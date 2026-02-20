@@ -1,0 +1,13 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.22.2
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  'snyk:lic:golang:github.com:hashicorp:go-multierror:MPL-2.0':
+    - '*':
+        reason: ignore MPL-2.0 licenses
+        created: 2022-03-24T12:21:26.520Z
+  'snyk:lic:golang:github.com:hashicorp:errwrap:MPL-2.0':
+    - '*':
+        reason: ignore MPL-2.0 licenses
+        created: 2022-03-24T12:21:37.079Z
+patch: {}

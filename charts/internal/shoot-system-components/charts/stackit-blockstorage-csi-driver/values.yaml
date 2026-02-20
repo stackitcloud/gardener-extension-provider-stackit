@@ -1,0 +1,35 @@
+prefix: stackit-blockstorage
+driverName: block-storage.csi.stackit.cloud
+
+rescanBlockStorageOnResize: "true"
+nodeVolumeAttachLimit: 24
+
+images:
+  csi-driver-stackit: image-repository:image-tag
+  csi-node-driver-registrar: image-repository:image-tag
+  csi-liveness-probe: image-repository:image-tag
+
+socketPath: /csi/csi.sock
+userAgentHeaders: []
+
+webhookConfig:
+  url: https://service-name.service-namespace/volumesnapshot
+  caBundle: |
+    -----BEGIN CERTIFICATE-----
+    ...
+    -----END CERTIFICATE-----
+
+resources:
+  driver:
+    requests:
+      cpu: 15m
+      memory: 42Mi
+  nodeDriverRegistrar:
+    requests:
+      cpu: 11m
+      memory: 32Mi
+  livenessProbe:
+    requests:
+      cpu: 11m
+      memory: 32Mi
+

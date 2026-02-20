@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{.Values.prefix}}-csi-driver
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{.Values.prefix}}-csi
+    role: controller
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{.Values.prefix}}-csi
+      role: controller
+  unhealthyPodEvictionPolicy: AlwaysAllow

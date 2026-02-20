@@ -1,0 +1,26 @@
+{{- define "cloud-provider-disk-config-csi" -}}
+[Global]
+{{ include "cloud-provider-config-credentials" . }}
+{{ include "cloud-provider-config-meta" . }}
+
+[BlockStorage]
+rescan-on-resize={{ .Values.rescanBlockStorageOnResize }}
+ignore-volume-az={{ .Values.ignoreVolumeAZ }}
+{{- if .Values.nodeVolumeAttachLimit }}
+node-volume-attach-limit={{ .Values.nodeVolumeAttachLimit }}
+{{- end -}}
+{{- end -}}
+{{- if not .Values.stackitOnly }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-provider-disk-config-csi
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+data:
+  cloudprovider.conf: {{ include "cloud-provider-disk-config-csi" . | b64enc }}
+  {{- if .Values.caCert }}
+  keystone-ca.crt: {{ .Values.caCert | b64enc }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,66 @@
+{{- range $index, $machineClass := .Values.machineClasses }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $machineClass.name }}
+  namespace: {{ $.Release.Namespace }}
+{{- if $machineClass.labels }}
+  labels:
+{{ toYaml $machineClass.labels | indent 4 }}
+{{- end }}
+type: Opaque
+data:
+  userData: {{ $machineClass.secret.cloudConfig | b64enc }}
+---
+apiVersion: machine.sapcloud.io/v1alpha1
+kind: MachineClass
+metadata:
+  name: {{ $machineClass.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- if $machineClass.labels }}
+{{ toYaml $machineClass.labels | indent 4 }}
+    {{- end }}
+    {{- if $machineClass.operatingSystem }}
+{{ toYaml $machineClass.operatingSystem | indent 4 }}
+    {{- end }}
+provider: "stackit"
+{{- if $machineClass.nodeTemplate }}
+nodeTemplate:
+  architecture: {{ $machineClass.nodeTemplate.architecture }}
+  capacity:
+{{ toYaml $machineClass.nodeTemplate.capacity | indent 4 }}
+  instanceType: {{ $machineClass.nodeTemplate.instanceType }}
+  region: {{ $machineClass.nodeTemplate.region }}
+  zone: {{ $machineClass.nodeTemplate.zone }}
+{{- end }}
+secretRef:
+  name: {{ $machineClass.name }}
+  namespace: {{ $.Release.Namespace }}
+credentialsSecretRef:
+  name: {{ $machineClass.credentialsSecretRef.name }}
+  namespace: {{ $machineClass.credentialsSecretRef.namespace }}
+providerSpec:
+  region: {{ $machineClass.region }}
+  availabilityZone: {{ $machineClass.availabilityZone }}
+  machineType: {{ $machineClass.nodeTemplate.instanceType }}
+  keypairName: {{ $machineClass.keyName }}
+  networking:
+    networkId: {{ $machineClass.networkID }}
+  allowedAddresses: {{ $machineClass.podNetworkCIDRs }}
+  # TODO: use bootVolume OR imageID
+  # NOTE: imageID doesn't work -> image size was greater than the bootVolume
+  bootVolume:
+    size: {{ $machineClass.rootDiskSize }}
+    performanceClass: {{ $machineClass.rootDiskType }}
+    source:
+      id: {{ $machineClass.imageID }}
+      type: image
+  securityGroups:
+{{ toYaml $machineClass.securityGroups | indent 2 }}
+  {{- if $machineClass.tags }}
+  labels:
+{{ toYaml $machineClass.tags | indent 4 }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,19 @@
+replicas: 1
+technicalID: shoot-foo-bar
+kubernetesVersion: 1.27.4
+podNetwork: 192.168.0.0/16
+podAnnotations: {}
+podLabels: {}
+featureGates: {}
+images:
+  hyperkube: image-repository:image-tag
+userAgentHeaders: []
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+tlsCipherSuites: []
+secrets:
+  server: cloud-controller-manager-server
+vpa:
+  resourcePolicy: {}

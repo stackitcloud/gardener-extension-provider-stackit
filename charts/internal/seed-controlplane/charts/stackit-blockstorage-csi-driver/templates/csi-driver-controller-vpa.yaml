@@ -1,0 +1,26 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{.Values.prefix}}-csi-driver-vpa
+  namespace: {{ .Release.Namespace }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: stackit-csi-driver
+      controlledValues: RequestsOnly
+    - containerName: external-provisioner
+      controlledValues: RequestsOnly
+    - containerName: external-attacher
+      controlledValues: RequestsOnly
+    - containerName: external-snapshotter
+      controlledValues: RequestsOnly
+    - containerName: external-resizer
+      controlledValues: RequestsOnly
+    - containerName: liveness-probe
+      controlledValues: RequestsOnly
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{.Values.prefix}}-csi-driver-controller
+  updatePolicy:
+    updateMode: Auto

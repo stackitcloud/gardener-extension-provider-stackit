@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v2/content/en/schemas/v3.json
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: gardener-extension-provider-stackit
+build:
+  artifacts:
+    # admission
+    - image: stackitcloud/gardener-extension-provider-stackit/gardener-extension-admission-stackit
+      ko:
+        main: ./cmd/gardener-extension-admission-stackit
+    - image: stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-runtime
+      custom:
+        buildCommand: |
+          bash ${GARDENER_HACK_DIR}/push-helm.sh ./charts/gardener-extension-admission-stackit/charts/runtime .image.ref
+      requires:
+        - image: stackitcloud/gardener-extension-provider-stackit/gardener-extension-admission-stackit
+          alias: IMG
+    - image: stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-virtual-garden
+      custom:
+        buildCommand: |
+          bash ${GARDENER_HACK_DIR}/push-helm.sh ./charts/gardener-extension-admission-stackit/charts/virtual-garden
+    # provider
+    - image: stackitcloud/gardener-extension-provider-stackit/gardener-extension-provider-stackit
+      ko:
+        main: ./cmd/gardener-extension-provider-stackit
+    - image: stackitcloud/gardener-extension-provider-stackit/charts/gardener-extension-provider-stackit
+      custom:
+        buildCommand: |
+          bash ${GARDENER_HACK_DIR}/push-helm.sh ./charts/gardener-extension-provider-stackit .image.ref
+      requires:
+        - image: stackitcloud/gardener-extension-provider-stackit/gardener-extension-provider-stackit
+          alias: IMG
+manifests:
+  remoteManifests:
+    - manifest: garden:extensions.operator.gardener.cloud/provider-stackit
+  hooks:
+    before:
+      - host:
+          command:
+            - bash
+            - -c
+            - kubectl annotate -n garden extensions.operator.gardener.cloud/provider-stackit kustomize.toolkit.fluxcd.io/reconcile=disabled
+      - host:
+          command:
+            - bash
+            - -c
+            - kubectl patch -n garden extensions.operator.gardener.cloud/provider-stackit --type=merge --patch-file=hack/skaffold-extension-patch.yaml
+deploy:
+  kubectl: {}
+resourceSelector:
+  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
+  allow:
+    - groupKind: Extension.operator.gardener.cloud
+      image:
+        - .spec.deployment.extension.helm.ociRepository.ref
+        - .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref
+        - .spec.deployment.admission.virtualCluster.helm.ociRepository.ref

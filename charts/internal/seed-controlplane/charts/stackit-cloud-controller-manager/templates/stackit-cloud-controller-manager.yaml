@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stackit-cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: stackit-cloud-controller-manager
+    high-availability-config.resources.gardener.cloud/type: controller
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: stackit-cloud-controller-manager
+  template:
+    metadata:
+      annotations:
+        checksum/configmap-cloud-provider-config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+{{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        gardener.cloud/role: controlplane
+        app: kubernetes
+        role: stackit-cloud-controller-manager
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      priorityClassName: gardener-system-300
+      containers:
+      - name: stackit-cloud-controller-manager
+        image: {{ index .Values.images "stackit-cloud-controller-manager" }}
+        args:
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --authentication-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --authorization-kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --use-service-account-credentials
+        - --cloud-provider=stackit
+        - --route-reconciliation-period=30s
+        - --webhook-secure-port=0
+        - --leader-elect=true
+        - --leader-elect-resource-name=stackit-cloud-controller-manager # Must not collide with the lease for OpenStack's cloud controller manager.
+        - --concurrent-service-syncs=3
+        - --authorization-always-allow-paths=/metrics
+        - --cloud-config=/etc/config/cloud.yaml
+        - --cluster-name={{ .Values.technicalID }}
+        - --metrics-address=:{{ .Values.config.metricsPort }}
+        {{- include "stackit-cloud-controller-manager.featureGates" . | trimSuffix "," | indent 8 }}
+        {{- include "stackit-cloud-controller-manager.controllers" . | trimSuffix "," | indent 8 }}
+        env:
+        - name: STACKIT_SERVICE_ACCOUNT_KEY_PATH
+          value: /etc/serviceaccount/serviceaccount.json
+{{- if .Values.config.tokenUrl }}
+        - name: STACKIT_TOKEN_BASEURL
+          value: {{ .Values.config.tokenUrl }}
+{{- end }}
+{{- if .Values.config.loadBalancerEmergencyToken }}
+        - name: STACKIT_LB_API_EMERGENCY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: "lb-api-emergency-access"
+              key: "lbApiToken"
+{{- end }}
+        ports:
+        - containerPort: {{ .Values.config.port }}
+          name: https
+          protocol: TCP
+        - containerPort: {{ .Values.config.metricsPort }}
+          name: metrics
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+        volumeMounts:
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig
+          readOnly: true
+        - mountPath: /etc/config
+          name: config-volume
+        - mountPath: /etc/serviceaccount
+          name: sa-secret
+        - mountPath: /etc/ssl/certs/keystone-ca.crt
+          name: cloud-config-ca
+          subPath: keystone-ca.crt
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+      volumes:
+      - name: config-volume
+        configMap:
+          defaultMode: 420
+          name: stackit-cloud-controller-manager
+      - name: sa-secret
+        secret:
+          defaultMode: 420
+          secretName: cloudprovider
+          items:
+            - key: "serviceaccount.json"
+              path: "serviceaccount.json"
+      - name: cloud-config-ca
+        secret:
+          secretName: cloud-provider-config
+          optional: true
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+                - key: kubeconfig
+                  path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+                - key: token
+                  path: token
+              name: shoot-access-cloud-controller-manager
+              optional: false

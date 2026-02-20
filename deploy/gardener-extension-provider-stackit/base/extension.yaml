@@ -1,0 +1,24 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: provider-stackit
+spec:
+  resources:
+  - kind: Bastion
+    primary: true
+    type: openstack
+  - kind: ControlPlane
+    primary: true
+    type: openstack
+  - kind: Infrastructure
+    primary: true
+    type: openstack
+  - kind: Worker
+    primary: true
+    type: openstack
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          repository: ghcr.io/stackitcloud/charts/gardener-extension-provider-stackit
+          tag: latest

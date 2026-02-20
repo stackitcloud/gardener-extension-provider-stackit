@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stackit-alb-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: stackit-alb-controller-manager
+    high-availability-config.resources.gardener.cloud/type: controller
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: stackit-alb-controller-manager
+  template:
+    metadata:
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        gardener.cloud/role: controlplane
+        app: kubernetes
+        role: stackit-alb-controller-manager
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      priorityClassName: gardener-system-300
+      containers:
+      - name: stackit-alb-controller-manager
+        image: {{ index .Values.images "stackit-alb-controller-manager" }}
+        args:
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --leader-elect=true
+        - --leader-election-namespace=kube-system
+        - --leader-election-id=stackit-alb-controller-manager
+        env:
+        - name: STACKIT_SERVICE_ACCOUNT_KEY_PATH
+          value: /etc/serviceaccount/serviceaccount.json
+        - name: STACKIT_REGION
+          value: {{ .Values.config.region }}
+        - name: PROJECT_ID
+          value: {{ .Values.config.stackitProjectID }}
+        - name: NETWORK_ID
+          value: {{ .Values.config.stackitNetworkID }}
+
+{{- if .Values.config.tokenUrl }}
+        - name: STACKIT_TOKEN_BASEURL
+          value: {{ .Values.config.tokenUrl }}
+{{- end }}
+{{- if .Values.config.applicationLBApiUrl }}
+        - name: STACKIT_LOAD_BALANCER_API_ALB_URL
+          value: {{ .Values.config.applicationLBApiUrl }}
+{{- end }}
+{{- if .Values.config.certificateApiUrl }}
+        - name: STACKIT_LOAD_BALANCER_API_CERT_URL
+          value: {{ .Values.config.certificateApiUrl }}
+{{- end }}
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+        volumeMounts:
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig
+          readOnly: true
+        - mountPath: /etc/serviceaccount
+          name: sa-secret
+        - mountPath: /etc/ssl/certs/keystone-ca.crt
+          name: cloud-config-ca
+          subPath: keystone-ca.crt
+          readOnly: true
+      volumes:
+      - name: sa-secret
+        secret:
+          defaultMode: 420
+          secretName: cloudprovider
+          items:
+            - key: "serviceaccount.json"
+              path: "serviceaccount.json"
+      - name: cloud-config-ca
+        secret:
+          secretName: cloud-provider-config
+          optional: true
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+                - key: kubeconfig
+                  path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+                - key: token
+                  path: token
+              name: shoot-access-cloud-controller-manager
+              optional: false

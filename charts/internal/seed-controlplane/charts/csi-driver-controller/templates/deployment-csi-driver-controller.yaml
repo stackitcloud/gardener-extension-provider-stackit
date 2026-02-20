@@ -1,0 +1,340 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-driver-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: csi
+    role: controller
+    high-availability-config.resources.gardener.cloud/type: controller
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: csi
+      role: controller
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      creationTimestamp: null
+      labels:
+        app: csi
+        role: controller
+        gardener.cloud/role: controlplane
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/from-prometheus: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: gardener-system-300
+      containers:
+      - name: openstack-csi-driver
+        image: {{ index .Values.images "csi-driver-cinder" }}
+        imagePullPolicy: IfNotPresent
+        args :
+        - /bin/cinder-csi-plugin
+        - --endpoint=$(CSI_ENDPOINT)
+        - --cloud-config=/etc/kubernetes/cloudprovider/cloudprovider.conf
+        - --cluster={{ .Release.Namespace }}
+        {{- range $userAgentHeader := .Values.userAgentHeaders }}
+        - --user-agent={{ $userAgentHeader }}
+        {{- end }}
+        - --v=3
+        {{- if semverCompare ">= 1.28-0" .Values.kubernetesVersion }}
+        - --provide-node-service=false
+        {{- end }}
+        env:
+        - name: CSI_ENDPOINT
+          value: unix://{{ .Values.socketPath }}/csi.sock
+{{- if .Values.resources.driver }}
+        resources:
+{{ toYaml .Values.resources.driver | indent 10 }}
+{{- end }}
+        ports:
+        - name: healthz
+          containerPort: 9808
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
+          initialDelaySeconds: 10
+          timeoutSeconds: 180
+          periodSeconds: 30
+          failureThreshold: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: {{ .Values.socketPath }}
+        - name: cloud-provider-config
+          mountPath: /etc/kubernetes/cloudprovider
+        # Host certificates are mounted to accommodate OpenStack endpoints that might be served with a certificate
+        # signed by a CA that is not globally trusted.
+        - mountPath: /usr/share/ca-certificates
+          name: usr-share-ca-certificates
+          readOnly: true
+        - mountPath: /etc/ssl
+          name: etc-ssl
+          readOnly: true
+
+      - name: openstack-csi-provisioner
+        image: {{ index .Values.images "csi-provisioner" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --csi-address=$(ADDRESS)
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --feature-gates=Topology=true
+        - --volume-name-prefix=pv-{{ .Release.Namespace }}
+        - --metrics-address=0.0.0.0:8080
+        - --default-fstype=ext4
+        - --leader-election
+        - --leader-election-namespace=kube-system
+        - --timeout={{ .Values.timeout }}
+        - --v=5
+        ports:
+          - containerPort: 8080
+            name: metrics
+        env:
+        - name: ADDRESS
+          value: {{ .Values.socketPath }}/csi.sock
+{{- if .Values.resources.provisioner }}
+        resources:
+{{ toYaml .Values.resources.provisioner | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: {{ .Values.socketPath }}
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig-csi-provisioner
+          readOnly: true
+
+      - name: openstack-csi-attacher
+        image: {{ index .Values.images "csi-attacher" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --csi-address=$(ADDRESS)
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --leader-election
+        - --leader-election-namespace=kube-system
+        - --timeout={{ .Values.timeout }}
+        - --v=3
+        - --http-endpoint=0.0.0.0:8081
+        - --retry-interval-start=1m
+        - --retry-interval-max=15m
+        - --reconcile-sync=5m
+        - --max-entries={{ .Values.maxEntries }}
+        ports:
+        - containerPort: 8081
+          name: metrics
+        env:
+        - name: ADDRESS
+          value: {{ .Values.socketPath }}/csi.sock
+{{- if .Values.resources.attacher }}
+        resources:
+{{ toYaml .Values.resources.attacher | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: {{ .Values.socketPath }}
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig-csi-attacher
+          readOnly: true
+
+      - name: openstack-csi-snapshotter
+        image: {{ index .Values.images "csi-snapshotter" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --csi-address=$(CSI_ENDPOINT)
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --leader-election
+        - --leader-election-namespace=kube-system
+        - --timeout={{ .Values.timeout }}
+        - --snapshot-name-prefix={{ .Release.Namespace }}
+        env:
+        - name: CSI_ENDPOINT
+          value: {{ .Values.socketPath }}/csi.sock
+{{- if .Values.resources.snapshotter }}
+        resources:
+{{ toYaml .Values.resources.snapshotter | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: {{ .Values.socketPath }}
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig-csi-snapshotter
+          readOnly: true
+
+      - name: openstack-csi-resizer
+        image: {{ index .Values.images "csi-resizer" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --csi-address=$(ADDRESS)
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --leader-election=true
+        - --leader-election-namespace=kube-system
+        - --timeout={{ .Values.timeout }}
+        - --handle-volume-inuse-error=false
+        - --v=5
+        env:
+        - name: ADDRESS
+          value: {{ .Values.socketPath }}/csi.sock
+{{- if .Values.resources.resizer }}
+        resources:
+{{ toYaml .Values.resources.resizer | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: {{ .Values.socketPath }}
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig-csi-resizer
+          readOnly: true
+
+      - name: openstack-csi-liveness-probe
+        image: {{ index .Values.images "csi-liveness-probe" }}
+        args:
+        - --probe-timeout=3m
+        - --csi-address=/csi/csi.sock
+{{- if .Values.resources.livenessProbe }}
+        resources:
+{{ toYaml .Values.resources.livenessProbe | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - name: socket-dir
+          mountPath: /csi
+
+      volumes:
+      - name: socket-dir
+        emptyDir: {}
+      - name: kubeconfig-csi-attacher
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: shoot-access-csi-attacher
+              optional: false
+      - name: kubeconfig-csi-provisioner
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: shoot-access-csi-provisioner
+              optional: false
+      - name: kubeconfig-csi-snapshotter
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: shoot-access-csi-snapshotter
+              optional: false
+      - name: kubeconfig-csi-resizer
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: shoot-access-csi-resizer
+              optional: false
+      - name: usr-share-ca-certificates
+        hostPath:
+          path: /usr/share/ca-certificates
+      - name: cloud-provider-config
+        secret:
+          secretName: cloud-provider-disk-config-csi
+      # Host certificates are mounted to accommodate OpenStack endpoints that might be served with a certificate
+      # signed by a CA that is not globally trusted.
+      - name: etc-ssl
+        hostPath:
+          path: /etc/ssl

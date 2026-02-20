@@ -1,0 +1,29 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: provider-stackit
+spec:
+  deployment:
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-runtime:v0.0.0
+      values:
+        image:
+          repository: null
+          tag: null
+          pullPolicy: Always
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-virtual-garden:v0.0.0
+    extension:
+      helm:
+        ociRepository:
+          ref: stackitcloud/gardener-extension-provider-stackit/charts/gardener-extension-provider-stackit:v0.0.0
+      values:
+        image:
+          repository: null
+          tag: null
+          pullPolicy: Always

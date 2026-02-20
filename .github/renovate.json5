@@ -1,0 +1,112 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+  ],
+  dependencyDashboard: true,
+  postUpdateOptions: [
+    'gomodTidy',
+  ],
+  separateMinorPatch: true,
+  additionalReviewers: [
+    'team:ske-infrastructure',
+  ],
+  labels: [
+    'kind/upgrade',
+  ],
+  commitMessagePrefix: '🤖',
+  customManagers: [
+    {
+      description: 'Update `_VERSION` and `_version` variables in Makefiles and scripts. Inspired by `regexManagers:dockerfileVersions` preset.',
+      customType: 'regex',
+      managerFilePatterns: [
+        '/Makefile$/',
+        '/\\.mk$/',
+        '/\\.sh$/',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_(VERSION|version) *[?:]?= *"?(?<currentValue>.+?)"?\\s',
+      ],
+    },
+    {
+      description: 'Update `imagevector/images.yaml`',
+      customType: 'regex',
+      managerFilePatterns: [
+        '/imagevector/images.yaml$/',
+      ],
+      matchStrings: [
+        '# renovate(?:\w|\W|)*?repository: (?<depName>.*)(?:\w|\W)*?tag: "?(?<currentValue>(?:\w|\d|\.|-)*)"?',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'semver'
+    }
+  ],
+  packageRules: [
+    {
+      description: 'dependencies are updated alongside g/g',
+      enabled: false,
+      matchDatasources: ['go'],
+      matchPackageNames: [
+        '/k8s.io/',
+        '/sigs.k8s.io/controller-runtime/',
+        '/github.com/gardener/etcd-druid/',
+        '/github.com/gardener/machine-controller-manager/',
+      ],
+    },
+    {
+      description: 'dependencies are pined to a dedicated version minor',
+      enabled: false,
+      matchUpdateTypes: [
+        'minor',
+        'major',
+      ],
+      matchPackageNames: [
+        'ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin',
+        'ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager',
+        'registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin',
+        'registry.k8s.io/provider-os/openstack-cloud-controller-manager',
+      ],
+    },
+    {
+      groupName: 'cloud-provider-stackit',
+      matchUpdateTypes: [
+        'patch',
+      ],
+      matchPackageNames: [
+        'ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin',
+        'ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager',
+      ],
+    },
+    {
+      groupName: 'cloud-provider-openstack',
+      matchUpdateTypes: [
+        'patch',
+      ],
+      matchPackageNames: [
+        'registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin',
+        'registry.k8s.io/provider-os/openstack-cloud-controller-manager'
+      ],
+    },
+    {
+      groupName: 'Internal',
+      matchFileNames: [
+        'charts/internal/**/requirements.yaml',
+      ],
+      enabled: false,
+    },
+    {
+      groupName: 'Go testing',
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+      ],
+      addLabels: [
+        'skip-review',
+      ],
+      matchSourceUrls: [
+        'https://github.com/onsi/gomega{/,}**',
+        'https://github.com/onsi/ginkgo{/,}**',
+      ],
+    },
+  ],
+}

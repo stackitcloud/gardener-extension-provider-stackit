@@ -1,0 +1,21 @@
+dependencies:
+- name: cloud-controller-manager
+  repository: http://localhost:10191
+  version: 0.1.0
+  condition: cloud-controller-manager.enabled
+- name: stackit-cloud-controller-manager
+  repository: http://localhost:10191
+  version: 0.1.0
+  condition: stackit-cloud-controller-manager.enabled
+- name: csi-driver-controller
+  repository: http://localhost:10191
+  version: 0.1.0
+  condition: csi-driver-controller.enabled
+- name: stackit-blockstorage-csi-driver
+  version: 0.1.0
+  repository: http://localhost:10191
+  condition: stackit-blockstorage-csi-driver.enabled
+- name: stackit-alb-controller-manager
+  repository: http://localhost:10191
+  version: 0.1.0
+  condition: stackit-alb-controller-manager.enabled

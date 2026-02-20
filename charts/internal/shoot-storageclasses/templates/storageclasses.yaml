@@ -1,0 +1,29 @@
+{{- range $key, $value := .Values.storageclasses }}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ $value.name }}
+  annotations:
+    resources.gardener.cloud/delete-on-invalid-update: "true"
+    {{- if $value.default }}
+    storageclass.kubernetes.io/is-default-class: "true"
+    {{- else }}
+    storageclass.kubernetes.io/is-default-class: "false"
+    {{- end }}
+    {{- if $value.annotations }}
+    {{- toYaml $value.annotations | nindent 4 }}
+    {{- end}}
+  {{- if $value.labels }}
+  labels:
+  {{- toYaml $value.labels | nindent 4 }}
+  {{- end }}
+{{- if $value.parameters }}
+parameters:
+  {{- toYaml $value.parameters | nindent 2 }}
+{{- end }}
+allowVolumeExpansion: true
+{{ if $value.provisioner }}provisioner: {{ $value.provisioner }}{{ end }}
+{{ if $value.reclaimPolicy }}reclaimPolicy: {{ $value.reclaimPolicy }}{{ end }}
+{{ if $value.volumeBindingMode }}volumeBindingMode: {{ $value.volumeBindingMode }}{{ end }}
+{{- end }}

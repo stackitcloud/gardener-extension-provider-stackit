@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: cloud-controller-manager
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: cloud-controller-manager
+  unhealthyPodEvictionPolicy: AlwaysAllow

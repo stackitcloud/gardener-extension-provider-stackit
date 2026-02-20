@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stackit-cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+data:
+  cloud.yaml: |-
+    global:
+      projectId: {{ .Values.config.stackitProjectID }}
+      region: {{ .Values.config.stackitRegion }}
+    {{- if .Values.config.iaasApiUrl }}
+    instances:
+      api: {{ .Values.config.iaasApiUrl }}
+    {{- end }}
+    loadBalancer:
+      api: {{ .Values.config.loadBalancerApiUrl }}
+      networkId: {{ .Values.config.stackitNetworkID }}
+      {{- if .Values.config.extraLabels }}
+      extraLabels:
+        {{- toYaml .Values.config.extraLabels | nindent 8 }}
+      {{- end }}

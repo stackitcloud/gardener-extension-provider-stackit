@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: stackit-cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"port":{{ .Values.config.metricsPort }},"protocol":"TCP"}]'
+  labels:
+    app: kubernetes
+    role: stackit-cloud-controller-manager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: {{ .Values.config.metricsPort }}
+    protocol: TCP
+  selector:
+    app: kubernetes
+    role: stackit-cloud-controller-manager

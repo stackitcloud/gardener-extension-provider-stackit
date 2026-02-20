@@ -1,0 +1,154 @@
+images:
+# renovate
+- name: cloud-controller-manager
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
+  tag: "v1.32.1"
+  targetVersion: "1.32.x"
+# renovate
+- name: cloud-controller-manager
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
+  tag: "v1.33.1"
+  targetVersion: "1.33.x"
+# renovate
+- name: cloud-controller-manager
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
+  tag: "v1.34.1"
+  targetVersion: 1.34.x
+# renovate
+- name: cloud-controller-manager
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
+  tag: "v1.35.0"
+  targetVersion: ">= 1.35"
+
+# renovate
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.32.13"
+  targetVersion: "1.32.x"
+# renovate
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.33.12"
+  targetVersion: "1.33.x"
+# renovate
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.34.5"
+  targetVersion: "1.34.x"
+# renovate
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.35.0"
+  targetVersion: ">= 1.35"
+
+# renovate
+- name: machine-controller-manager-provider-openstack
+  sourceRepository: github.com/gardener/machine-controller-manager-provider-openstack
+  repository: registry.ske.stackit.cloud/stackitcloud/machine-controller-manager-provider-openstack
+  tag: "v0.24.1-ske-1"
+# renovate
+- name: machine-controller-manager-provider-stackit
+  sourceRepository: github.com/stackitcloud/machine-controller-manager-provider-stackit
+  repository: ghcr.io/stackitcloud/machine-controller-manager-provider-stackit
+  tag: "v0.4.0"
+
+# renovate
+- name: csi-driver-cinder
+  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
+  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
+  tag: "v1.32.4-ske-1"
+  targetVersion: "1.32.x"
+# renovate
+- name: csi-driver-cinder
+  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
+  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
+  tag: "v1.33.0-ske-1"
+  targetVersion: "1.33.x"
+# renovate
+- name: csi-driver-cinder
+  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
+  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
+  tag: "v1.34.1-ske-1"
+  targetVersion: 1.34.x
+# renovate
+- name: csi-driver-cinder
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/cinder-csi-plugin
+  tag: v1.35.0
+  targetVersion: '>= 1.35'
+
+# renovate
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.32.13"
+  targetVersion: "1.32.x"
+  # renovate
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.33.12"
+  targetVersion: "1.33.x"
+# renovate
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.34.5"
+  targetVersion: "1.34.x"
+# renovate
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.35.0"
+  targetVersion: ">= 1.35"
+
+- name: csi-provisioner
+  sourceRepository: github.com/kubernetes-csi/external-provisioner
+  repository: registry.k8s.io/sig-storage/csi-provisioner
+  tag: "v5.3.0"
+- name: csi-provisioner
+  sourceRepository: github.com/kubernetes-csi/external-provisioner
+  repository: registry.k8s.io/sig-storage/csi-provisioner
+  tag: "v6.1.1"
+  targetVersion: '>= 1.34'
+- name: csi-attacher
+  sourceRepository: github.com/kubernetes-csi/external-attacher
+  repository: registry.k8s.io/sig-storage/csi-attacher
+  tag: "v4.11.0"
+- name: csi-snapshotter
+  sourceRepository: github.com/kubernetes-csi/external-snapshotter
+  repository: registry.k8s.io/sig-storage/csi-snapshotter
+  tag: "v8.5.0"
+- name: csi-snapshot-controller
+  sourceRepository: github.com/kubernetes-csi/external-snapshotter
+  repository: registry.k8s.io/sig-storage/snapshot-controller
+  tag: "v8.5.0"
+- name: csi-resizer
+  sourceRepository: github.com/kubernetes-csi/external-resizer
+  repository: registry.k8s.io/sig-storage/csi-resizer
+  tag: "v1.14.0"
+- name: csi-resizer
+  sourceRepository: github.com/kubernetes-csi/external-resizer
+  repository: registry.k8s.io/sig-storage/csi-resizer
+  tag: "v2.1.0"
+  targetVersion: '>= 1.34'
+- name: csi-node-driver-registrar
+  sourceRepository: github.com/kubernetes-csi/node-driver-registrar
+  repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+  tag: "v2.16.0"
+- name: csi-liveness-probe
+  sourceRepository: github.com/kubernetes-csi/livenessprobe
+  repository: registry.k8s.io/sig-storage/livenessprobe
+  tag: "v2.18.0"
+
+- name: stackit-alb-controller-manager
+  repository: reg3.infra.ske.eu01.stackit.cloud/temp/alb-controller-manager
+  tag: "1245"

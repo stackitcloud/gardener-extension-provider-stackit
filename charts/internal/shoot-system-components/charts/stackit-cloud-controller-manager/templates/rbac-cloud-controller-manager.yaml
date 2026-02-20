@@ -1,0 +1,15 @@
+# TODO after removing openstack CCM: think about reducing permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: extensions.gardener.cloud:provider-stackit:cloud-controller-manager
+  annotations:
+    resources.gardener.cloud/keep-object: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: cloud-controller-manager
+  namespace: kube-system

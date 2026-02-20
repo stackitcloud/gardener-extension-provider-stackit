@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: csi-snapshot-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: csi-snapshot-controller
+    role: controller
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: csi-snapshot-controller
+      role: controller
+  unhealthyPodEvictionPolicy: AlwaysAllow

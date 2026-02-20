@@ -1,0 +1,22 @@
+aliases:
+  gardener-extension-provider-stackit-reviewers:
+    - Duciwuci
+    - einfachnuralex
+    - hown3d
+    - JuliusSte
+    - Kumm-Kai
+    - maboehm
+    - MichaelEischer
+    - rgroemmer
+    - robinschneider
+    - timebertt
+    - lukasjarosch
+    - crigertg
+    - cerealsnow
+  gardener-extension-provider-stackit-approvers:
+    - dergeberl
+    - nschad
+    - ftl
+    - xoxys
+    - aniruddha2000
+    - breuerfelix

@@ -1,0 +1,19 @@
+{{- define "cloud-provider-disk-config" -}}
+[Global]
+{{ include "cloud-provider-config-credentials" . }}
+{{ include "cloud-provider-config-meta" . }}
+{{- end -}}
+{{- if not .Values.stackitOnly }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-provider-disk-config
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+data:
+  cloudprovider.conf: {{ include "cloud-provider-disk-config" . | b64enc }}
+  {{- if .Values.caCert }}
+  keystone-ca.crt: {{ .Values.caCert | b64enc }}
+  {{- end }}
+{{- end -}}

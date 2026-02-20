@@ -1,0 +1,51 @@
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
+package cmd
+
+import (
+	extensionsbastioncontroller "github.com/gardener/gardener/extensions/pkg/controller/bastion"
+	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	extensionscontrolplanecontroller "github.com/gardener/gardener/extensions/pkg/controller/controlplane"
+	extensionsdnsrecordcontroller "github.com/gardener/gardener/extensions/pkg/controller/dnsrecord"
+	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
+	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
+	extensionsinfrastructurecontroller "github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
+	extensionsworkercontroller "github.com/gardener/gardener/extensions/pkg/controller/worker"
+	extensionscloudproviderwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cloudprovider"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+	extensioncontrolplanewebhook "github.com/gardener/gardener/extensions/pkg/webhook/controlplane"
+
+	bastioncontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/bastion"
+	controlplanecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/controlplane"
+	dnsrecordcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/dnsrecord"
+	healthcheckcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/healthcheck"
+	infrastructurecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure"
+	workercontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/worker"
+	cloudproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/cloudprovider"
+	controlplanewebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/controlplane"
+	seedproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/seedprovider"
+)
+
+// ControllerSwitchOptions are the controllercmd.SwitchOptions for the provider controllers.
+func ControllerSwitchOptions() *controllercmd.SwitchOptions {
+	return controllercmd.NewSwitchOptions(
+		controllercmd.Switch(extensionsbastioncontroller.ControllerName, bastioncontroller.AddToManager),
+		controllercmd.Switch(extensionscontrolplanecontroller.ControllerName, controlplanecontroller.AddToManager),
+		controllercmd.Switch(extensionsdnsrecordcontroller.ControllerName, dnsrecordcontroller.AddToManager),
+		controllercmd.Switch(extensionsinfrastructurecontroller.ControllerName, infrastructurecontroller.AddToManager),
+		controllercmd.Switch(extensionsworkercontroller.ControllerName, workercontroller.AddToManager),
+		controllercmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
+		controllercmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
+	)
+}
+
+// WebhookSwitchOptions are the webhookcmd.SwitchOptions for the provider webhooks.
+func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
+	return webhookcmd.NewSwitchOptions(
+		webhookcmd.Switch(extensioncontrolplanewebhook.WebhookName, controlplanewebhook.AddToManager),
+		webhookcmd.Switch(extensioncontrolplanewebhook.SeedProviderWebhookName, seedproviderwebhook.AddToManager),
+		webhookcmd.Switch(extensionscloudproviderwebhook.WebhookName, cloudproviderwebhook.AddToManager),
+	)
+}

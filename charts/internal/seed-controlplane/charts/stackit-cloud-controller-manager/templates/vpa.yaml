@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: stackit-cloud-controller-manager-vpa
+  namespace: {{ .Release.Namespace }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stackit-cloud-controller-manager
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: stackit-cloud-controller-manager
+      minAllowed:
+        memory: 80M
+      maxAllowed:
+        cpu: {{ .Values.vpa.resourcePolicy.maxAllowed.cpu }}
+        memory: {{ .Values.vpa.resourcePolicy.maxAllowed.memory }}
+      controlledValues: RequestsOnly

@@ -1,0 +1,28 @@
+{
+  "target": {
+    "path": {
+      "deployment": "gardener-extension-provider-stackit"
+    }
+  },
+  "feature": {
+    "fs": {
+      "mode": "read",
+      "read_only": [
+        "/etc/gardener-extension-provider-stackit/.*",
+        "/charts_overwrite/.*",
+        "/var/run/secrets/gardener.cloud/.*"
+      ]
+    },
+    "env": {
+      "unset": [
+        "KUBECONFIG",
+        "HTTPS_PROXY",
+        "https_proxy"
+      ]
+    },
+    "network": {
+      "incoming": "steal",
+      "outgoing": true
+    }
+  }
+}

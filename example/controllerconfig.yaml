@@ -1,0 +1,19 @@
+---
+apiVersion: stackit.provider.extensions.config.stackit.cloud/v1alpha1
+kind: ControllerConfiguration
+clientConnection:
+  acceptContentTypes: application/json
+  contentType: application/json
+  qps: 100
+  burst: 130
+etcd:
+  storage:
+    className: gardener.cloud-fast
+    capacity: 80Gi
+#   backup:
+#     schedule: "0 */24 * * *"
+# healthCheckConfig:
+#   syncPeriod: 30s
+# NOTE: only change this if you know what you are doing!
+# changing this value without a migration plan could lead to orphaned cloud resources
+# customLabelDomain: kubernetes.io (default)

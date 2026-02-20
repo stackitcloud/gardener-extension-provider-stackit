@@ -1,0 +1,33 @@
+machineClasses:
+  - name: class-1
+    labels:
+      foo: bar
+    region: eu01
+    availabilityZone: eu01-1
+    machineType: medium_2_4
+    nodeTemplate:
+      architecture: amd64
+      capacity:
+        cpu: 2
+        gpu: 1
+        memory: 25Gi
+      instanceType: medium_2_4
+      region: eu01
+      zone: eu01-1
+    keyName: my-ssh-key
+    imageID: 836428cd-5f98-1305-af9d-9825d4dfd0ec
+    networkID: 426428cd-5e88-4005-9fad-9555d4dfd0fb
+    rootDiskSize: 100 # GB
+    rootDiskType: standard_hdd
+    securityGroups:
+      - 836428cd-5f98-1305-af9d-9825d4dfd0ec
+    podNetworkCIDRs:
+      - 192.168.0.0/24
+    tags:
+      kubernetes.io/cluster/shoot-crazy-botany: "1"
+      kubernetes.io/role/node: "1"
+    secret:
+      cloudConfig: abc
+    credentialsSecretRef:
+      name: cloudprovider
+      namespace: shoot-namespace

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: csi-snapshot-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: csi-snapshot-controller
+    role: controller
+    high-availability-config.resources.gardener.cloud/type: controller
+spec:
+  replicas: {{ .Values.csiSnapshotController.replicas }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: csi-snapshot-controller
+      role: controller
+  template:
+    metadata:
+      annotations:
+{{- if .Values.csiSnapshotController.podAnnotations }}
+{{ toYaml .Values.csiSnapshotController.podAnnotations | indent 8 }}
+{{- end }}
+      creationTimestamp: null
+      labels:
+        app: csi-snapshot-controller
+        role: controller
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: gardener-system-200
+      containers:
+      - name: openstack-csi-snapshot-controller
+        image: {{ index .Values.images "csi-snapshot-controller" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
+        - --leader-election=true
+        - --leader-election-namespace=kube-system
+{{- if .Values.csiSnapshotController.resources }}
+        resources:
+{{ toYaml .Values.csiSnapshotController.resources | indent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          runAsUser: 1337
+          runAsGroup: 1337
+        volumeMounts:
+        - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          name: kubeconfig
+          readOnly: true
+      volumes:
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: shoot-access-csi-snapshot-controller
+              optional: false

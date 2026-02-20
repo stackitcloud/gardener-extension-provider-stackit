@@ -1,0 +1,5 @@
+formatter:
+  indentless_arrays: true
+  retain_line_breaks_single: true
+  eof_newline: true
+  trim_trailing_whitspace: true

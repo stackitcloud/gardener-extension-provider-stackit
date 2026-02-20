@@ -1,0 +1,6 @@
+cloud-controller-manager:
+  enabled: true
+stackit-cloud-controller-manager:
+  enabled: true
+csi-driver-node:
+  enabled: true

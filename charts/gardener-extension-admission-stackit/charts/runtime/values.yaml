@@ -1,0 +1,41 @@
+image:
+  ref: ""
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/admission-stackit
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+resources: {}
+extraEnvs: []
+metricsPort: 8080
+healthPort: 8081
+vpa:
+  enabled: true
+  updatePolicy:
+    updateMode: "Auto"
+webhookConfig:
+  serverPort: 10250
+# Kubeconfig to the target cluster. In-cluster configuration will be used if not specified.
+kubeconfig:
+
+featureGates: {}
+#   SomeGate: true
+flatcarImageVersion: ""
+
+#projectedKubeconfig:
+#  baseMountPath: /var/run/secrets/gardener.cloud
+#  genericKubeconfigSecretName: generic-token-kubeconfig
+#  tokenSecretName: access-stackit-admission
+
+service:
+  topologyAwareRouting:
+    enabled: false
+
+gardener:
+  virtualCluster:
+    enabled: true
+    serviceAccount: {}
+  #     name: extension-admission-provider-stackit
+  #     namespace: kube-system
+  runtimeCluster: {}
+#   priorityClassName: gardener-garden-system-400

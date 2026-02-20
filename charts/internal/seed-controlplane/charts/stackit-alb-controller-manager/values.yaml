@@ -1,0 +1,17 @@
+replicas: 1
+config:
+  region: ""
+#   stackitNetworkID: foo
+#   stackitProjectID: foo
+#   region: foo
+#   applicationLBApiUrl: foo
+#   certificateApiUrl: foo
+podAnnotations: {}
+podLabels: {}
+images:
+  stackit-alb-controller-manager: image:tag
+vpa:
+  resourcePolicy:
+    maxAllowed:
+      cpu: 1
+      memory: 512Mi

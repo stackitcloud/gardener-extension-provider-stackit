@@ -1,0 +1,23 @@
+replicas: 1
+technicalID: shoot-foo-bar
+config:
+  extraLabels: {}
+  stackitProjectID: foo
+  stackitNetworkID: foo
+  stackitRegion: foo
+  #loadBalancerApiUrl: foo.bar.example.com/v1
+  #iaasApiUrl: foo.bar.example.com/v1
+  #tokenUrl: foo.bar.example.com/v1
+  port: 10258
+  metricsPort: 9090
+podAnnotations: {}
+podLabels: {}
+featureGates: {}
+controllers: {}
+images:
+  hyperkube: image-repository:image-tag
+vpa:
+  resourcePolicy:
+    maxAllowed:
+      cpu: 1
+      memory: 512Mi
