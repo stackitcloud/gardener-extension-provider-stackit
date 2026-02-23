@@ -49,8 +49,6 @@ providerSpec:
   networking:
     networkId: {{ $machineClass.networkID }}
   allowedAddresses: {{ $machineClass.podNetworkCIDRs }}
-  # TODO: use bootVolume OR imageID
-  # NOTE: imageID doesn't work -> image size was greater than the bootVolume
   bootVolume:
     size: {{ $machineClass.rootDiskSize }}
     performanceClass: {{ $machineClass.rootDiskType }}
