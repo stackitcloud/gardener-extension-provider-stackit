@@ -25,7 +25,7 @@ linters:
     importas:
       alias:
         # internal packages
-        - pkg: github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1
+        - pkg: github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1
           alias: stackitv1alpha1
         # External imported packages
         - pkg: k8s.io/api/(\w+)/(v[\w\d]+)

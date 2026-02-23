@@ -5,4 +5,4 @@
 // +k8s:deepcopy-gen=package
 // +groupName="stackit.provider.extensions.config.stackit.cloud"
 
-package config // import "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
+package config // import "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
