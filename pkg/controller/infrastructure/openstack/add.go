@@ -13,9 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 // DefaultAddOptions are the default AddOptions for AddToManager.

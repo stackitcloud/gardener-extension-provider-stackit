@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 )
 
 var _ = Describe("Client", func() {

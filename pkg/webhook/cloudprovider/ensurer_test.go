@@ -22,8 +22,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	types "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	types "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
 func TestController(t *testing.T) {

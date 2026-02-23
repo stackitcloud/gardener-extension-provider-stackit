@@ -31,11 +31,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	. "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	mockopenstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client/mocks"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	mockopenstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client/mocks"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 const (

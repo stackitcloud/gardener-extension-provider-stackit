@@ -14,7 +14,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
 
 // NewEnsurer creates a new seedprovider ensurer.

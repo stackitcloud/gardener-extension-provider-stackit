@@ -14,8 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/runtime/serializer/versioning"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config/install"
 )
 
 var (

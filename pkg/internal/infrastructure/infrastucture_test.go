@@ -12,7 +12,7 @@ import (
 	"go.uber.org/mock/gomock"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client/mocks"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client/mocks"
 )
 
 var _ = Describe("Infrastructure", func() {

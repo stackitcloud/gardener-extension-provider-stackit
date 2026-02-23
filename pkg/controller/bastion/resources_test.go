@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
-	mock "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client/mock"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock"
 )
 
 var _ = Describe("Bastion Resources", func() {

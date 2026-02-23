@@ -10,8 +10,8 @@ import (
 	"k8s.io/utils/ptr"
 	"k8s.io/utils/set"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 func NewDNSClient(ctx context.Context, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (DNSClient, error) {

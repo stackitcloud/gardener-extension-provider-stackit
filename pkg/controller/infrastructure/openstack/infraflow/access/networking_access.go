@@ -21,7 +21,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 )
 
 // NetworkingAccess provides methods for managing routers and networks

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
 
-	mock "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client/mock/dns"
+	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock/dns"
 )
 
 var _ = Describe("DNSClient", func() {

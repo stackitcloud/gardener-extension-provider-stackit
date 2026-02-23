@@ -23,8 +23,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/admission/validator"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 )
 
 var _ = Describe("NamespacedCloudProfile Validator", func() {

@@ -13,9 +13,9 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 )
 
 type actuator struct {

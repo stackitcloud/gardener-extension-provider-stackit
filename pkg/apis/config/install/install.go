@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config/v1alpha1"
 )
 
 var (

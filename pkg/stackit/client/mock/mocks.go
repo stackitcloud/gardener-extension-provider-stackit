@@ -14,8 +14,8 @@ import (
 	reflect "reflect"
 
 	logr "github.com/go-logr/logr"
-	stackit "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	client "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	stackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	client "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
 	gomock "go.uber.org/mock/gomock"

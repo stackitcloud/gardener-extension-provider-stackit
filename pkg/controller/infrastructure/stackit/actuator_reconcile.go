@@ -13,12 +13,12 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/stackit/infraflow"
-	openstackutils "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/stackit/infraflow"
+	openstackutils "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 // Reconcile the Infrastructure config.

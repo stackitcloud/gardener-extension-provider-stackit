@@ -3,8 +3,8 @@ package cmd
 import (
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/admission/mutator"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/admission/validator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/mutator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
 )
 
 // GardenWebhookSwitchOptions are the webhookcmd.SwitchOptions for the admission webhooks.

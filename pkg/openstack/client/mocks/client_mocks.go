@@ -24,8 +24,8 @@ import (
 	networks "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/networks"
 	ports "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 	subnets "github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
-	openstack "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	client "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	openstack "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	client "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 	gomock "go.uber.org/mock/gomock"
 )
 

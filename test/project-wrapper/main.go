@@ -22,7 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	"k8s.io/utils/set"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/test/project-wrapper/sdk"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/test/project-wrapper/sdk"
 )
 
 /*

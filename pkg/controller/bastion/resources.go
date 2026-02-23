@@ -7,7 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 // Resources holds the STACKIT resources created for a Bastion along with all input (options) and the needed clients.

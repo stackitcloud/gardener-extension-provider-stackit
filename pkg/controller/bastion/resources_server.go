@@ -8,7 +8,7 @@ import (
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 func (r *Resources) reconcileServer(ctx context.Context, log logr.Logger) error {

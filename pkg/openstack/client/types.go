@@ -22,7 +22,7 @@ import (
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/ports"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/subnets"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
 // OpenstackClientFactory implements a factory that can construct clients for Openstack services.

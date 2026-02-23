@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config/loader"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config/loader"
 )
 
 func TestLoader(t *testing.T) {
