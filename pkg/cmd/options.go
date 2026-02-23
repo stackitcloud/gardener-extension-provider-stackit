@@ -17,15 +17,15 @@ import (
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	extensioncontrolplanewebhook "github.com/gardener/gardener/extensions/pkg/webhook/controlplane"
 
-	bastioncontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/bastion"
-	controlplanecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/controlplane"
-	dnsrecordcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/dnsrecord"
-	healthcheckcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/healthcheck"
-	infrastructurecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure"
-	workercontroller "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/worker"
-	cloudproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/cloudprovider"
-	controlplanewebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/controlplane"
-	seedproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/webhook/seedprovider"
+	bastioncontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/bastion"
+	controlplanecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
+	dnsrecordcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/dnsrecord"
+	healthcheckcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/healthcheck"
+	infrastructurecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure"
+	workercontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
+	cloudproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/cloudprovider"
+	controlplanewebhook "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane"
+	seedproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/seedprovider"
 )
 
 // ControllerSwitchOptions are the controllercmd.SwitchOptions for the provider controllers.

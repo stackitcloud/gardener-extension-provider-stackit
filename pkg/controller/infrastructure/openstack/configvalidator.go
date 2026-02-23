@@ -19,9 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 )
 
 // configValidator implements ConfigValidator for openstack infrastructure resources.

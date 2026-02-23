@@ -6,11 +6,11 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils/flow"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/controlplane"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/shared"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 func (fctx *FlowContext) Delete(ctx context.Context) error {

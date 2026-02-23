@@ -38,7 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
 const (

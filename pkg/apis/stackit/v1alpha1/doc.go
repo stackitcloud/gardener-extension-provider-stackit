@@ -10,4 +10,4 @@
 
 // Package v1alpha1 contains the STACKIT provider API resources.
 // +groupName=stackit.provider.extensions.gardener.cloud
-package v1alpha1 // import "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
+package v1alpha1 // import "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"

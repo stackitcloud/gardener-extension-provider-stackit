@@ -39,10 +39,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 const (

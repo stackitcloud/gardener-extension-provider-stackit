@@ -22,9 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 )
 
 type delegateFactory struct {

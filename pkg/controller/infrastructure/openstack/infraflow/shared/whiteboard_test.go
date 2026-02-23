@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/shared"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
 )
 
 var _ = Describe("Whiteboard", func() {

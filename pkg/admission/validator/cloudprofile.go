@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitvalidation "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/validation"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitvalidation "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 )
 
 // NewCloudProfileValidator returns a new instance of a cloud profile validator.

@@ -19,8 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	. "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/bastion"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/bastion"
 )
 
 var _ = Describe("Options", func() {

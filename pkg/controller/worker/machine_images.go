@@ -13,8 +13,8 @@ import (
 	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 )
 
 func (w *workerDelegate) UpdateMachineImagesStatus(ctx context.Context) error {

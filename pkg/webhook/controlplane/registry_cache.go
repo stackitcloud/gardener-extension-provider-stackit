@@ -11,7 +11,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
 
 // ensureAdditionalFilesForRegCaches for the hosts config and optionally a custom CA.

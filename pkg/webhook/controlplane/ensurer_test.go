@@ -35,8 +35,8 @@ import (
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"k8s.io/utils/ptr"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 )
 
 const namespace = "test"

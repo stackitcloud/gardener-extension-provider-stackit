@@ -9,7 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
 
-	mock "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client/mock/loadbalancer"
+	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock/loadbalancer"
 )
 
 var _ = Describe("LoadBalancingClient", func() {

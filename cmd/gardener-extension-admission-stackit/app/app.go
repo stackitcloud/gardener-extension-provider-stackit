@@ -25,11 +25,11 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	admissioncmd "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/admission/cmd"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/admission/mutator"
-	stackitinstall "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/install"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	providerstackit "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	admissioncmd "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/cmd"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/mutator"
+	stackitinstall "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	providerstackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 // AdmissionName is the name of the admission component.

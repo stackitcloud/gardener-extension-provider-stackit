@@ -26,13 +26,13 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/charts"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	stackitutils "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/utils"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitutils "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.

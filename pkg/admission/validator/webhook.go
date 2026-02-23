@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 const (

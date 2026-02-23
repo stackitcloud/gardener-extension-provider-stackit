@@ -49,14 +49,14 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/charts"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/imagevector"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/utils"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/imagevector"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (

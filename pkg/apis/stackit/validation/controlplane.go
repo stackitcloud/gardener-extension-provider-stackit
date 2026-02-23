@@ -10,7 +10,7 @@ import (
 	featurevalidation "github.com/gardener/gardener/pkg/utils/validation/features"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 )
 
 var (

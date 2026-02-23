@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
 
 func TestController(t *testing.T) {

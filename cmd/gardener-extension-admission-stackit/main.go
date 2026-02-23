@@ -7,7 +7,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/cmd/gardener-extension-admission-stackit/app"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/cmd/gardener-extension-admission-stackit/app"
 )
 
 func main() {

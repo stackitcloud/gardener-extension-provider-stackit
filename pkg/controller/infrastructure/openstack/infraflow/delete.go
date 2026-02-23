@@ -9,11 +9,11 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils/flow"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/controlplane"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/shared"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/internal/infrastructure"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 )
 
 // Delete creates and runs the flow to delete the AWS infrastructure.

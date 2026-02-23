@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 var (

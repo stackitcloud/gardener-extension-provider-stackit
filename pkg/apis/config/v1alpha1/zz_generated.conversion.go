@@ -11,7 +11,7 @@ import (
 	unsafe "unsafe"
 
 	apisconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
-	config "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
+	config "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 	resource "k8s.io/apimachinery/pkg/api/resource"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"

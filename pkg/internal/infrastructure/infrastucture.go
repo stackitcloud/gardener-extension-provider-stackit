@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/utils"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (

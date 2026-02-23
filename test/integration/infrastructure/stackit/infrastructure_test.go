@@ -47,12 +47,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	infrastructure "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/utils"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	infrastructure "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (

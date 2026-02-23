@@ -1,4 +1,4 @@
-module github.com/stackitcloud/gardener-extension-provider-stackit
+module github.com/stackitcloud/gardener-extension-provider-stackit/v2
 
 go 1.25.6
 

@@ -10,8 +10,8 @@ import (
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	"github.com/spf13/pflag"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config"
-	configloader "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/config/loader"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
+	configloader "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config/loader"
 )
 
 var ErrConfigFilePathNotSet = errors.New("config file path not set")

@@ -18,7 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	os "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack"
+	os "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
 // NewOpenstackClientFromCredentials returns a Factory implementation that can be used to create clients for OpenStack services.

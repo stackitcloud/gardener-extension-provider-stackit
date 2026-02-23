@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
+	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 var _ = Describe("ToLabels", func() {

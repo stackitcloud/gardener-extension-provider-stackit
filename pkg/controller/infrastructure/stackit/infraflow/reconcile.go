@@ -12,10 +12,10 @@ import (
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/shared"
-	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/internal/infrastructure"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
+	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 const (

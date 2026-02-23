@@ -12,10 +12,10 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/utils"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 // Options contains all input required for creating a Bastion host for a shoot on STACKIT.

@@ -22,9 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
-	mock "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client/mock"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock"
 )
 
 const (

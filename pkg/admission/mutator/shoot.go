@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 )
 
 // FlatcarImageVersion is the OEM image that supports PTP.

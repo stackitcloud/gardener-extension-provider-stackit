@@ -17,14 +17,14 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/access"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/controller/infrastructure/openstack/infraflow/shared"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/feature"
-	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/internal/infrastructure"
-	osclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/openstack/client"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/access"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
+	osclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 const (
