@@ -54,7 +54,7 @@ func (fctx *FlowContext) buildDeleteGraph() *flow.Graph {
 	)
 
 	_ = fctx.AddTask(g, "ensure STACKIT LB deletion",
-		fctx.ensureSTACKITLBDeletion,
+		fctx.ensureStackitLoadBalancerDeletion,
 		shared.Timeout(defaultTimeout),
 		shared.DoIf(feature.Gate.Enabled(feature.EnsureSTACKITLBDeletion)),
 	)
@@ -62,7 +62,7 @@ func (fctx *FlowContext) buildDeleteGraph() *flow.Graph {
 	return g
 }
 
-func (fctx *FlowContext) ensureSTACKITLBDeletion(ctx context.Context) error {
+func (fctx *FlowContext) ensureStackitLoadBalancerDeletion(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
 	lb, err := fctx.stackitLB.ListLoadBalancers(ctx)
 	if err != nil {
