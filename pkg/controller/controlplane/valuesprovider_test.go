@@ -456,7 +456,9 @@ var _ = Describe("ValuesProvider", func() {
 				"stackitRegion":    "eu01",
 				"extraLabels": map[string]string{
 					STACKITLBClusterLabelKey: "shoot--dev--test",
-					"kubernetes.io/cluster":  "shoot--dev--test",
+					// Disabled as the load balancer API is currently not accepting `/` in the label
+					// TODO: enable this as soon as the load balancer API supports this
+					// "kubernetes.io/cluster":  "shoot--dev--test",
 				},
 				"customLabelDomain": "kubernetes.io",
 			},
@@ -469,7 +471,9 @@ var _ = Describe("ValuesProvider", func() {
 					"stackitRegion":    "eu01",
 					"extraLabels": map[string]string{
 						STACKITLBClusterLabelKey: "shoot--dev--test",
-						"kubernetes.io/cluster":  "shoot--dev--test",
+						// Disabled as the load balancer API is currently not accepting `/` in the label
+						// TODO: enable this as soon as the load balancer API supports this
+						// "kubernetes.io/cluster":  "shoot--dev--test",
 					},
 					"customLabelDomain": "kubernetes.io",
 				}),
@@ -680,7 +684,9 @@ var _ = Describe("ValuesProvider", func() {
 					"stackitRegion":    "eu01",
 					"extraLabels": map[string]string{
 						STACKITLBClusterLabelKey: "shoot--dev--test",
-						"kubernetes.io/cluster":  "shoot--dev--test",
+						// Disabled as the load balancer API is currently not accepting `/` in the label
+						// TODO: enable this as soon as the load balancer API supports this
+						// "kubernetes.io/cluster":  "shoot--dev--test",
 					},
 					"customLabelDomain": "kubernetes.io",
 				},
@@ -697,7 +703,9 @@ var _ = Describe("ValuesProvider", func() {
 					"stackitRegion":    "eu01",
 					"extraLabels": map[string]string{
 						STACKITLBClusterLabelKey: "shoot--dev--test",
-						"kubernetes.io/cluster":  "shoot--dev--test",
+						// Disabled as the load balancer API is currently not accepting `/` in the label
+						// TODO: enable this as soon as the load balancer API supports this
+						// "kubernetes.io/cluster":  "shoot--dev--test",
 					},
 					"loadBalancerApiUrl": "https://custom-lb.stackit.cloud",
 					"customLabelDomain":  "kubernetes.io",
@@ -716,7 +724,9 @@ var _ = Describe("ValuesProvider", func() {
 					"stackitRegion":    "eu01",
 					"extraLabels": map[string]string{
 						STACKITLBClusterLabelKey: "shoot--dev--test",
-						"kubernetes.io/cluster":  "shoot--dev--test",
+						// Disabled as the load balancer API is currently not accepting `/` in the label
+						// TODO: enable this as soon as the load balancer API supports this
+						// "kubernetes.io/cluster":  "shoot--dev--test",
 					},
 					"loadBalancerApiUrl": "https://custom-lb.stackit.cloud",
 					"tokenUrl":           "https://custom-auth.stackit.cloud/token",
@@ -737,7 +747,9 @@ var _ = Describe("ValuesProvider", func() {
 					"stackitRegion":    "eu01",
 					"extraLabels": map[string]string{
 						STACKITLBClusterLabelKey: "shoot--dev--test",
-						"kubernetes.io/cluster":  "shoot--dev--test",
+						// Disabled as the load balancer API is currently not accepting `/` in the label
+						// TODO: enable this as soon as the load balancer API supports this
+						// "kubernetes.io/cluster":  "shoot--dev--test",
 					},
 					"customLabelDomain": "kubernetes.io",
 				},
@@ -775,10 +787,12 @@ var _ = Describe("ValuesProvider", func() {
 				Expect(ccmConfig).To(HaveKeyWithValue("customLabelDomain", customDomain))
 
 				// Verify extraLabels uses the customLabelDomain for cluster label key
-				extraLabels, ok := ccmConfig["extraLabels"].(map[string]string)
-				Expect(ok).To(BeTrue(), "extraLabels should be a string map")
-				Expect(extraLabels).To(HaveKey(expectedClusterLabelKey))
-				Expect(extraLabels[expectedClusterLabelKey]).To(Equal("shoot--dev--test"))
+				// Disabled as the load balancer API is currently not accepting `/` in the label
+				// TODO: enable this as soon as the load balancer API supports this
+				// extraLabels, ok := ccmConfig["extraLabels"].(map[string]string)
+				// Expect(ok).To(BeTrue(), "extraLabels should be a string map")
+				// Expect(extraLabels).To(HaveKey(expectedClusterLabelKey))
+				// Expect(extraLabels[expectedClusterLabelKey]).To(Equal("shoot--dev--test"))
 
 				// Verify STACKIT CSI Controller has customLabelDomain
 				stackitCSIValues, ok := values[openstack.CSISTACKITControllerName].(map[string]any)
