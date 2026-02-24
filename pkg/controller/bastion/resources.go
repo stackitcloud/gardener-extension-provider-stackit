@@ -42,7 +42,7 @@ func (r *Resources) getExistingResources(ctx context.Context, log logr.Logger) e
 	if len(servers) > 1 {
 		return fmt.Errorf("found multiple servers with the name %s", r.ResourceName)
 	}
-	if len(secGroups) == 1 {
+	if len(servers) == 1 {
 		r.Server = &servers[0]
 		log.V(1).Info("Found existing server", "server", r.Server.GetId())
 	}
@@ -51,10 +51,10 @@ func (r *Resources) getExistingResources(ctx context.Context, log logr.Logger) e
 	if err != nil {
 		return fmt.Errorf("error getting public IP: %w", err)
 	}
-	if len(servers) > 1 {
-		return fmt.Errorf("found multiple servers with the name %s", r.ResourceName)
+	if len(publicIPs) > 1 {
+		return fmt.Errorf("found multiple public IPs with the name %s", r.ResourceName)
 	}
-	if len(secGroups) == 1 {
+	if len(publicIPs) == 1 {
 		r.PublicIP = &publicIPs[0]
 		log.V(1).Info("Found existing public IP", "publicIP", r.PublicIP.GetId())
 	}
