@@ -56,7 +56,6 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -827,8 +826,10 @@ func getSTACKITCCMChartValues(
 		"stackitProjectID": credentials.ProjectID,
 		"extraLabels": map[string]string{
 			// TODO: migrate away from the old key
-			STACKITLBClusterLabelKey:                 cluster.Shoot.Status.TechnicalID,
-			utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
+			STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,
+			// Disabled as the load balancer API is currently not accepting `/` in the label
+			// TODO: enable this as soon as the load balancer API supports this
+			// utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
 		},
 		"customLabelDomain": customLabelDomain,
 	}
