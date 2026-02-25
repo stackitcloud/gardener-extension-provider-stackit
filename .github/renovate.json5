@@ -35,7 +35,7 @@
         '/imagevector/images.yaml$/',
       ],
       matchStrings: [
-        '# renovate(?:\w|\W|)*?repository: (?<depName>.*)(?:\w|\W)*?tag: "?(?<currentValue>(?:\w|\d|\.|-)*)"?',
+        '# renovate(?:\\w|\\W|)*?repository: (?<depName>.*)(?:\\w|\\W)*?tag: "?(?<currentValue>(?:\\w|\\d|\\.|-)*)"?',
       ],
       datasourceTemplate: 'docker',
       versioningTemplate: 'semver'
