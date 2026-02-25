@@ -27,6 +27,8 @@ type ControllerConfiguration struct {
 
 	// RegistryCaches optionally configures a container registry cache(s) that will be
 	// configured on every shoot machine at boot time (and reconciled while its running).
+	//
+	// Deprecated: will be removed in a future version
 	RegistryCaches []RegistryCacheConfiguration
 
 	// DeployALBIngressController
