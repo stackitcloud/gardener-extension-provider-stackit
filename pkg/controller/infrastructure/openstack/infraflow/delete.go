@@ -16,6 +16,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 // Delete creates and runs the flow to delete the AWS infrastructure.
@@ -119,7 +120,10 @@ func (fctx *FlowContext) deleteRouter(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "router", *routerID)
 	if err := fctx.networking.DeleteRouter(ctx, *routerID); client.IgnoreNotFoundError(err) != nil {
-		return util.DetermineError(fmt.Errorf("failed to delete router: %w", err), helper.KnownCodes)
+		if stackitclient.IsConflict(err) {
+			return fmt.Errorf("failed to delete router due to 409 conflict: %w", err)
+		}
+		return fmt.Errorf("failed to delete router: %w", err)
 	}
 
 	fctx.state.Set(IdentifierRouter, "")
