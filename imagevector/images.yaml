@@ -53,7 +53,7 @@ images:
 - name: machine-controller-manager-provider-openstack
   sourceRepository: github.com/gardener/machine-controller-manager-provider-openstack
   repository: registry.ske.stackit.cloud/stackitcloud/machine-controller-manager-provider-openstack
-  tag: "v0.24.1-ske-1"
+  tag: "v0.25.0-ske-1"
 # renovate
 - name: machine-controller-manager-provider-stackit
   sourceRepository: github.com/stackitcloud/machine-controller-manager-provider-stackit
