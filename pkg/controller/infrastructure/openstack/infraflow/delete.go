@@ -150,7 +150,7 @@ func (fctx *FlowContext) deleteSubnet(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "subnet", *subnetID)
 	if err := fctx.networking.DeleteSubnet(ctx, *subnetID); client.IgnoreNotFoundError(err) != nil {
-		return util.DetermineError(fmt.Errorf("failed to delete subnet: %w", err), helper.KnownCodes)
+		return fmt.Errorf("failed to delete subnet: %w", err)
 	}
 	fctx.state.Set(IdentifierSubnet, "")
 	return nil
@@ -283,7 +283,7 @@ func (fctx *FlowContext) deleteStackitSSHKeyPair(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting stackit ssh keypair...")
 		if err := fctx.iaasClient.DeleteKeypair(ctx, *current.Name); client.IgnoreNotFoundError(err) != nil {
-			return util.DetermineError(fmt.Errorf("failed to delete STACKIT SSH key pair: %w", err), helper.KnownCodes)
+			return fmt.Errorf("failed to delete STACKIT SSH key pair: %w", err)
 		}
 	}
 	return nil
