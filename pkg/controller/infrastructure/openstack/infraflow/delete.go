@@ -10,8 +10,7 @@ import (
 
 	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/gardener/gardener/pkg/utils/flow"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
-
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
