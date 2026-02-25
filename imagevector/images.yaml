@@ -58,7 +58,7 @@ images:
 - name: machine-controller-manager-provider-stackit
   sourceRepository: github.com/stackitcloud/machine-controller-manager-provider-stackit
   repository: ghcr.io/stackitcloud/machine-controller-manager-provider-stackit
-  tag: "v0.4.0"
+  tag: "v0.5.0"
 
 # renovate
 - name: csi-driver-cinder
