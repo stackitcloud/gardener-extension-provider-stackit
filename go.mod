@@ -7,8 +7,8 @@ toolchain go1.26.0
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/coreos/go-systemd/v22 v22.7.0
-	github.com/gardener/etcd-druid/api v0.35.0
-	github.com/gardener/gardener v1.136.2
+	github.com/gardener/etcd-druid/api v0.35.1
+	github.com/gardener/gardener v1.136.3
 	github.com/gardener/gardener-extension-networking-calico v1.56.0
 	github.com/gardener/gardener-extension-os-coreos v1.28.0
 	github.com/gardener/machine-controller-manager v0.61.2
