@@ -8,9 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/gardener/gardener/pkg/utils/flow"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
@@ -138,7 +136,10 @@ func (fctx *FlowContext) deleteNetwork(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "network", *networkID)
 	if err := fctx.networking.DeleteNetwork(ctx, *networkID); client.IgnoreNotFoundError(err) != nil {
-		return util.DetermineError(fmt.Errorf("failed to delete network: %w", err), helper.KnownCodes)
+		if stackitclient.IsConflict(err) {
+			return fmt.Errorf("failed to delete network due to 409 conflict: %w", err)
+		}
+		return fmt.Errorf("failed to delete network: %w", err)
 	}
 
 	fctx.state.Set(NameNetwork, "")
@@ -235,7 +236,10 @@ func (fctx *FlowContext) deleteSecGroup(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting...", "securityGroup", current.ID)
 		if err := fctx.networking.DeleteSecurityGroup(ctx, current.ID); client.IgnoreNotFoundError(err) != nil {
-			return util.DetermineError(fmt.Errorf("failed to delete security groups: %w", err), helper.KnownCodes)
+			if stackitclient.IsConflict(err) {
+				return fmt.Errorf("failed to delete security group due to 409 conflict: %w", err)
+			}
+			return fmt.Errorf("failed to delete security groups: %w", err)
 		}
 	}
 	fctx.state.Set(NameSecGroup, "")
@@ -272,7 +276,10 @@ func (fctx *FlowContext) deleteSSHKeyPair(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting ssh keypair...")
 		if err := fctx.compute.DeleteKeyPair(ctx, current.Name); client.IgnoreNotFoundError(err) != nil {
-			return util.DetermineError(fmt.Errorf("failed to delete SSH key pair: %w", err), helper.KnownCodes)
+			if stackitclient.IsConflict(err) {
+				return fmt.Errorf("failed to delete ssh key pair due to 409 conflict: %w", err)
+			}
+			return fmt.Errorf("failed to delete SSH key pair: %w", err)
 		}
 	}
 	return nil

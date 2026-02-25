@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/gardener/gardener/pkg/utils/flow"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
-
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
@@ -112,7 +109,10 @@ func (fctx *FlowContext) deleteIsolatedNetwork(ctx context.Context) error {
 	}
 
 	if err := fctx.iaasClient.DeleteNetwork(ctx, *networkID); stackitclient.IgnoreNotFoundError(err) != nil {
-		return util.DetermineError(fmt.Errorf("failed to delete network: %w", err), helper.KnownCodes)
+		if stackitclient.IsConflict(err) {
+			return fmt.Errorf("failed to delete network r due to 409 conflict: %w", err)
+		}
+		return fmt.Errorf("failed to delete network: %w", err)
 	}
 	fctx.state.Set(NameNetwork, "")
 	fctx.state.Set(IdentifierNetwork, "")
@@ -128,7 +128,10 @@ func (fctx *FlowContext) deleteSecGroup(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting...", "securityGroup", current.GetId())
 		if err := fctx.iaasClient.DeleteSecurityGroup(ctx, current.GetId()); stackitclient.IgnoreNotFoundError(err) != nil {
-			return util.DetermineError(fmt.Errorf("failed to delete security group: %w", err), helper.KnownCodes)
+			if stackitclient.IsConflict(err) {
+				return fmt.Errorf("failed to delete security group r due to 409 conflict: %w", err)
+			}
+			return fmt.Errorf("failed to delete security group: %w", err)
 		}
 	}
 	fctx.state.Set(NameSecGroup, "")
