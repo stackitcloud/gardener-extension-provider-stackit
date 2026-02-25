@@ -6,8 +6,11 @@ package infraflow
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/gardener/gardener/pkg/utils/flow"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/pkg/apis/stackit/helper"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
@@ -117,7 +120,7 @@ func (fctx *FlowContext) deleteRouter(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "router", *routerID)
 	if err := fctx.networking.DeleteRouter(ctx, *routerID); client.IgnoreNotFoundError(err) != nil {
-		return err
+		return util.DetermineError(fmt.Errorf("failed to delete router: %w", err), helper.KnownCodes)
 	}
 
 	fctx.state.Set(IdentifierRouter, "")
@@ -132,7 +135,7 @@ func (fctx *FlowContext) deleteNetwork(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "network", *networkID)
 	if err := fctx.networking.DeleteNetwork(ctx, *networkID); client.IgnoreNotFoundError(err) != nil {
-		return err
+		return util.DetermineError(fmt.Errorf("failed to delete network: %w", err), helper.KnownCodes)
 	}
 
 	fctx.state.Set(NameNetwork, "")
@@ -148,7 +151,7 @@ func (fctx *FlowContext) deleteSubnet(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "subnet", *subnetID)
 	if err := fctx.networking.DeleteSubnet(ctx, *subnetID); client.IgnoreNotFoundError(err) != nil {
-		return err
+		return util.DetermineError(fmt.Errorf("failed to delete subnet: %w", err), helper.KnownCodes)
 	}
 	fctx.state.Set(IdentifierSubnet, "")
 	return nil
@@ -229,7 +232,7 @@ func (fctx *FlowContext) deleteSecGroup(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting...", "securityGroup", current.ID)
 		if err := fctx.networking.DeleteSecurityGroup(ctx, current.ID); client.IgnoreNotFoundError(err) != nil {
-			return err
+			return util.DetermineError(fmt.Errorf("failed to delete security groups: %w", err), helper.KnownCodes)
 		}
 	}
 	fctx.state.Set(NameSecGroup, "")
@@ -266,7 +269,7 @@ func (fctx *FlowContext) deleteSSHKeyPair(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting ssh keypair...")
 		if err := fctx.compute.DeleteKeyPair(ctx, current.Name); client.IgnoreNotFoundError(err) != nil {
-			return err
+			return util.DetermineError(fmt.Errorf("failed to delete SSH key pair: %w", err), helper.KnownCodes)
 		}
 	}
 	return nil
@@ -281,7 +284,7 @@ func (fctx *FlowContext) deleteStackitSSHKeyPair(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting stackit ssh keypair...")
 		if err := fctx.iaasClient.DeleteKeypair(ctx, *current.Name); client.IgnoreNotFoundError(err) != nil {
-			return err
+			return util.DetermineError(fmt.Errorf("failed to delete STACKIT SSH key pair: %w", err), helper.KnownCodes)
 		}
 	}
 	return nil
