@@ -51,6 +51,8 @@ func IsNotFound(err error) bool {
 	return GetStatusCode(err) == http.StatusNotFound
 }
 
+func IsConflict(err error) bool { return GetStatusCode(err) == http.StatusConflict }
+
 // IgnoreNotFoundError ignore not found error
 func IgnoreNotFoundError(err error) error {
 	if IsNotFound(err) {
