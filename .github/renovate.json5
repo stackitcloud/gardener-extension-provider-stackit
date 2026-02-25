@@ -88,6 +88,14 @@
       ],
     },
     {
+      groupName: 'machine-controller-manager-provider-openstack',
+      matchPackageNames: [
+        'registry.ske.stackit.cloud/stackitcloud/machine-controller-manager-provider-openstack',
+      ],
+      // Enable updating fork releases/tags, e.g., v0.24.1-ske-1
+      ignoreUnstable: false,
+    },
+    {
       groupName: 'Internal',
       matchFileNames: [
         'charts/internal/**/requirements.yaml',
