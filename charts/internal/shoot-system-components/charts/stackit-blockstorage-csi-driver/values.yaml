@@ -2,7 +2,6 @@ prefix: stackit-blockstorage
 driverName: block-storage.csi.stackit.cloud
 
 rescanBlockStorageOnResize: "true"
-nodeVolumeAttachLimit: 24
 
 images:
   csi-driver-stackit: image-repository:image-tag
