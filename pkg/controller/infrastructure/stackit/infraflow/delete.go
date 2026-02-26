@@ -110,9 +110,6 @@ func (fctx *FlowContext) deleteIsolatedNetwork(ctx context.Context) error {
 	}
 
 	if err := fctx.iaasClient.DeleteNetwork(ctx, *networkID); stackitclient.IgnoreNotFoundError(err) != nil {
-		if stackitclient.IsConflict(err) {
-			return fmt.Errorf("failed to delete network r due to 409 conflict: %w", err)
-		}
 		return fmt.Errorf("failed to delete network: %w", err)
 	}
 	fctx.state.Set(NameNetwork, "")
@@ -129,9 +126,6 @@ func (fctx *FlowContext) deleteSecGroup(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting...", "securityGroup", current.GetId())
 		if err := fctx.iaasClient.DeleteSecurityGroup(ctx, current.GetId()); stackitclient.IgnoreNotFoundError(err) != nil {
-			if stackitclient.IsConflict(err) {
-				return fmt.Errorf("failed to delete security group r due to 409 conflict: %w", err)
-			}
 			return fmt.Errorf("failed to delete security group: %w", err)
 		}
 	}
