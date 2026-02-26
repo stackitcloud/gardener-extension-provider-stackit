@@ -902,7 +902,6 @@ var _ = Describe("ValuesProvider", func() {
 					openstack.CloudControllerManagerName: enabledTrue,
 					openstack.CSISTACKITNodeName: utils.MergeMaps(enabledTrue, map[string]any{
 						"rescanBlockStorageOnResize": rescanBlockStorageOnResize,
-						"nodeVolumeAttachLimit":      ptr.To[int32](nodeVoluemAttachLimit),
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
 					openstack.CSINodeName: enabledFalse,
@@ -921,7 +920,6 @@ var _ = Describe("ValuesProvider", func() {
 					openstack.CloudControllerManagerName: enabledTrue,
 					openstack.CSISTACKITControllerName: utils.MergeMaps(enabledTrue, map[string]any{
 						"rescanBlockStorageOnResize": rescanBlockStorageOnResize,
-						"nodeVolumeAttachLimit":      ptr.To[int32](nodeVoluemAttachLimit),
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
 					openstack.CSINodeName: enabledFalse,

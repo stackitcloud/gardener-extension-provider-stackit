@@ -1213,7 +1213,6 @@ func (vp *valuesProvider) getControlPlaneShootChartCSISTACKITValues(ctx context.
 	values := map[string]any{
 		"enabled":                    getCSIDriver(cpConfig) == stackitv1alpha1.STACKIT,
 		"rescanBlockStorageOnResize": cloudProfileConfig.RescanBlockStorageOnResize != nil && *cloudProfileConfig.RescanBlockStorageOnResize,
-		"nodeVolumeAttachLimit":      cloudProfileConfig.NodeVolumeAttachLimit,
 	}
 
 	if userAgentHeader != nil {
