@@ -15,7 +15,6 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 // Delete creates and runs the flow to delete the AWS infrastructure.
@@ -119,9 +118,6 @@ func (fctx *FlowContext) deleteRouter(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "router", *routerID)
 	if err := fctx.networking.DeleteRouter(ctx, *routerID); client.IgnoreNotFoundError(err) != nil {
-		if stackitclient.IsConflict(err) {
-			return fmt.Errorf("failed to delete router due to 409 conflict: %w", err)
-		}
 		return fmt.Errorf("failed to delete router: %w", err)
 	}
 
@@ -137,9 +133,6 @@ func (fctx *FlowContext) deleteNetwork(ctx context.Context) error {
 
 	shared.LogFromContext(ctx).Info("deleting...", "network", *networkID)
 	if err := fctx.networking.DeleteNetwork(ctx, *networkID); client.IgnoreNotFoundError(err) != nil {
-		if stackitclient.IsConflict(err) {
-			return fmt.Errorf("failed to delete network due to 409 conflict: %w", err)
-		}
 		return fmt.Errorf("failed to delete network: %w", err)
 	}
 
@@ -237,9 +230,6 @@ func (fctx *FlowContext) deleteSecGroup(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting...", "securityGroup", current.ID)
 		if err := fctx.networking.DeleteSecurityGroup(ctx, current.ID); client.IgnoreNotFoundError(err) != nil {
-			if stackitclient.IsConflict(err) {
-				return fmt.Errorf("failed to delete security group due to 409 conflict: %w", err)
-			}
 			return fmt.Errorf("failed to delete security groups: %w", err)
 		}
 	}
@@ -277,9 +267,6 @@ func (fctx *FlowContext) deleteSSHKeyPair(ctx context.Context) error {
 	if current != nil {
 		log.Info("deleting ssh keypair...")
 		if err := fctx.compute.DeleteKeyPair(ctx, current.Name); client.IgnoreNotFoundError(err) != nil {
-			if stackitclient.IsConflict(err) {
-				return fmt.Errorf("failed to delete ssh key pair due to 409 conflict: %w", err)
-			}
 			return fmt.Errorf("failed to delete SSH key pair: %w", err)
 		}
 	}
