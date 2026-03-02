@@ -68,6 +68,13 @@
       ],
     },
     {
+      description: 'g/g',
+      matchPackageNames: [
+        'github.com/gardener/gardener',
+        'github.com/gardener/gardener/pkg/apis',
+      ],
+    },
+    {
       groupName: 'cloud-provider-stackit',
       matchUpdateTypes: [
         'patch',
