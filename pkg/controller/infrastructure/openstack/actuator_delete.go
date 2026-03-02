@@ -10,6 +10,8 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/util"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	gardenerapihelper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 
@@ -23,8 +25,13 @@ import (
 
 // Delete the Infrastructure config.
 func (a *actuator) Delete(ctx context.Context, log logr.Logger, infra *extensionsv1alpha1.Infrastructure, cluster *extensionscontroller.Cluster) error {
+	err := a.delete(ctx, log, infra, cluster)
+	if openstackclient.IsConflict(err) {
+		return gardenerapihelper.NewErrorWithCodes(err, gardencorev1beta1.ErrorInfraDependencies)
+	}
+
 	return util.DetermineError(
-		a.delete(ctx, log, infra, cluster),
+		err,
 		helper.KnownCodes,
 	)
 }
