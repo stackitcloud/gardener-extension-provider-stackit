@@ -23,6 +23,7 @@ You can find all available make targets by running `make help`.
 
 For information on our workflows, see:
 
+* [Cloudprovider configuration guide](docs/cloudprovider.md)
 * [Development guide](docs/development.md)
 * [Testing guide](docs/testing.md)
 * [Release procedure](docs/releases.md)
@@ -32,4 +33,4 @@ For information on our workflows, see:
 Feedback and contributions are always welcome. Please report bugs or
 suggestions as GitHub issues.
 
-Please report bugs or suggestions as GitHub issues or reach out on [Slack](https://gardener-cloud.slack.com/) in the `stackit` channel (join the workspace [here](https://gardener.cloud/community/)).
+Please report bugs or suggestions as GitHub issues or reach out on [Slack](https://gardener-cloud.slack.com/) in the `stackit` channel ([join](https://gardener.cloud/community/) the workspace).

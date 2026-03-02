@@ -51,94 +51,6 @@ string
 </tr>
 <tr>
 <td>
-<code>constraints</code></br>
-<em>
-<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.Constraints">
-Constraints
-</a>
-</em>
-</td>
-<td>
-<p>Constraints is an object containing constraints for certain values in the control plane config.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>dnsServers</code></br>
-<em>
-[]string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>DNSServers is a list of IPs of DNS servers used while creating subnets.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>dhcpDomain</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>DHCPDomain is the dhcp domain of the OpenStack system configured in nova.conf. Only meaningful for
-Kubernetes 1.10.1+. See <a href="https://github.com/kubernetes/kubernetes/pull/61890">https://github.com/kubernetes/kubernetes/pull/61890</a> for details.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>keystoneURL</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>KeyStoneURL is the URL for auth{n,z} in OpenStack (pointing to KeyStone).</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>keystoneCACert</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>KeystoneCACert is the CA Bundle for the KeyStoneURL.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>keystoneForceInsecure</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>KeyStoneForceInsecure is a flag to control whether the OpenStack client should perform no certificate validation.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>keystoneURLs</code></br>
-<em>
-<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.KeyStoneURL">
-[]KeyStoneURL
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>KeyStoneURLs is a region-URL mapping for auth{n,z} in OpenStack (pointing to KeyStone).</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>machineImages</code></br>
 <em>
 <a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.MachineImages">
@@ -153,16 +65,16 @@ logical names and versions to provider-specific identifiers.</p>
 </tr>
 <tr>
 <td>
-<code>requestTimeout</code></br>
+<code>storageClasses</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta">
-Kubernetes meta/v1.Duration
+<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.StorageClassDefinition">
+[]StorageClassDefinition
 </a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>RequestTimeout specifies the HTTP timeout against the OpenStack API.</p>
+<p>StorageClasses defines storageclasses for the shoot</p>
 </td>
 </tr>
 <tr>
@@ -180,90 +92,14 @@ the filesystem.</p>
 </tr>
 <tr>
 <td>
-<code>ignoreVolumeAZ</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>IgnoreVolumeAZ specifies whether the volumes AZ should be ignored when scheduling to nodes,
-to allow for differences between volume and compute zone naming.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>nodeVolumeAttachLimit</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>NodeVolumeAttachLimit specifies how many volumes can be attached to a node.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>useOctavia</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>UseOctavia specifies whether the OpenStack Octavia network load balancing is used.</p>
-<p>Deprecated: This field will be removed in future release.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>useSNAT</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>UseSNAT specifies whether S-NAT is supposed to be used for the Gardener managed OpenStack router.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>serverGroupPolicies</code></br>
+<code>dnsServers</code></br>
 <em>
 []string
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>ServerGroupPolicies specify the allowed server group policies for worker groups.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>resolvConfOptions</code></br>
-<em>
-[]string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>ResolvConfOptions specifies options to be added to /etc/resolv.conf on workers</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>storageClasses</code></br>
-<em>
-<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.StorageClassDefinition">
-[]StorageClassDefinition
-</a>
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>StorageClasses defines storageclasses for the shoot</p>
+<p>DNSServers is a list of IPs of DNS servers used while creating subnets.</p>
 </td>
 </tr>
 <tr>
@@ -291,6 +127,182 @@ string
 <em>(Optional)</em>
 <p>CABundle is the CA certificate bundle for API endpoints.
 This field is currently ignored and reserved for future use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>constraints</code></br>
+<em>
+<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.Constraints">
+Constraints
+</a>
+</em>
+</td>
+<td>
+<p>Constraints is an object containing constraints for certain values in the control plane config.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>dhcpDomain</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>DHCPDomain is the dhcp domain of the OpenStack system configured in nova.conf. Only meaningful for
+Kubernetes 1.10.1+. See <a href="https://github.com/kubernetes/kubernetes/pull/61890">https://github.com/kubernetes/kubernetes/pull/61890</a> for details.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>keystoneURL</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>KeyStoneURL is the URL for auth{n,z} in OpenStack (pointing to KeyStone).</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>keystoneCACert</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>KeystoneCACert is the CA Bundle for the KeyStoneURL.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>keystoneForceInsecure</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>KeyStoneForceInsecure is a flag to control whether the OpenStack client should perform no certificate validation.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>keystoneURLs</code></br>
+<em>
+<a href="#stackit.provider.extensions.gardener.cloud/v1alpha1.KeyStoneURL">
+[]KeyStoneURL
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>KeyStoneURLs is a region-URL mapping for auth{n,z} in OpenStack (pointing to KeyStone).</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>requestTimeout</code></br>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta">
+Kubernetes meta/v1.Duration
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>RequestTimeout specifies the HTTP timeout against the OpenStack API.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ignoreVolumeAZ</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>IgnoreVolumeAZ specifies whether the volumes AZ should be ignored when scheduling to nodes,</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.
+to allow for differences between volume and compute zone naming.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>nodeVolumeAttachLimit</code></br>
+<em>
+int32
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>NodeVolumeAttachLimit specifies how many volumes can be attached to a node.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>useOctavia</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>UseOctavia specifies whether the OpenStack Octavia network load balancing is used.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>useSNAT</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>UseSNAT specifies whether S-NAT is supposed to be used for the Gardener managed OpenStack router.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>serverGroupPolicies</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ServerGroupPolicies specify the allowed server group policies for worker groups.</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>resolvConfOptions</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ResolvConfOptions specifies options to be added to /etc/resolv.conf on workers</p>
+<p>Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 </tbody>

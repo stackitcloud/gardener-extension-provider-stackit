@@ -134,12 +134,41 @@ func (in *CloudControllerManagerConfig) DeepCopy() *CloudControllerManagerConfig
 func (in *CloudProfileConfig) DeepCopyInto(out *CloudProfileConfig) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.Constraints.DeepCopyInto(&out.Constraints)
+	if in.MachineImages != nil {
+		in, out := &in.MachineImages, &out.MachineImages
+		*out = make([]MachineImages, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.StorageClasses != nil {
+		in, out := &in.StorageClasses, &out.StorageClasses
+		*out = make([]StorageClassDefinition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.RescanBlockStorageOnResize != nil {
+		in, out := &in.RescanBlockStorageOnResize, &out.RescanBlockStorageOnResize
+		*out = new(bool)
+		**out = **in
+	}
 	if in.DNSServers != nil {
 		in, out := &in.DNSServers, &out.DNSServers
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.APIEndpoints != nil {
+		in, out := &in.APIEndpoints, &out.APIEndpoints
+		*out = new(APIEndpoints)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.CABundle != nil {
+		in, out := &in.CABundle, &out.CABundle
+		*out = new(string)
+		**out = **in
+	}
+	in.Constraints.DeepCopyInto(&out.Constraints)
 	if in.DHCPDomain != nil {
 		in, out := &in.DHCPDomain, &out.DHCPDomain
 		*out = new(string)
@@ -157,21 +186,9 @@ func (in *CloudProfileConfig) DeepCopyInto(out *CloudProfileConfig) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.MachineImages != nil {
-		in, out := &in.MachineImages, &out.MachineImages
-		*out = make([]MachineImages, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	if in.RequestTimeout != nil {
 		in, out := &in.RequestTimeout, &out.RequestTimeout
 		*out = new(v1.Duration)
-		**out = **in
-	}
-	if in.RescanBlockStorageOnResize != nil {
-		in, out := &in.RescanBlockStorageOnResize, &out.RescanBlockStorageOnResize
-		*out = new(bool)
 		**out = **in
 	}
 	if in.IgnoreVolumeAZ != nil {
@@ -203,23 +220,6 @@ func (in *CloudProfileConfig) DeepCopyInto(out *CloudProfileConfig) {
 		in, out := &in.ResolvConfOptions, &out.ResolvConfOptions
 		*out = make([]string, len(*in))
 		copy(*out, *in)
-	}
-	if in.StorageClasses != nil {
-		in, out := &in.StorageClasses, &out.StorageClasses
-		*out = make([]StorageClassDefinition, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
-	if in.APIEndpoints != nil {
-		in, out := &in.APIEndpoints, &out.APIEndpoints
-		*out = new(APIEndpoints)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.CABundle != nil {
-		in, out := &in.CABundle, &out.CABundle
-		*out = new(string)
-		**out = **in
 	}
 	return
 }
