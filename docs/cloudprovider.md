@@ -29,7 +29,7 @@ The service account needs the following permissions:
 
 | Permission                     | Purpose                               |
 | ------------------------------ | ------------------------------------- |
-| `nlb.admin`                    | create network load balancer          |
+| `nlb.admin`                    | CCM service-controller - network load balancer          |
 | `blockstorage.admin`           | CSI driver                            |
 | `compute.admin`                | CCM node-controller                   |
 | `iaas.network.admin`           | bastion and infrastructure controller |
