@@ -2,6 +2,7 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'config:recommended',
+    'github>stackitcloud/ske-ci-infra//config/renovate/ske.json5',
   ],
   dependencyDashboard: true,
   postUpdateOptions: [
@@ -28,18 +29,6 @@
         '# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_(VERSION|version) *[?:]?= *"?(?<currentValue>.+?)"?\\s',
       ],
     },
-    {
-      description: 'Update `imagevector/images.yaml`',
-      customType: 'regex',
-      managerFilePatterns: [
-        '/imagevector/images.yaml$/',
-      ],
-      matchStrings: [
-        '# renovate(?:\\w|\\W|)*?repository: (?<depName>.*)(?:\\w|\\W)*?tag: "?(?<currentValue>(?:\\w|\\d|\\.|-)*)"?',
-      ],
-      datasourceTemplate: 'docker',
-      versioningTemplate: 'semver'
-    }
   ],
   packageRules: [
     {
