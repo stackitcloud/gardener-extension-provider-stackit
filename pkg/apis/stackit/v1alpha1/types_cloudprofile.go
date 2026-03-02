@@ -15,62 +15,19 @@ import (
 // resource.
 type CloudProfileConfig struct {
 	metav1.TypeMeta `json:",inline"`
-	// Constraints is an object containing constraints for certain values in the control plane config.
-	Constraints Constraints `json:"constraints"`
-	// DNSServers is a list of IPs of DNS servers used while creating subnets.
-	// +optional
-	DNSServers []string `json:"dnsServers,omitempty"`
-	// DHCPDomain is the dhcp domain of the OpenStack system configured in nova.conf. Only meaningful for
-	// Kubernetes 1.10.1+. See https://github.com/kubernetes/kubernetes/pull/61890 for details.
-	// +optional
-	DHCPDomain *string `json:"dhcpDomain,omitempty"`
-	// KeyStoneURL is the URL for auth{n,z} in OpenStack (pointing to KeyStone).
-	// +optional
-	KeyStoneURL string `json:"keystoneURL,omitempty"`
-	// KeystoneCACert is the CA Bundle for the KeyStoneURL.
-	// +optional
-	KeyStoneCACert *string `json:"keystoneCACert,omitempty"`
-	// KeyStoneForceInsecure is a flag to control whether the OpenStack client should perform no certificate validation.
-	// +optional
-	KeyStoneForceInsecure bool `json:"keystoneForceInsecure,omitempty"`
-	// KeyStoneURLs is a region-URL mapping for auth{n,z} in OpenStack (pointing to KeyStone).
-	// +optional
-	KeyStoneURLs []KeyStoneURL `json:"keystoneURLs,omitempty"`
 	// MachineImages is the list of machine images that are understood by the controller. It maps
 	// logical names and versions to provider-specific identifiers.
 	MachineImages []MachineImages `json:"machineImages"`
-	// RequestTimeout specifies the HTTP timeout against the OpenStack API.
+	// StorageClasses defines storageclasses for the shoot
 	// +optional
-	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+	StorageClasses []StorageClassDefinition `json:"storageClasses,omitempty"`
 	// RescanBlockStorageOnResize specifies whether the storage plugin scans and checks new block device size before it resizes
 	// the filesystem.
 	// +optional
 	RescanBlockStorageOnResize *bool `json:"rescanBlockStorageOnResize,omitempty"`
-	// IgnoreVolumeAZ specifies whether the volumes AZ should be ignored when scheduling to nodes,
-	// to allow for differences between volume and compute zone naming.
+	// DNSServers is a list of IPs of DNS servers used while creating subnets.
 	// +optional
-	IgnoreVolumeAZ *bool `json:"ignoreVolumeAZ,omitempty"`
-	// NodeVolumeAttachLimit specifies how many volumes can be attached to a node.
-	// +optional
-	NodeVolumeAttachLimit *int32 `json:"nodeVolumeAttachLimit,omitempty"`
-	// UseOctavia specifies whether the OpenStack Octavia network load balancing is used.
-	//
-	// Deprecated: This field will be removed in future release.
-	//
-	// +optional
-	UseOctavia *bool `json:"useOctavia,omitempty"`
-	// UseSNAT specifies whether S-NAT is supposed to be used for the Gardener managed OpenStack router.
-	// +optional
-	UseSNAT *bool `json:"useSNAT,omitempty"`
-	// ServerGroupPolicies specify the allowed server group policies for worker groups.
-	// +optional
-	ServerGroupPolicies []string `json:"serverGroupPolicies,omitempty"`
-	// ResolvConfOptions specifies options to be added to /etc/resolv.conf on workers
-	// +optional
-	ResolvConfOptions []string `json:"resolvConfOptions,omitempty"`
-	// StorageClasses defines storageclasses for the shoot
-	// +optional
-	StorageClasses []StorageClassDefinition `json:"storageClasses,omitempty"`
+	DNSServers []string `json:"dnsServers,omitempty"`
 	// APIEndpoints contains API endpoints for various services (e.g., "LoadBalancer", "IaaS").
 	// +optional
 	APIEndpoints *APIEndpoints `json:"apiEndpoints,omitempty"`
@@ -78,6 +35,72 @@ type CloudProfileConfig struct {
 	// This field is currently ignored and reserved for future use.
 	// +optional
 	CABundle *string `json:"caBundle,omitempty"`
+	// Constraints is an object containing constraints for certain values in the control plane config.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	Constraints Constraints `json:"constraints"`
+	// DHCPDomain is the dhcp domain of the OpenStack system configured in nova.conf. Only meaningful for
+	// Kubernetes 1.10.1+. See https://github.com/kubernetes/kubernetes/pull/61890 for details.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	DHCPDomain *string `json:"dhcpDomain,omitempty"`
+	// KeyStoneURL is the URL for auth{n,z} in OpenStack (pointing to KeyStone).
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	KeyStoneURL string `json:"keystoneURL,omitempty"`
+	// KeystoneCACert is the CA Bundle for the KeyStoneURL.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	KeyStoneCACert *string `json:"keystoneCACert,omitempty"`
+	// KeyStoneForceInsecure is a flag to control whether the OpenStack client should perform no certificate validation.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	KeyStoneForceInsecure bool `json:"keystoneForceInsecure,omitempty"`
+	// KeyStoneURLs is a region-URL mapping for auth{n,z} in OpenStack (pointing to KeyStone).
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	KeyStoneURLs []KeyStoneURL `json:"keystoneURLs,omitempty"`
+	// RequestTimeout specifies the HTTP timeout against the OpenStack API.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
+	// IgnoreVolumeAZ specifies whether the volumes AZ should be ignored when scheduling to nodes,
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// to allow for differences between volume and compute zone naming.
+	// +optional
+	IgnoreVolumeAZ *bool `json:"ignoreVolumeAZ,omitempty"`
+	// NodeVolumeAttachLimit specifies how many volumes can be attached to a node.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	NodeVolumeAttachLimit *int32 `json:"nodeVolumeAttachLimit,omitempty"`
+	// UseOctavia specifies whether the OpenStack Octavia network load balancing is used.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	UseOctavia *bool `json:"useOctavia,omitempty"`
+	// UseSNAT specifies whether S-NAT is supposed to be used for the Gardener managed OpenStack router.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	UseSNAT *bool `json:"useSNAT,omitempty"`
+	// ServerGroupPolicies specify the allowed server group policies for worker groups.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	ServerGroupPolicies []string `json:"serverGroupPolicies,omitempty"`
+	// ResolvConfOptions specifies options to be added to /etc/resolv.conf on workers
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
+	ResolvConfOptions []string `json:"resolvConfOptions,omitempty"`
 }
 
 // Constraints is an object containing constraints for the shoots.
