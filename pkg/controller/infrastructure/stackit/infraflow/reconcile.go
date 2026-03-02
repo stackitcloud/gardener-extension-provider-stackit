@@ -400,11 +400,15 @@ func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	_, ok := network.GetIpv4Ok()
+	if !ok {
+		return fmt.Errorf("could not find IPv4 config in network: %s", network.GetId())
+	}
 	routerIP, ok := network.Ipv4.GetPublicIpOk()
 	if ok {
 		result = append(result, routerIP)
 		fctx.state.SetObject(IdentifierEgressCIDRs, result)
 		return nil
 	}
-	return fmt.Errorf("egress IP not found for network %s", network.GetId())
+	return fmt.Errorf("egress IP not found for network: %s", network.GetId())
 }
