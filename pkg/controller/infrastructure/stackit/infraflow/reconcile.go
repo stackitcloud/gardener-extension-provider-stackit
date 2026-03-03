@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	gardenv1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"k8s.io/utils/ptr"
