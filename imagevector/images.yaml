@@ -1,4 +1,4 @@
-# Field order must be name, sourceRepository, repositroy, name in order for renovate updates to work!
+# Field order must be name, sourceRepository, repository, name in order for renovate updates to work!
 # Add a `renovate` comment to enable a specific image block.
 images:
 # renovate
