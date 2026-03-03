@@ -1,3 +1,5 @@
+# Field order must be name, sourceRepository, repositroy, name in order for renovate updates to work!
+# Add a `renovate` comment to enable a specific image block.
 images:
 # renovate
 - name: cloud-controller-manager
