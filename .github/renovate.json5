@@ -34,7 +34,9 @@
     {
       description: 'dependencies are updated alongside g/g',
       enabled: false,
-      matchDatasources: ['go'],
+      matchDatasources: [
+        'go'
+      ],
       matchPackageNames: [
         '/k8s.io/',
         '/sigs.k8s.io/controller-runtime/',
@@ -104,6 +106,27 @@
         'https://github.com/onsi/gomega{/,}**',
         'https://github.com/onsi/ginkgo{/,}**',
       ],
+    },
+    {
+      description: 'disable csi auto-updates (k8s compatibility check)',
+      matchPackageNames: [
+        "registry.k8s.io/sig-storage/csi-provisioner",
+        "registry.k8s.io/sig-storage/csi-provisioner",
+        "registry.k8s.io/sig-storage/csi-attacher",
+        "registry.k8s.io/sig-storage/csi-snapshotter",
+        "registry.k8s.io/sig-storage/snapshot-controller",
+        "registry.k8s.io/sig-storage/csi-resizer",
+        "registry.k8s.io/sig-storage/csi-resizer",
+        "registry.k8s.io/sig-storage/csi-node-driver-registrar",
+        "registry.k8s.io/sig-storage/livenessprobe",
+      ],
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchFileNames: [
+        '/imagevector/images.yaml$/',
+      ],
+      enabled: false,
     },
   ],
 }
