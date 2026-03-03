@@ -9,7 +9,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.35.1
 	github.com/gardener/gardener v1.137.1
-	github.com/gardener/gardener-extension-networking-calico v1.56.0
+	github.com/gardener/gardener-extension-networking-calico v1.57.0
 	github.com/gardener/gardener-extension-os-coreos v1.28.0
 	github.com/gardener/gardener/pkg/apis v1.137.1
 	github.com/gardener/machine-controller-manager v0.61.2
@@ -77,7 +77,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.39.1 // indirect
-	github.com/aws/smithy-go v1.23.2 // indirect
+	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
