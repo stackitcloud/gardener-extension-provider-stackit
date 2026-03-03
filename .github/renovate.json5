@@ -2,6 +2,7 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'config:recommended',
+    'github>stackitcloud/ske-ci-infra//config/renovate/ske.json5',
   ],
   dependencyDashboard: true,
   postUpdateOptions: [
@@ -28,24 +29,14 @@
         '# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s.+?_(VERSION|version) *[?:]?= *"?(?<currentValue>.+?)"?\\s',
       ],
     },
-    {
-      description: 'Update `imagevector/images.yaml`',
-      customType: 'regex',
-      managerFilePatterns: [
-        '/imagevector/images.yaml$/',
-      ],
-      matchStrings: [
-        '# renovate(?:\\w|\\W|)*?repository: (?<depName>.*)(?:\\w|\\W)*?tag: "?(?<currentValue>(?:\\w|\\d|\\.|-)*)"?',
-      ],
-      datasourceTemplate: 'docker',
-      versioningTemplate: 'semver'
-    }
   ],
   packageRules: [
     {
       description: 'dependencies are updated alongside g/g',
       enabled: false,
-      matchDatasources: ['go'],
+      matchDatasources: [
+        'go'
+      ],
       matchPackageNames: [
         '/k8s.io/',
         '/sigs.k8s.io/controller-runtime/',
@@ -122,6 +113,27 @@
         'https://github.com/onsi/gomega{/,}**',
         'https://github.com/onsi/ginkgo{/,}**',
       ],
+    },
+    {
+      description: 'disable csi auto-updates (k8s compatibility check)',
+      matchPackageNames: [
+        "registry.k8s.io/sig-storage/csi-provisioner",
+        "registry.k8s.io/sig-storage/csi-provisioner",
+        "registry.k8s.io/sig-storage/csi-attacher",
+        "registry.k8s.io/sig-storage/csi-snapshotter",
+        "registry.k8s.io/sig-storage/snapshot-controller",
+        "registry.k8s.io/sig-storage/csi-resizer",
+        "registry.k8s.io/sig-storage/csi-resizer",
+        "registry.k8s.io/sig-storage/csi-node-driver-registrar",
+        "registry.k8s.io/sig-storage/livenessprobe",
+      ],
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchFileNames: [
+        '/imagevector/images.yaml$/',
+      ],
+      enabled: false,
     },
   ],
 }
