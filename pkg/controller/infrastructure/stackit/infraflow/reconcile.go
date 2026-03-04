@@ -98,6 +98,7 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 	networkID := *fctx.config.Networks.ID
 	network, err := fctx.iaasClient.GetNetworkById(ctx, networkID)
 	if err != nil {
+		fctx.dnsNameservers = nil
 		fctx.state.Set(IdentifierNetwork, "")
 		fctx.state.Set(NameNetwork, "")
 		return err
@@ -129,6 +130,10 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 		infrainternal.InjectConfig(&fctx.config.Networks, snaConfig)
 		fctx.nodesCIDR = &snaConfig.WorkersCIDR
 	}
+
+	// Populate dnsNameservers for InfrastructureStatus from provided network
+	nameservers := networkIPv4Config.GetNameservers()
+	fctx.dnsNameservers = ptr.To(nameservers)
 
 	fctx.state.Set(IdentifierNetwork, networkID)
 	fctx.state.Set(NameNetwork, network.GetName())
