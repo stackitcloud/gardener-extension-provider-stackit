@@ -130,6 +130,10 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 		fctx.nodesCIDR = &snaConfig.WorkersCIDR
 	}
 
+	// Populate dnsNameservers for InfrastructureStatus from provided network
+	nameservers := networkIPv4Config.GetNameservers()
+	fctx.dnsNameservers = ptr.To(nameservers)
+
 	fctx.state.Set(IdentifierNetwork, networkID)
 	fctx.state.Set(NameNetwork, network.GetName())
 	return nil
