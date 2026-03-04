@@ -59,7 +59,7 @@
       ],
     },
     {
-      description: 'g/g',
+      groupName: 'gardener/gardener',
       matchPackageNames: [
         'github.com/gardener/gardener',
         'github.com/gardener/gardener/pkg/apis',
