@@ -98,6 +98,7 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 	networkID := *fctx.config.Networks.ID
 	network, err := fctx.iaasClient.GetNetworkById(ctx, networkID)
 	if err != nil {
+		fctx.dnsNameservers = nil
 		fctx.state.Set(IdentifierNetwork, "")
 		fctx.state.Set(NameNetwork, "")
 		return err
