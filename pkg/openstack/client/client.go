@@ -225,6 +225,18 @@ func IsNotFoundError(err error) bool {
 	return false
 }
 
+func IsConflict(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if gophercloud.ResponseCodeIs(err, http.StatusConflict) {
+		return true
+	}
+
+	return false
+}
+
 // IgnoreNotFoundError ignore not found error
 func IgnoreNotFoundError(err error) error {
 	if IsNotFoundError(err) {
