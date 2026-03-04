@@ -152,6 +152,20 @@ func (fctx *FlowContext) ensureOpenStackSubnetID(ctx context.Context) error {
 		)
 	}
 
+	if osNetwork == nil {
+		return gardenv1beta1helper.NewErrorWithCodes(
+			fmt.Errorf("network with ID '%s' was not found", networkID),
+			gardencorev1beta1.ErrorInfraDependencies,
+		)
+	}
+
+	if len(osNetwork.Subnets) == 0 {
+		return gardenv1beta1helper.NewErrorWithCodes(
+			fmt.Errorf("network with ID '%s' does not have any subnets", networkID),
+			gardencorev1beta1.ErrorInfraDependencies,
+		)
+	}
+
 	// TODO: A network can have multiple subnets. Check if we can just fetch the first one
 	fctx.state.Set(IdentifierSubnet, osNetwork.Subnets[0])
 	return nil
