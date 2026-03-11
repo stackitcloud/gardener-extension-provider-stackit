@@ -16,7 +16,7 @@ import (
 
 	"github.com/stackitcloud/stackit-sdk-go/core/utils"
 	"github.com/stackitcloud/stackit-sdk-go/services/authorization"
-	"github.com/stackitcloud/stackit-sdk-go/services/resourcemanager"
+	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
 	"github.com/stackitcloud/stackit-sdk-go/services/serviceaccount"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
@@ -146,7 +146,7 @@ func createPortalProject(ctx context.Context, client *sdk.Client) (string, error
 	portalProject, err := client.CreateProject(
 		ctx,
 		os.Getenv("PORTAL_FOLDER_ID"),
-		&projectName,
+		projectName,
 		map[string]string{
 			"billingReference": os.Getenv("BILLING_REFERENCE"),
 			"scope":            "PUBLIC",
@@ -159,10 +159,10 @@ func createPortalProject(ctx context.Context, client *sdk.Client) (string, error
 	if err != nil {
 		return "", err
 	}
-	if portalProject.ProjectId == nil {
+	if portalProject.ProjectId == "" {
 		return "", fmt.Errorf("error: no project ID found in new portal project '%s'", projectName)
 	}
-	return *portalProject.ProjectId, nil
+	return portalProject.ProjectId, nil
 }
 
 func assignRoleToServiceAccount(ctx context.Context, projectID string, email string, roles set.Set[string]) error {
@@ -271,7 +271,7 @@ func waitForProjectReadiness(ctx context.Context, client *sdk.Client, stackitPro
 			}
 		}
 
-		if *project.LifecycleState == resourcemanager.LIFECYCLESTATE_ACTIVE {
+		if project.LifecycleState == resourcemanager.LIFECYCLESTATE_ACTIVE {
 			log.Printf("Project '%s' is now active.\n", stackitProjectID)
 			return nil
 		}

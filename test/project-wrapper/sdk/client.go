@@ -3,7 +3,7 @@ package sdk
 import (
 	"context"
 
-	"github.com/stackitcloud/stackit-sdk-go/services/resourcemanager"
+	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
 	"k8s.io/utils/ptr"
 )
 
@@ -25,22 +25,22 @@ func NewClient() (*Client, error) {
 func (c *Client) CreateProject(
 	ctx context.Context,
 	organizationID string,
-	name *string,
+	name string,
 	labels map[string]string,
 	subject string,
 ) (*resourcemanager.Project, error) {
 	payload := resourcemanager.CreateProjectPayload{
 		Labels: ptr.To(labels),
-		Members: &[]resourcemanager.Member{
+		Members: []resourcemanager.Member{
 			{
-				Role:    ptr.To("owner"),
-				Subject: &subject,
+				Role:    "owner",
+				Subject: subject,
 			},
 		},
 		Name:              name,
-		ContainerParentId: ptr.To(organizationID),
+		ContainerParentId: organizationID,
 	}
-	project, err := c.rmClient.CreateProject(ctx).CreateProjectPayload(payload).Execute()
+	project, err := c.rmClient.DefaultAPI.CreateProject(ctx).CreateProjectPayload(payload).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *Client) CreateProject(
 }
 
 func (c *Client) GetProject(ctx context.Context, projectID string) (*resourcemanager.GetProjectResponse, error) {
-	project, err := c.rmClient.GetProject(ctx, projectID).Execute()
+	project, err := c.rmClient.DefaultAPI.GetProject(ctx, projectID).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -56,5 +56,5 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*resourceman
 }
 
 func (c *Client) DeleteProject(ctx context.Context, projectID string) error {
-	return c.rmClient.DeleteProject(ctx, projectID).Execute()
+	return c.rmClient.DefaultAPI.DeleteProject(ctx, projectID).Execute()
 }
