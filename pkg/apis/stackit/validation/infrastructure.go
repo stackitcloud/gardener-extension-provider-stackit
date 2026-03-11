@@ -78,7 +78,7 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 
 // ValidateInfrastructureConfigUpdate validates a InfrastructureConfig object.
 func ValidateInfrastructureConfigUpdate(oldConfig, newConfig *stackitv1alpha1.InfrastructureConfig, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
+	allErrs := field.ErrorList{} // nolint:prealloc // size is not known yet
 	if oldConfig == nil {
 		return allErrs
 	}
