@@ -128,7 +128,7 @@ func (c iaasClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.N
 }
 
 func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (IaaSClient, error) {
-	options := clientOptions(&region, endpoints, credentials)
+	options := clientOptions(endpoints, credentials)
 
 	if endpoints.IaaS != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.IaaS))

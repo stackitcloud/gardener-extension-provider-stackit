@@ -75,13 +75,10 @@ func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.Secr
 	return NewDNSClient(ctx, f.StackitAPIEndpoints, credentials)
 }
 
-func clientOptions(region *string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) []sdkconfig.ConfigurationOption {
+func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) []sdkconfig.ConfigurationOption {
 	result := []sdkconfig.ConfigurationOption{
 		sdkconfig.WithUserAgent(UserAgent),
 		sdkconfig.WithServiceAccountKey(credentials.SaKeyJSON),
-	}
-	if region != nil {
-		result = append(result, sdkconfig.WithRegion(*region))
 	}
 
 	if endpoints.TokenEndpoint != nil {

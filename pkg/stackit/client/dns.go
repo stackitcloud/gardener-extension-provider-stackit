@@ -15,7 +15,7 @@ import (
 )
 
 func NewDNSClient(ctx context.Context, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (DNSClient, error) {
-	options := clientOptions(nil, endpoints, credentials)
+	options := clientOptions(endpoints, credentials)
 
 	if endpoints.DNS != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.DNS))

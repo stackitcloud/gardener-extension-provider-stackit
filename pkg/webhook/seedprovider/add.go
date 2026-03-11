@@ -27,7 +27,7 @@ type AddOptions struct {
 	ETCDStorage config.ETCDStorage
 }
 
-var logger = log.Log.WithName("openstack-seedprovider-webhook")
+var logger = log.Log.WithName("stackit-seedprovider-webhook")
 
 // AddToManagerWithOptions creates a webhook with the given options and adds it to the manager.
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionswebhook.Webhook, error) {
