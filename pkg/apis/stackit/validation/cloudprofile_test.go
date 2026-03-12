@@ -73,17 +73,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		Context("floating pools constraints", func() {
-			It("should enforce that at least one pool has been defined", func() {
-				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{}
-
-				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, fldPath)
-
-				Expect(errorList).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":  Equal(field.ErrorTypeRequired),
-					"Field": Equal("root.constraints.floatingPools"),
-				}))))
-			})
-
 			It("should forbid unsupported pools", func() {
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
 					{
@@ -159,18 +148,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		Context("keystone url validation", func() {
-			It("should forbid keystone urls with unsupported format", func() {
-				cloudProfileConfig.KeyStoneURL = ""
-				cloudProfileConfig.KeyStoneURLs = nil
-
-				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, fldPath)
-
-				Expect(errorList).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":  Equal(field.ErrorTypeRequired),
-					"Field": Equal("root.keyStoneURL"),
-				}))))
-			})
-
 			It("should forbid keystone urls with missing keys", func() {
 				cloudProfileConfig.KeyStoneURL = ""
 				cloudProfileConfig.KeyStoneURLs = []stackitv1alpha1.KeyStoneURL{{}}

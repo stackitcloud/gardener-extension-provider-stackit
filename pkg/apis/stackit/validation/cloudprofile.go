@@ -26,10 +26,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 	allErrs := field.ErrorList{}
 
 	floatingPoolPath := fldPath.Child("constraints", "floatingPools")
-	if len(cloudProfile.Constraints.FloatingPools) == 0 {
-		allErrs = append(allErrs, field.Required(floatingPoolPath, "must provide at least one floating pool"))
-	}
-
 	combinationFound := sets.NewString()
 	for i, pool := range cloudProfile.Constraints.FloatingPools {
 		idxPath := floatingPoolPath.Index(i)
@@ -70,10 +66,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 		allErrs = append(allErrs, ValidateProviderMachineImage(idxPath, machineImage)...)
 	}
 	allErrs = append(allErrs, validateMachineImageMapping(machineImages, cloudProfile, field.NewPath("spec").Child("machineImages"))...)
-
-	if len(cloudProfile.KeyStoneURL) == 0 && len(cloudProfile.KeyStoneURLs) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("keyStoneURL"), "must provide the URL to KeyStone"))
-	}
 	if ca := cloudProfile.KeyStoneCACert; ca != nil && len(*ca) > 0 {
 		_, err := utils.DecodeCertificate([]byte(*ca))
 		if err != nil {

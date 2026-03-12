@@ -21,7 +21,7 @@ import (
 func NewEnsurer(etcdStorage *config.ETCDStorage, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		etcdStorage: etcdStorage,
-		logger:      logger.WithName("openstack-seedprovider-ensurer"),
+		logger:      logger.WithName("stackit-seedprovider-ensurer"),
 	}
 }
 
