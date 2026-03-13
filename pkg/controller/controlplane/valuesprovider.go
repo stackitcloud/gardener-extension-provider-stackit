@@ -61,6 +61,7 @@ import (
 const (
 	caNameControlPlane               = "ca-" + openstack.Name + "-controlplane"
 	cloudControllerManagerServerName = openstack.CloudControllerManagerName + "-server"
+	stackitPodIdentityWebhookServerName = openstack.STACKITPodIdentityWebhookName + "-server"
 
 	CSIStackitPrefix = "stackit-blockstorage"
 
@@ -98,6 +99,16 @@ func secretConfigsFunc(namespace string) []extensionssecretmanager.SecretConfigW
 				Name:                        cloudControllerManagerServerName,
 				CommonName:                  openstack.CloudControllerManagerName,
 				DNSNames:                    kutil.DNSNamesForService(openstack.CloudControllerManagerName, namespace),
+				CertType:                    secretutils.ServerCert,
+				SkipPublishingCACertificate: true,
+			},
+			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caNameControlPlane)},
+		},
+		{
+			Config: &secretutils.CertificateSecretConfig{
+				Name:                        stackitPodIdentityWebhookServerName,
+				CommonName:                  openstack.STACKITPodIdentityWebhookName,
+				DNSNames:                    kutil.DNSNamesForService(openstack.STACKITPodIdentityWebhookName, namespace),
 				CertType:                    secretutils.ServerCert,
 				SkipPublishingCACertificate: true,
 			},
@@ -205,6 +216,14 @@ var (
 					// stackit-alb-controller-manager
 					{Type: &appsv1.Deployment{}, Name: openstack.STACKITALBControllerManagerName},
 					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITALBControllerManagerName},
+				},
+			},
+			{
+				Name:   openstack.STACKITPodIdentityWebhookName,
+				Images: []string{imagevector.ImageNameStackitPodIdentityWebhook},
+				Objects: []*chart.Object{
+					{Type: &appsv1.Deployment{}, Name: openstack.STACKITPodIdentityWebhookName},
+					{Type: &corev1.Service{}, Name: openstack.STACKITPodIdentityWebhookName},
 				},
 			},
 		},

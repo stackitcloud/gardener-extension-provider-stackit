@@ -135,3 +135,6 @@ images:
 - name: stackit-alb-controller-manager
   repository: reg3.infra.ske.eu01.stackit.cloud/temp/alb-controller-manager
   tag: "1245"
+- name: stackit-pod-identity-webhook
+  repository: reg3.infra.ske.eu01.stackit.cloud/stackitcloud/stackit-pod-identity-webhook
+  tag: "latest"

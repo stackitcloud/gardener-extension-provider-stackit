@@ -1,0 +1,16 @@
+replicas: 2
+enabled: true
+webhook:
+  port: 8443
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+podAnnotations: {}
+podLabels: {}
+secrets:
+  server: stackit-pod-identity-webhook-server
+  ca: "" # will be populated by valuesprovider
