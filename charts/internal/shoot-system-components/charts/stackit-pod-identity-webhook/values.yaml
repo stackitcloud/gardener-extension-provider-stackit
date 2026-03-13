@@ -1,0 +1,4 @@
+enabled: true
+webhook:
+  namespace: "" # will be set by valuesprovider to the seed namespace
+  caBundle: "" # will be set by valuesprovider

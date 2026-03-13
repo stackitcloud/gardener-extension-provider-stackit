@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stackit-pod-identity-webhook
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: stackit-pod-identity-webhook
+    high-availability-config.resources.gardener.cloud/type: controller
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: stackit-pod-identity-webhook
+  template:
+    metadata:
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        gardener.cloud/role: controlplane
+        app: kubernetes
+        role: stackit-pod-identity-webhook
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      priorityClassName: gardener-system-300
+      containers:
+      - name: stackit-pod-identity-webhook
+        image: {{ index .Values.images "stackit-pod-identity-webhook" }}
+        imagePullPolicy: IfNotPresent
+        args:
+        - --cert-dir=/etc/webhook/certs
+        - --port={{ .Values.webhook.port }}
+        ports:
+        - containerPort: {{ .Values.webhook.port }}
+          name: https
+          protocol: TCP
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+        volumeMounts:
+        - name: certs
+          mountPath: /etc/webhook/certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: {{ .Values.secrets.server }}
+          defaultMode: 420
