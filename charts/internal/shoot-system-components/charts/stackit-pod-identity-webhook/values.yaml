@@ -1,4 +1,10 @@
-enabled: true
 webhook:
-  namespace: "" # will be set by valuesprovider to the seed namespace
   caBundle: "" # will be set by valuesprovider
+  # failurePolicy for the webhook (Ignore or Fail).
+  # Defaults to Fail to guarantee that pods are not started without the required workload identity configuration.
+  # Note: If the webhook is down, pod creation in monitored namespaces will be blocked.
+  # Specific pods or namespaces can be excluded using the skip label (see README.md).
+  failurePolicy: Fail
+  # Whether to exclude the kube-system namespace from the webhook.
+  # Defaults to true to avoid breaking critical system pods.
+  excludeKubeSystem: true

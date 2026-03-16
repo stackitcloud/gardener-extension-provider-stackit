@@ -1317,22 +1317,15 @@ func getSTACKITPodIdentityWebhookChartValues(
 	secretsReader secretsmanager.Reader,
 	scaledDown bool,
 ) (map[string]any, error) {
-	caSecret, found := secretsReader.Get(caNameControlPlane)
-	if !found {
-		return nil, fmt.Errorf("secret %q not found", caNameControlPlane)
-	}
-
-	serverSecret, found := secretsReader.Get(stackitPodIdentityWebhookServerName)
+	tlsSecret, found := secretsReader.Get(stackitPodIdentityWebhookServerName)
 	if !found {
 		return nil, fmt.Errorf("secret %q not found", stackitPodIdentityWebhookServerName)
 	}
 
 	return map[string]any{
-		"enabled":  true,
-		"replicas": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 2),
-		"secrets": map[string]any{
-			"server": serverSecret.Name,
-			"ca":     string(caSecret.Data[secretutils.DataKeyCertificateBundle]),
+		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 2),
+		"webhook": map[string]any{
+			"tlsSecretName": tlsSecret.Name,
 		},
 	}, nil
 }
@@ -1347,9 +1340,7 @@ func getSTACKITPodIdentityWebhookShootChartValues(
 	}
 
 	return map[string]any{
-		"enabled": true,
 		"webhook": map[string]any{
-			"namespace": namespace,
 			"caBundle":  gardenerutils.EncodeBase64(caSecret.Data[secretutils.DataKeyCertificateBundle]),
 		},
 	}, nil

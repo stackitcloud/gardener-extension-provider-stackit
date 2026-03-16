@@ -1,61 +1,79 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stackit-pod-identity-webhook
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "stackit-pod-identity-webhook.fullname" . }}
   labels:
-    app: kubernetes
-    role: stackit-pod-identity-webhook
-    high-availability-config.resources.gardener.cloud/type: controller
+    {{- include "stackit-pod-identity-webhook.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicas }}
-  revisionHistoryLimit: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: kubernetes
-      role: stackit-pod-identity-webhook
+      {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-{{- if .Values.podAnnotations }}
-      annotations:
-{{ toYaml .Values.podAnnotations | indent 8 }}
-{{- end }}
       labels:
+        {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 8 }}
+        workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
-        app: kubernetes
-        role: stackit-pod-identity-webhook
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-public-networks: allowed
         networking.gardener.cloud/to-private-networks: allowed
         networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
-{{- if .Values.podLabels }}
-{{ toYaml .Values.podLabels | indent 8 }}
-{{- end }}
     spec:
-      terminationGracePeriodSeconds: 30
-      automountServiceAccountToken: false
-      priorityClassName: gardener-system-300
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "stackit-pod-identity-webhook.fullname" .) }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      priorityClassName: {{ .Values.priorityClassName }}
       containers:
-      - name: stackit-pod-identity-webhook
-        image: {{ index .Values.images "stackit-pod-identity-webhook" }}
-        imagePullPolicy: IfNotPresent
-        args:
-        - --cert-dir=/etc/webhook/certs
-        - --port={{ .Values.webhook.port }}
-        ports:
-        - containerPort: {{ .Values.webhook.port }}
-          name: https
-          protocol: TCP
-{{- if .Values.resources }}
-        resources:
-{{ toYaml .Values.resources | indent 10 }}
-{{- end }}
-        volumeMounts:
-        - name: certs
-          mountPath: /etc/webhook/certs
-          readOnly: true
+        - name: {{ .Chart.Name }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ index .Values.images "stackit-pod-identity-webhook" }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --cert-dir=/etc/webhook/certs
+            - --port={{ .Values.webhook.port }}
+          ports:
+            - name: https
+              containerPort: {{ .Values.webhook.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
       volumes:
-      - name: certs
-        secret:
-          secretName: {{ .Values.secrets.server }}
-          defaultMode: 420
+        - name: certs
+          secret:
+            secretName: {{ .Values.webhook.tlsSecretName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,22 +1,36 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: stackit-pod-identity-webhook
+  name: {{ include "stackit-pod-identity-webhook.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 webhooks:
-- name: stackit-pod-identity-webhook.stackit.cloud
-  clientConfig:
-    service:
-      name: stackit-pod-identity-webhook
-      namespace: {{ .Values.webhook.namespace }}
-      path: /mutate--v1-pod
-      port: 443
-    caBundle: {{ .Values.webhook.caBundle }}
-  rules:
-  - operations: ["CREATE"]
-    apiGroups: [""]
-    apiVersions: ["v1"]
-    resources: ["pods"]
-  admissionReviewVersions: ["v1", "v1beta1"]
-  sideEffects: None
-  timeoutSeconds: 30
-  failurePolicy: Ignore
+  - name: stackit-pod-identity-webhook.stackit.cloud
+    clientConfig:
+      service:
+        name: {{ include "stackit-pod-identity-webhook.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: "/mutate--v1-pod"
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" }}
+    namespaceSelector:
+      matchExpressions:
+        {{- if .Values.webhook.excludeKubeSystem }}
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+        {{- end }}
+        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+          operator: DoesNotExist
+    objectSelector:
+      matchExpressions:
+        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+          operator: DoesNotExist
