@@ -32,7 +32,7 @@ const (
 	// ImageNameMachineControllerManagerProviderStackit is a constant for an image in the image vector with name 'machine-controller-manager-provider-stackit'.
 	ImageNameMachineControllerManagerProviderStackit = "machine-controller-manager-provider-stackit"
 	// ImageNameStackitAlbControllerManager is a constant for an image in the image vector with name 'stackit-alb-controller-manager'.
-	ImageNameStackitAlbControllerManager = "stackit-alb-controller-manager"
+	ImageNameStackitApplicationLoadBalancerControllerManager = "stackit-application-load-balancer-controller-manager"
 	// ImageNameStackitCloudControllerManager is a constant for an image in the image vector with name 'stackit-cloud-controller-manager'.
 	ImageNameStackitCloudControllerManager = "stackit-cloud-controller-manager"
 )

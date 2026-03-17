@@ -207,9 +207,9 @@ type APIEndpoints struct {
 	// ApplicationLoadBalancer is the Endpoint of the Application LoadBalancer API.
 	// +optional
 	ApplicationLoadBalancer *string `json:"applicationLoadBalancer,omitempty"`
-	// LoadbalancerCertificate is the Endpoint of the LoadBalancerCertificate API.
+	// ApplicationLoadBalancerCertificate is the Endpoint of the ApplicationLoadBalancerCertificate API.
 	// +optional
-	LoadBalancerCertificate *string `json:"loadbalancerCertificate,omitempty"`
+	ApplicationLoadBalancerCertificate *string `json:"applicationLoadBalancerCertificate,omitempty"`
 	// TokenEndpoint is the token endpoint URL.
 	// +optional
 	TokenEndpoint *string `json:"tokenEndpoint,omitempty"`

@@ -132,6 +132,6 @@ images:
   repository: registry.k8s.io/sig-storage/livenessprobe
   tag: "v2.18.0"
 
-- name: stackit-alb-controller-manager
+- name: stackit-application-load-balancer-controller-manager
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/application-load-balancer-controller-manager-dev
   tag: "v1.34.0-132-g612f42f"

@@ -16,6 +16,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/util"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
@@ -78,7 +79,7 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 		},
 		{
 			ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-			HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITALBControllerManagerName),
+			HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITApplicationLoadBalancerControllerManagerName),
 			PreCheckFunc:  checkALB,
 		},
 	}
@@ -169,7 +170,7 @@ func checkALB(_ context.Context, client client.Client, _ client.Object, clusterO
 		return false
 	}
 
-	return controlplane.DeploySTACKITALB(cpConfig)
+	return controlplane.DeploySTACKITApplicationLoadBalancer(cpConfig) && feature.StackitApplicationLoadBalancerControllerManager(cluster)
 }
 
 // AddToManager adds a controller with the default Options.

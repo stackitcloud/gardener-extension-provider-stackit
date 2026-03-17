@@ -563,7 +563,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
-				openstack.STACKITALBControllerManagerName: empty(),
+				openstack.STACKITApplicationLoadBalancerControllerManagerName: empty(),
 			}))
 		})
 
@@ -606,7 +606,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
-				openstack.STACKITALBControllerManagerName: empty(),
+				openstack.STACKITApplicationLoadBalancerControllerManagerName: empty(),
 			}))
 		})
 
@@ -882,7 +882,7 @@ var _ = Describe("ValuesProvider", func() {
 
 			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, fakeSecretsManager, checksums, false)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(values[openstack.STACKITALBControllerManagerName]).To(Equal(stackitAlbChartValues))
+			Expect(values[openstack.STACKITApplicationLoadBalancerControllerManagerName]).To(Equal(stackitAlbChartValues))
 		})
 	})
 
