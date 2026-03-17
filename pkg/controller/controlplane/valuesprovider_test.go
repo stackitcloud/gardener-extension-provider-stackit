@@ -315,7 +315,7 @@ var _ = Describe("ValuesProvider", func() {
 		mgr = mockmanager.NewMockManager(ctrl)
 		mgr.EXPECT().GetClient().Return(c)
 		mgr.EXPECT().GetScheme().Return(scheme)
-		vp = NewValuesProvider(mgr, true, "kubernetes.io")
+		vp = NewValuesProvider(mgr, "kubernetes.io")
 	})
 
 	AfterEach(func() {
@@ -497,6 +497,11 @@ var _ = Describe("ValuesProvider", func() {
 		})
 
 		BeforeEach(func() {
+			Expect(feature.MutableGate.SetFromMap(map[string]bool{string(feature.STACKITALBControllerManager): true})).To(Succeed())
+			DeferCleanup(func() {
+				Expect(feature.MutableGate.SetFromMap(map[string]bool{string(feature.STACKITALBControllerManager): false})).To(Succeed())
+			})
+
 			c.EXPECT().Get(ctx, cpConfigKey, &corev1.Secret{}).DoAndReturn(clientGet(cpConfig))
 			c.EXPECT().Delete(context.TODO(), &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-kube-apiserver-to-csi-snapshot-validation", Namespace: cp.Namespace}})
 
@@ -658,7 +663,7 @@ var _ = Describe("ValuesProvider", func() {
 					stackitCCMDeletion(ctx, c)
 				}
 
-				vpStackitConf := NewValuesProvider(mgr, true, "kubernetes.io")
+				vpStackitConf := NewValuesProvider(mgr, "kubernetes.io")
 				values, err := vpStackitConf.GetControlPlaneChartValues(ctx, cp, &testCluster, fakeSecretsManager, checksums, false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(values).To(HaveKey(openstack.STACKITCloudControllerManagerName))
@@ -773,7 +778,7 @@ var _ = Describe("ValuesProvider", func() {
 				mgr.EXPECT().GetClient().Return(c)
 				mgr.EXPECT().GetScheme().Return(scheme)
 
-				vpCustomDomain := NewValuesProvider(mgr, true, customDomain)
+				vpCustomDomain := NewValuesProvider(mgr, customDomain)
 				values, err := vpCustomDomain.GetControlPlaneChartValues(ctx, cp, &testCluster, fakeSecretsManager, checksums, false)
 				Expect(err).NotTo(HaveOccurred())
 

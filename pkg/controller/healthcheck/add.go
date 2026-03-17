@@ -76,16 +76,11 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 			HealthCheck:   general.NewSeedDeploymentHealthChecker(controlplane.CSIStackitPrefix + "-" + openstack.CSISnapshotControllerName),
 			PreCheckFunc:  checkCSISTACKIT,
 		},
-	}
-
-	if controlplane.DeployALBIngressController {
-		healthchecks = append(healthchecks,
-			healthcheck.ConditionTypeToHealthCheck{
-				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-				HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITALBControllerManagerName),
-				PreCheckFunc:  checkALB,
-			},
-		)
+		{
+			ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
+			HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITALBControllerManagerName),
+			PreCheckFunc:  checkALB,
+		},
 	}
 
 	if err := healthcheck.DefaultRegistration(
