@@ -333,22 +333,20 @@ var (
 )
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string) genericactuator.ValuesProvider {
+func NewValuesProvider(mgr manager.Manager, customLabelDomain string) genericactuator.ValuesProvider {
 	return &valuesProvider{
-		client:                     mgr.GetClient(),
-		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		deployALBIngressController: deployALBIngressController,
-		customLabelDomain:          customLabelDomain,
+		client:            mgr.GetClient(),
+		decoder:           serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		customLabelDomain: customLabelDomain,
 	}
 }
 
 // valuesProvider is a ValuesProvider that provides OpenStack-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
-	client                     k8sclient.Client
-	decoder                    runtime.Decoder
-	deployALBIngressController bool
-	customLabelDomain          string
+	client            k8sclient.Client
+	decoder           runtime.Decoder
+	customLabelDomain string
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -732,7 +730,8 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		openstack.STACKITCloudControllerManagerName: stackitccm,
 	})
 
-	if vp.deployALBIngressController {
+	if feature.StackitALBControllerManager(cluster) {
+		// TODO(geberl) add a field in the shoot control plane provider option to enable the alb controller
 		fmt.Println("deploying ALB Ingress Controller")
 		albcm, err := getSTACKITALBCMChartValues(cpConfig, cluster, infra, stackitCredentialsConfig, apiEndpoints, scaledDown, stackitRegion)
 		if err != nil {

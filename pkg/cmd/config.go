@@ -75,10 +75,6 @@ func (c *Config) ApplyRegistryCaches(regCaches *[]config.RegistryCacheConfigurat
 	*regCaches = c.Config.RegistryCaches
 }
 
-func (c *Config) ApplyDeployALBIngressController(deployALBIngressController *bool) {
-	*deployALBIngressController = c.Config.DeployALBIngressController
-}
-
 // ApplyCustomLabelDomain sets the custom label domain configuration for infrastructure resources.
 func (c *Config) ApplyCustomLabelDomain(customLabelDomain *string) {
 	*customLabelDomain = c.Config.CustomLabelDomain

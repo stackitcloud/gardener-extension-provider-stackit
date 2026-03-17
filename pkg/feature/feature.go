@@ -22,10 +22,14 @@ const (
 	UseSTACKITAPIInfrastructureController featuregate.Feature = "UseSTACKITAPIInfrastructureController"
 	// UseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes.
 	UseSTACKITMachineControllerManager featuregate.Feature = "UseSTACKITMachineControllerManager"
+	// STACKITALBControllerManager Enables the STACKIT ALP controller manager.
+	STACKITALBControllerManager featuregate.Feature = "STACKITALBControllerManager"
 	// ShootUseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes for a specific Shoot.
 	ShootUseSTACKITMachineControllerManager = "shoot.gardener.cloud/use-stackit-machine-controller-manager"
 	// ShootUseSTACKITAPIInfrastructureController Uses the STACKIT API to create the shoot resources instead of OpenStack for a specific Shoot.
 	ShootUseSTACKITAPIInfrastructureController = "shoot.gardener.cloud/use-stackit-api-infrastructure-controller"
+	// ShootSTACKITALBControllerManager Enables the STACKIT ALP controller manager for a specific Shoot.
+	ShootSTACKITALBControllerManager = "shoot.gardener.cloud/stackit-alb-controller-manager"
 )
 
 var (
@@ -46,6 +50,7 @@ var (
 		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
 		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
 		UseSTACKITMachineControllerManager:    {Default: true, PreRelease: featuregate.Alpha},
+		STACKITALBControllerManager:           {Default: false, PreRelease: featuregate.Alpha},
 	}
 )
 
@@ -77,4 +82,17 @@ func UseStackitAPIInfrastructureController(cluster *extensionscontroller.Cluster
 		}
 	}
 	return Gate.Enabled(UseSTACKITAPIInfrastructureController)
+}
+
+func StackitALBControllerManager(cluster *extensionscontroller.Cluster) bool {
+	if cluster != nil && cluster.Shoot != nil {
+		annotation, ok := cluster.Shoot.Annotations[ShootSTACKITALBControllerManager]
+		if ok {
+			enabledByAnnotation, err := strconv.ParseBool(annotation)
+			if err == nil {
+				return enabledByAnnotation
+			}
+		}
+	}
+	return Gate.Enabled(STACKITALBControllerManager)
 }
