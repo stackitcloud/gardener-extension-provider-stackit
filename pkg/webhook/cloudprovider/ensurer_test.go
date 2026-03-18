@@ -87,9 +87,23 @@ var _ = Describe("Ensurer", func() {
 		Expect(string(newSecret.Data[types.AuthURL])).To(Equal(authURL))
 	})
 
-	It("Should return an error if no authURL is found", func() {
+	It("Should not fail and skip KeyStone fields if no KeyStone config is present (STACKITONLY)", func() {
 		newSecret := &corev1.Secret{}
 		cluster.CloudProfile.Spec.ProviderConfig = encodeCloudProfileConfig(&stackitv1alpha1.CloudProfileConfig{})
+
+		err := ensurer.EnsureCloudProviderSecret(ctx, ectx, newSecret, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(newSecret.Data).NotTo(HaveKey(types.AuthURL))
+	})
+
+	It("Should return an error if KeyStoneURLs are configured but no entry matches the region", func() {
+		newSecret := &corev1.Secret{}
+		cluster.CloudProfile.Spec.ProviderConfig = encodeCloudProfileConfig(&stackitv1alpha1.CloudProfileConfig{
+			KeyStoneURLs: []stackitv1alpha1.KeyStoneURL{
+				{Region: "other-region", URL: authURL},
+			},
+		})
+		cluster.Shoot.Spec.Region = "eu-de-1"
 
 		err := ensurer.EnsureCloudProviderSecret(ctx, ectx, newSecret, nil)
 		Expect(err).To(HaveOccurred())
