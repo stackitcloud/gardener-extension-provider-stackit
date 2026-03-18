@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -120,7 +119,7 @@ func isShootInMigrationOrRestorePhase(shoot *gardencorev1beta1.Shoot) bool {
 // and disables the ntp service.
 func (s *shoot) mutateMachineImageVersion(shoot *gardencorev1beta1.Shoot) error {
 	ptpOverride := configv1alpha1.ExtensionConfig{NTP: &configv1alpha1.NTPConfig{
-		Enabled: ptr.To(false),
+		Enabled: new(false),
 	}}
 	providerConfigBuf := new(bytes.Buffer)
 	err := encoder.Encode(&ptpOverride, providerConfigBuf)

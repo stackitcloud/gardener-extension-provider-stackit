@@ -7,7 +7,6 @@ import (
 
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	"github.com/stackitcloud/stackit-sdk-go/services/dns"
-	"k8s.io/utils/ptr"
 	"k8s.io/utils/set"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
@@ -80,7 +79,7 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	wantedRecordsPayload := []dns.RecordPayload{}
 	for _, record := range wantedRecords {
 		wantedRecordsPayload = append(wantedRecordsPayload, dns.RecordPayload{
-			Content: ptr.To(record),
+			Content: new(record),
 		})
 	}
 
@@ -88,8 +87,8 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 		_, err := c.api.CreateRecordSet(ctx, c.projectID, zoneID).CreateRecordSetPayload(dns.CreateRecordSetPayload{
 			Name:    &name,
 			Records: &wantedRecordsPayload,
-			Type:    ptr.To(dns.CreateRecordSetPayloadTypes(recordType)),
-			Ttl:     ptr.To(ttl),
+			Type:    new(dns.CreateRecordSetPayloadTypes(recordType)),
+			Ttl:     new(ttl),
 		}).Execute()
 		if err != nil {
 			return fmt.Errorf("failed to create record set: %w", err)
@@ -105,7 +104,7 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	_, err = c.api.PartialUpdateRecordSet(ctx, c.projectID, zoneID, recordSet.GetId()).PartialUpdateRecordSetPayload(dns.PartialUpdateRecordSetPayload{
 		Name:    &name,
 		Records: &wantedRecordsPayload,
-		Ttl:     ptr.To(ttl),
+		Ttl:     new(ttl),
 	}).Execute()
 	if err != nil {
 		return fmt.Errorf("failed to update record set: %w", err)

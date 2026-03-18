@@ -45,6 +45,9 @@ func CleanupKubernetesLoadbalancers(ctx context.Context, log logr.Logger, client
 	lbList, err := client.ListLoadbalancers(ctx, loadbalancers.ListOpts{
 		VipSubnetID: subnetID,
 	})
+	if err != nil {
+		return fmt.Errorf("error listing load balancers: %w", err)
+	}
 
 	// do we need that if we anyway want to delete the gardener managed subnet ?
 	k8sSvcPrefix := servicePrefix + clusterName
@@ -69,9 +72,7 @@ func CleanupKubernetesLoadbalancers(ctx context.Context, log logr.Logger, client
 		}
 
 		log.Info("deleting orphan loadbalancer", "ID", lb.ID, "name", lb.Name)
-		w.Add(1)
-		go func() {
-			defer w.Done()
+		w.Go(func() {
 			if err := client.DeleteLoadbalancer(ctx, lb.ID, loadbalancers.DeleteOpts{Cascade: true}); err != nil {
 				res <- err
 				return
@@ -90,7 +91,7 @@ func CleanupKubernetesLoadbalancers(ctx context.Context, log logr.Logger, client
 			if err != nil {
 				res <- fmt.Errorf("failed to ensure loadbalancers are deleted: %v", err)
 			}
-		}()
+		})
 	}
 	w.Wait()
 	close(res)

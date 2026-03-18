@@ -2,7 +2,6 @@ package stackit
 
 import (
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"k8s.io/utils/ptr"
 )
 
 // The SDK is lacking constants for well-known values of the security group rule fields.
@@ -21,7 +20,7 @@ const (
 
 var (
 	// ProtocolTCP is a shortcut for specifying a security group rule's protocol.
-	ProtocolTCP = iaas.Protocol{Name: ptr.To("tcp")}
+	ProtocolTCP = iaas.Protocol{Name: new("tcp")}
 	// ProtocolUDP is a shortcut for specifying a security group rule's protocol.
-	ProtocolUDP = iaas.Protocol{Name: ptr.To("udp")}
+	ProtocolUDP = iaas.Protocol{Name: new("udp")}
 )

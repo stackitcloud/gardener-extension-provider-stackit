@@ -64,7 +64,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, dns *extensio
 	}
 
 	patch := client.MergeFrom(dns.DeepCopy())
-	dns.Status.Zone = ptr.To(zoneID)
+	dns.Status.Zone = new(zoneID)
 	return a.client.Status().Patch(ctx, dns, patch)
 }
 

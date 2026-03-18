@@ -9,7 +9,6 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/pelletier/go-toml/v2"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
@@ -36,7 +35,7 @@ func ensureHostsConfig(reg config.RegistryCacheConfiguration, files *[]extension
 	}
 	hostsFile := extensionsv1alpha1.File{
 		Path:        path.Join(configBaseDir(reg.Server), "hosts.toml"),
-		Permissions: ptr.To[uint32](0o644),
+		Permissions: new(uint32(0o644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "",
@@ -51,7 +50,7 @@ func ensureHostsConfig(reg config.RegistryCacheConfiguration, files *[]extension
 func ensureCAFile(reg config.RegistryCacheConfiguration, files *[]extensionsv1alpha1.File) {
 	caFile := extensionsv1alpha1.File{
 		Path:        caPath(reg),
-		Permissions: ptr.To[uint32](0o644),
+		Permissions: new(uint32(0o644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",

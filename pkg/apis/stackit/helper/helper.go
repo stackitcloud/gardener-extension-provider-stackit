@@ -86,7 +86,7 @@ func FindImageFromCloudProfile(cloudProfileConfig *stackitv1alpha1.CloudProfileC
 					return &stackitv1alpha1.MachineImage{
 						Name:         imageName,
 						Version:      imageVersion,
-						Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+						Architecture: new(v1beta1constants.ArchitectureAMD64),
 						Image:        version.Image,
 					}, nil
 				}

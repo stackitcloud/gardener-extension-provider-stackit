@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
-	"k8s.io/utils/ptr"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
@@ -124,8 +123,8 @@ var _ = Describe("Ensurer", func() {
 						ProviderConfig: &runtime.RawExtension{
 							Raw: encode(&stackitv1alpha1.CloudProfileConfig{
 								APIEndpoints: &stackitv1alpha1.APIEndpoints{
-									IaaS:          ptr.To("iaas.qa"),
-									TokenEndpoint: ptr.To("token.qa"),
+									IaaS:          new("iaas.qa"),
+									TokenEndpoint: new("token.qa"),
 								},
 							}),
 						},
@@ -378,8 +377,8 @@ var _ = Describe("Ensurer", func() {
 				FeatureGates: map[string]bool{
 					"Foo": true,
 				},
-				ResolverConfig:               ptr.To("/etc/resolv-for-kubelet.conf"),
-				EnableControllerAttachDetach: ptr.To(true),
+				ResolverConfig:               new("/etc/resolv-for-kubelet.conf"),
+				EnableControllerAttachDetach: new(true),
 			}
 
 			kubeletConfig := *oldKubeletConfig
@@ -526,8 +525,8 @@ WantedBy=multi-user.target
 			ensurer = NewEnsurer(nil, logger)
 			DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
 				Name:       "machine-controller-manager-provider-openstack",
-				Repository: ptr.To("foo"),
-				Tag:        ptr.To("bar"),
+				Repository: new("foo"),
+				Tag:        new("bar"),
 			}}))
 		})
 
@@ -567,8 +566,8 @@ WantedBy=multi-user.target
 			ensurer = NewEnsurer(nil, logger)
 			DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
 				Name:       "machine-controller-manager-provider-stackit",
-				Repository: ptr.To("foo"),
-				Tag:        ptr.To("bar"),
+				Repository: new("foo"),
+				Tag:        new("bar"),
 			}}))
 		})
 
@@ -609,8 +608,8 @@ WantedBy=multi-user.target
 			ensurer = NewEnsurer(nil, logger)
 			DeferCleanup(testutils.WithVar(&ImageVector, imagevector.ImageVector{{
 				Name:       "machine-controller-manager-provider-stackit",
-				Repository: ptr.To("foo"),
-				Tag:        ptr.To("bar"),
+				Repository: new("foo"),
+				Tag:        new("bar"),
 			}}))
 		})
 

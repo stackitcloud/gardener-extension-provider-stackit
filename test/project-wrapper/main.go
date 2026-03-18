@@ -14,12 +14,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stackitcloud/stackit-sdk-go/core/utils"
 	"github.com/stackitcloud/stackit-sdk-go/services/authorization"
 	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
 	"github.com/stackitcloud/stackit-sdk-go/services/serviceaccount"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/ptr"
 	"k8s.io/utils/set"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/test/project-wrapper/sdk"
@@ -171,7 +169,7 @@ func assignRoleToServiceAccount(ctx context.Context, projectID string, email str
 		return err
 	}
 
-	_, err = client.AddMembers(ctx, projectID).AddMembersPayload(authorization.AddMembersPayload{Members: sdk.GetMembersForRoles(email, roles), ResourceType: ptr.To("project")}).Execute()
+	_, err = client.AddMembers(ctx, projectID).AddMembersPayload(authorization.AddMembersPayload{Members: sdk.GetMembersForRoles(email, roles), ResourceType: new("project")}).Execute()
 	if err != nil {
 		return err
 	}
@@ -207,7 +205,7 @@ func createServiceAccountAndKey(ctx context.Context, projectID string) (string, 
 	}
 
 	createAccountPayload := serviceaccount.CreateServiceAccountPayload{
-		Name: utils.Ptr("ske-intgrtn-tst"),
+		Name: new("ske-intgrtn-tst"),
 	}
 	resp, err := saClient.CreateServiceAccount(ctx, projectID).CreateServiceAccountPayload(createAccountPayload).Execute()
 	if err != nil {
@@ -257,7 +255,7 @@ func generateRandomSuffix(length int) string {
 // If the project becomes active within 30 retries, the function returns nil.
 // If the project does not become active within 30 seconds, the function returns an error indicating a timeout.
 func waitForProjectReadiness(ctx context.Context, client *sdk.Client, stackitProjectID string) error {
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		project, err := client.GetProject(ctx, stackitProjectID)
 		if err != nil {
 			log.Printf("Error getting project: %v", err)

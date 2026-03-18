@@ -133,7 +133,7 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 
 	// Populate dnsNameservers for InfrastructureStatus from provided network
 	nameservers := networkIPv4Config.GetNameservers()
-	fctx.dnsNameservers = ptr.To(nameservers)
+	fctx.dnsNameservers = new(nameservers)
 
 	fctx.state.Set(IdentifierNetwork, networkID)
 	fctx.state.Set(NameNetwork, network.GetName())
@@ -245,8 +245,8 @@ func (fctx *FlowContext) ensureSecGroup(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
 
 	payload := iaas.CreateSecurityGroupPayload{
-		Name:        ptr.To(fctx.defaultSecurityGroupName()),
-		Description: ptr.To("Cluster Nodes"),
+		Name:        new(fctx.defaultSecurityGroupName()),
+		Description: new("Cluster Nodes"),
 	}
 
 	current, err := findExisting(ctx, fctx.state.Get(IdentifierSecGroup), fctx.defaultSecurityGroupName(), fctx.iaasClient.GetSecurityGroupById, fctx.iaasClient.GetSecurityGroupByName)
@@ -299,46 +299,46 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 
 	desiredRules := []iaas.SecurityGroupRule{
 		{
-			Direction:             ptr.To(stackit.DirectionIngress),
-			Ethertype:             ptr.To(stackit.EtherTypeIPv4),
-			RemoteSecurityGroupId: ptr.To(group.GetId()),
-			Description:           ptr.To("IPv4: allow all incoming traffic within the same security group"),
+			Direction:             new(stackit.DirectionIngress),
+			Ethertype:             new(stackit.EtherTypeIPv4),
+			RemoteSecurityGroupId: new(group.GetId()),
+			Description:           new("IPv4: allow all incoming traffic within the same security group"),
 		},
 		{
-			Direction:   ptr.To(stackit.DirectionEgress),
-			Ethertype:   ptr.To(stackit.EtherTypeIPv4),
-			Description: ptr.To("IPv4: allow all outgoing traffic"),
+			Direction:   new(stackit.DirectionEgress),
+			Ethertype:   new(stackit.EtherTypeIPv4),
+			Description: new("IPv4: allow all outgoing traffic"),
 		},
 		{
-			Direction: ptr.To(stackit.DirectionIngress),
-			Ethertype: ptr.To(stackit.EtherTypeIPv4),
-			Protocol:  ptr.To(stackit.ProtocolTCP),
+			Direction: new(stackit.DirectionIngress),
+			Ethertype: new(stackit.EtherTypeIPv4),
+			Protocol:  new(stackit.ProtocolTCP),
 			PortRange: &iaas.PortRange{
-				Max: ptr.To[int64](32767),
-				Min: ptr.To[int64](30000),
+				Max: new(int64(32767)),
+				Min: new(int64(30000)),
 			},
-			IpRange:     ptr.To(nodesCIDR),
-			Description: ptr.To("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
+			IpRange:     new(nodesCIDR),
+			Description: new("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
 		},
 		{
-			Direction: ptr.To(stackit.DirectionIngress),
-			Ethertype: ptr.To(stackit.EtherTypeIPv4),
-			Protocol:  ptr.To(stackit.ProtocolUDP),
+			Direction: new(stackit.DirectionIngress),
+			Ethertype: new(stackit.EtherTypeIPv4),
+			Protocol:  new(stackit.ProtocolUDP),
 			PortRange: &iaas.PortRange{
-				Max: ptr.To[int64](32767),
-				Min: ptr.To[int64](30000),
+				Max: new(int64(32767)),
+				Min: new(int64(30000)),
 			},
-			IpRange:     ptr.To(nodesCIDR),
-			Description: ptr.To("IPv4: allow all incoming udp traffic with port range 30000-32767"),
+			IpRange:     new(nodesCIDR),
+			Description: new("IPv4: allow all incoming udp traffic with port range 30000-32767"),
 		},
 	}
 
 	if fctx.cluster.Shoot.Spec.Networking != nil && fctx.cluster.Shoot.Spec.Networking.Pods != nil {
 		podCIDRRule := iaas.SecurityGroupRule{
-			Direction:   ptr.To(stackit.DirectionIngress),
-			Ethertype:   ptr.To(stackit.EtherTypeIPv4),
-			IpRange:     ptr.To(*fctx.cluster.Shoot.Spec.Networking.Pods),
-			Description: ptr.To("IPv4: allow all incoming traffic from cluster pod CIDR"),
+			Direction:   new(stackit.DirectionIngress),
+			Ethertype:   new(stackit.EtherTypeIPv4),
+			IpRange:     new(*fctx.cluster.Shoot.Spec.Networking.Pods),
+			Description: new("IPv4: allow all incoming traffic from cluster pod CIDR"),
 		}
 		desiredRules = append(desiredRules, podCIDRRule)
 	}
@@ -377,15 +377,15 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 
 	network := iaas.CreateNetworkIPv4{
 		CreateNetworkIPv4WithPrefix: &iaas.CreateNetworkIPv4WithPrefix{
-			Nameservers: ptr.To(dnsServers),
-			Prefix:      ptr.To(fctx.workerCIDR()),
+			Nameservers: new(dnsServers),
+			Prefix:      new(fctx.workerCIDR()),
 		},
 	}
 
 	desired := iaas.CreateIsolatedNetworkPayload{
-		Dhcp: ptr.To(true),
-		Ipv4: ptr.To(network),
-		Name: ptr.To(fctx.technicalID),
+		Dhcp: new(true),
+		Ipv4: new(network),
+		Name: new(fctx.technicalID),
 	}
 	current, err := findExisting(ctx, fctx.state.Get(IdentifierNetwork), fctx.defaultNetworkName(), fctx.iaasClient.GetNetworkById, fctx.iaasClient.GetNetworkByName)
 	if err != nil {
@@ -398,7 +398,7 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 			return err
 		}
 		// Update dnsNameservers when update was successful
-		fctx.dnsNameservers = ptr.To(desired.Ipv4.CreateNetworkIPv4WithPrefix.GetNameservers())
+		fctx.dnsNameservers = new(desired.Ipv4.CreateNetworkIPv4WithPrefix.GetNameservers())
 	} else {
 		log.Info("creating...", "network", fctx.defaultNetworkName())
 		created, err := fctx.iaasClient.CreateIsolatedNetwork(ctx, desired)
@@ -407,7 +407,7 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 		}
 		fctx.state.Set(IdentifierNetwork, created.GetId())
 		fctx.state.Set(NameNetwork, created.GetName())
-		fctx.dnsNameservers = ptr.To(created.Ipv4.GetNameservers())
+		fctx.dnsNameservers = new(created.Ipv4.GetNameservers())
 	}
 	return nil
 }

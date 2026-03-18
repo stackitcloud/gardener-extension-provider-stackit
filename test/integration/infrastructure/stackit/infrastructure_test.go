@@ -121,7 +121,7 @@ var _ = BeforeSuite(func() {
 		SaKeyJSON: stackitServiceAccount,
 	}
 	endpoints = stackitv1alpha1.APIEndpoints{
-		IaaS: ptr.To("https://iaas.api.stackit.cloud"),
+		IaaS: new("https://iaas.api.stackit.cloud"),
 	}
 
 	validateFlags()
@@ -233,11 +233,11 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("Infrastructure tests flow", func() {
-	testInfrastructure(ptr.To(reconcilerUseFlow))
+	testInfrastructure(new(reconcilerUseFlow))
 })
 
 var _ = Describe("Infrastructure tests recover", func() {
-	testInfrastructure(ptr.To(reconcilerRecoverState))
+	testInfrastructure(new(reconcilerRecoverState))
 })
 
 func testInfrastructure(reconciler *string) {
@@ -393,7 +393,7 @@ func runTest(
 		Spec: gardenerv1beta1.ShootSpec{
 			Region: *region,
 			Networking: &gardenerv1beta1.Networking{
-				Pods: ptr.To("10.123.0.0/24"),
+				Pods: new("10.123.0.0/24"),
 			},
 		},
 		Status: gardenerv1beta1.ShootStatus{
@@ -593,11 +593,11 @@ func prepareIsolatedNetwork(log logr.Logger, networkName string) (*string, error
 	log.Info("Waiting until network is created", "networkName", networkName)
 
 	createOpts := iaas.CreateIsolatedNetworkPayload{
-		Name: ptr.To(networkName),
+		Name: new(networkName),
 		Ipv4: &iaas.CreateNetworkIPv4{
 			CreateNetworkIPv4WithPrefix: &iaas.CreateNetworkIPv4WithPrefix{
-				Nameservers: ptr.To([]string{dnsServer}),
-				Prefix:      ptr.To(workerCIDR),
+				Nameservers: new([]string{dnsServer}),
+				Prefix:      new(workerCIDR),
 			},
 		},
 	}
@@ -652,18 +652,18 @@ func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, provide
 	if providerConfig.Networks.ID != nil {
 		Expect(net.GetId()).To(Equal(*providerConfig.Networks.ID))
 	}
-	infrastructureIdentifier.networkID = ptr.To(net.GetId())
+	infrastructureIdentifier.networkID = new(net.GetId())
 
 	// security group is created
 	secGroup, err := iaasClient.GetSecurityGroupById(ctx, providerStatus.SecurityGroups[0].ID)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(secGroup.GetName()).To(Equal(providerStatus.SecurityGroups[0].Name))
-	infrastructureIdentifier.secGroupID = ptr.To(secGroup.GetId())
+	infrastructureIdentifier.secGroupID = new(secGroup.GetId())
 
 	// keypair is created
 	keyPair, err := iaasClient.GetKeypair(ctx, providerStatus.Node.KeyName)
 	Expect(err).NotTo(HaveOccurred())
-	infrastructureIdentifier.keyPair = ptr.To(keyPair.GetName())
+	infrastructureIdentifier.keyPair = new(keyPair.GetName())
 
 	// verify egressCIDRs
 	Expect(infraStatus.EgressCIDRs).To(ContainElements(utils.ComputeEgressCIDRs(providerStatus.Networks.Router.ExternalFixedIPs)))

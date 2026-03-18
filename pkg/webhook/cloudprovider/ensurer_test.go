@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	types "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
@@ -145,7 +144,7 @@ var _ = Describe("Ensurer", func() {
 			},
 		}
 		cluster.CloudProfile.Spec.ProviderConfig = encodeCloudProfileConfig(&stackitv1alpha1.CloudProfileConfig{
-			KeyStoneCACert: ptr.To("cert"),
+			KeyStoneCACert: new("cert"),
 			KeyStoneURL:    "url",
 		})
 

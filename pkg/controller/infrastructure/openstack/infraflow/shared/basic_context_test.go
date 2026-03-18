@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
@@ -46,9 +46,7 @@ var _ = Describe("BasicFlowContext", func() {
 					return fmt.Errorf("forced persistor error")
 				}
 				persistedData = shared.FlatMap{}
-				for k, v := range state.ExportAsFlatMap() {
-					persistedData[k] = v
-				}
+				maps.Copy(persistedData, state.ExportAsFlatMap())
 				persistCallCount++
 				return nil
 			}
@@ -92,9 +90,9 @@ var _ = Describe("BasicFlowContext", func() {
 			Expect(c.state.Get("task1")).To(BeNil())
 			Expect(logBuffer.String()).To(ContainSubstring("task2:foo"))
 
-			Expect(c.state.Get("task2")).To(Equal(ptr.To("done")))
+			Expect(c.state.Get("task2")).To(Equal(new("done")))
 			Expect(c.state.Get("afterTask2")).To(Equal(c.state.Get("task2")))
-			Expect(c.state.Get("task3")).To(Equal(ptr.To("done")))
+			Expect(c.state.Get("task3")).To(Equal(new("done")))
 
 			Expect(persistCallCount).To(Equal(2))
 			Expect(persistedData["task2"]).To(Equal("done"))
