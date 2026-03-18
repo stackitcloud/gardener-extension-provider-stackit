@@ -244,10 +244,10 @@ func ensureKubeletCommandLineArgs(command []string) []string {
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
 func (e *ensurer) EnsureKubeletConfiguration(_ context.Context, _ gcontext.GardenContext, _ *semver.Version, newObj, _ *kubeletconfigv1beta1.KubeletConfiguration) error {
-	newObj.EnableControllerAttachDetach = ptr.To(true)
+	newObj.EnableControllerAttachDetach = new(true)
 
 	// resolv-for-kubelet.conf is created by update-resolv-conf.service
-	newObj.ResolverConfig = ptr.To("/etc/resolv-for-kubelet.conf")
+	newObj.ResolverConfig = new("/etc/resolv-for-kubelet.conf")
 
 	return nil
 }

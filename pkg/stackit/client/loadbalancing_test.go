@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/ptr"
 
 	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock/loadbalancer"
 )
@@ -33,8 +32,8 @@ var _ = Describe("LoadBalancingClient", func() {
 
 	It("gets a list of loadbalancers", func() {
 		expectedLoadBalancers := []loadbalancer.LoadBalancer{
-			{Name: ptr.To("testLB1")},
-			{Name: ptr.To("testLB2")},
+			{Name: new("testLB1")},
+			{Name: new("testLB2")},
 		}
 		response := loadbalancer.ListLoadBalancersResponse{
 			LoadBalancers: &expectedLoadBalancers,
@@ -54,7 +53,7 @@ var _ = Describe("LoadBalancingClient", func() {
 	It("gets a certain loadbalancer", func() {
 		name := "testLB"
 		expectedLoadBalancer := &loadbalancer.LoadBalancer{
-			Name: ptr.To(name),
+			Name: new(name),
 		}
 		request := mock.NewMockApiGetLoadBalancerRequest(mockCtrl)
 		request.EXPECT().Execute().Return(expectedLoadBalancer, nil)

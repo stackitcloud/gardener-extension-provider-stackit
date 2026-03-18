@@ -17,7 +17,6 @@ import (
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -112,7 +111,7 @@ var _ = Describe("Actuator", func() {
 		})
 
 		It("should fail if creating the DNS record set failed", func() {
-			dns.Spec.Zone = ptr.To(zone)
+			dns.Spec.Zone = new(zone)
 			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int64(120)).
 				Return(errors.New("test"))
 
@@ -130,7 +129,7 @@ var _ = Describe("Actuator", func() {
 		})
 
 		It("should fail with ERR_CONFIGURATION_PROBLEM if the hosted zone was deleted", func() {
-			dns.Spec.Zone = ptr.To(zone)
+			dns.Spec.Zone = new(zone)
 			// This error is returned when the zone was deleted, but can still be re-activated
 			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int64(120)).
 				Return(&stackitclient.Error{
@@ -148,7 +147,7 @@ var _ = Describe("Actuator", func() {
 
 	Describe("#Delete", func() {
 		It("should not fail when there is a not found error", func() {
-			dns.Spec.Zone = ptr.To(zone)
+			dns.Spec.Zone = new(zone)
 			dnsMock.EXPECT().DeleteRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA)).
 				Return(stackitclient.NewNotFoundError("foo", "bar"))
 
@@ -156,7 +155,7 @@ var _ = Describe("Actuator", func() {
 		})
 
 		It("should delete the DNSRecord", func() {
-			dns.Status.Zone = ptr.To(zone)
+			dns.Status.Zone = new(zone)
 			dnsMock.EXPECT().DeleteRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA)).
 				Return(nil)
 

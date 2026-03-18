@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
@@ -51,7 +50,7 @@ var _ = Describe("CloudProfileConfig validation", func() {
 								Regions: []stackitv1alpha1.RegionIDMapping{{
 									Name:         "eu01",
 									ID:           "9afa968b-ed9e-4ba0-a394-f74cbb0313w2",
-									Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+									Architecture: new(v1beta1constants.ArchitectureAMD64),
 								}},
 							},
 						},
@@ -77,8 +76,8 @@ var _ = Describe("CloudProfileConfig validation", func() {
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
 					{
 						Name:   "",
-						Region: ptr.To(""),
-						Domain: ptr.To(""),
+						Region: new(""),
+						Domain: new(""),
 					},
 				}
 
@@ -100,29 +99,29 @@ var _ = Describe("CloudProfileConfig validation", func() {
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
 					{
 						Name:   "foo",
-						Region: ptr.To("rfoo"),
+						Region: new("rfoo"),
 					},
 					{
 						Name:   "foo",
-						Region: ptr.To("rfoo"),
+						Region: new("rfoo"),
 					},
 					{
 						Name:   "foo",
-						Domain: ptr.To("dfoo"),
+						Domain: new("dfoo"),
 					},
 					{
 						Name:   "foo",
-						Domain: ptr.To("dfoo"),
+						Domain: new("dfoo"),
 					},
 					{
 						Name:   "foo",
-						Domain: ptr.To("dfoo"),
-						Region: ptr.To("rfoo"),
+						Domain: new("dfoo"),
+						Region: new("rfoo"),
 					},
 					{
 						Name:   "foo",
-						Domain: ptr.To("dfoo"),
-						Region: ptr.To("rfoo"),
+						Domain: new("dfoo"),
+						Region: new("rfoo"),
 					},
 				}
 
@@ -186,7 +185,7 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		It("should forbid invalid keystone CA Certs", func() {
-			cloudProfileConfig.KeyStoneCACert = ptr.To("foo")
+			cloudProfileConfig.KeyStoneCACert = new("foo")
 
 			errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, fldPath)
 			Expect(errorList).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
@@ -211,7 +210,7 @@ var _ = Describe("CloudProfileConfig validation", func() {
 
 		Context("dhcp domain validation", func() {
 			It("should forbid not specifying a value when the key is present", func() {
-				cloudProfileConfig.DHCPDomain = ptr.To("")
+				cloudProfileConfig.DHCPDomain = new("")
 
 				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, fldPath)
 
@@ -361,17 +360,17 @@ var _ = Describe("CloudProfileConfig validation", func() {
 									{
 										Name:         "eu01",
 										ID:           "abc_foo_amd64",
-										Architecture: ptr.To("amd64"),
+										Architecture: new("amd64"),
 									},
 									{
 										Name:         "eu01",
 										ID:           "abc_foo_arm64",
-										Architecture: ptr.To("arm64"),
+										Architecture: new("arm64"),
 									},
 									{
 										Name:         "eu01",
 										ID:           "abc_foo_ppc64",
-										Architecture: ptr.To("ppc64"),
+										Architecture: new("ppc64"),
 									},
 								},
 							}},

@@ -9,7 +9,6 @@ import (
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -46,24 +45,24 @@ var _ = Describe("Security Group", func() {
 		It("should return the security group rules for Bastion.spec.ingress", func() {
 			Expect(o.determineWantedSecurityGroupRules()).To(ContainElements(
 				iaas.SecurityGroupRule{
-					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "1.2.3.4/32")),
+					Description: new(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "1.2.3.4/32")),
 
-					Direction: ptr.To(stackit.DirectionIngress),
-					Ethertype: ptr.To(stackit.EtherTypeIPv4),
-					Protocol:  ptr.To(stackit.ProtocolTCP),
+					Direction: new(stackit.DirectionIngress),
+					Ethertype: new(stackit.EtherTypeIPv4),
+					Protocol:  new(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
 
-					IpRange: ptr.To("1.2.3.4/32"),
+					IpRange: new("1.2.3.4/32"),
 				},
 				iaas.SecurityGroupRule{
-					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "2001:db8:1::/48")),
+					Description: new(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "2001:db8:1::/48")),
 
-					Direction: ptr.To(stackit.DirectionIngress),
-					Ethertype: ptr.To(stackit.EtherTypeIPv6),
-					Protocol:  ptr.To(stackit.ProtocolTCP),
+					Direction: new(stackit.DirectionIngress),
+					Ethertype: new(stackit.EtherTypeIPv6),
+					Protocol:  new(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
 
-					IpRange: ptr.To("2001:db8:1::/48"),
+					IpRange: new("2001:db8:1::/48"),
 				},
 			))
 		})
@@ -73,14 +72,14 @@ var _ = Describe("Security Group", func() {
 
 			Expect(o.determineWantedSecurityGroupRules()).To(ContainElement(
 				iaas.SecurityGroupRule{
-					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from world", o.Bastion.Name)),
+					Description: new(fmt.Sprintf("Allow ingress to Bastion %s from world", o.Bastion.Name)),
 
-					Direction: ptr.To(stackit.DirectionIngress),
-					Ethertype: ptr.To(stackit.EtherTypeIPv4),
-					Protocol:  ptr.To(stackit.ProtocolTCP),
+					Direction: new(stackit.DirectionIngress),
+					Ethertype: new(stackit.EtherTypeIPv4),
+					Protocol:  new(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
 
-					IpRange: ptr.To("0.0.0.0/0"),
+					IpRange: new("0.0.0.0/0"),
 				},
 			))
 		})

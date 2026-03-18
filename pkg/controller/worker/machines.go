@@ -207,7 +207,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 					InstanceType: pool.MachineType,
 					Region:       region,
 					Zone:         zone,
-					Architecture: ptr.To(architecture),
+					Architecture: new(architecture),
 				}
 			} else if pool.NodeTemplate != nil {
 				machineClassSpec["nodeTemplate"] = machinev1alpha1.NodeTemplate{
@@ -215,7 +215,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 					InstanceType: pool.MachineType,
 					Region:       region,
 					Zone:         zone,
-					Architecture: ptr.To(architecture),
+					Architecture: new(architecture),
 				}
 			}
 
@@ -225,8 +225,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			)
 
 			updateConfiguration := machinev1alpha1.UpdateConfiguration{
-				MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(zoneIdx, pool.MaxUnavailable, zoneLen, pool.Minimum)),
-				MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(zoneIdx, pool.MaxSurge, zoneLen, pool.Maximum)),
+				MaxUnavailable: new(worker.DistributePositiveIntOrPercent(zoneIdx, pool.MaxUnavailable, zoneLen, pool.Minimum)),
+				MaxSurge:       new(worker.DistributePositiveIntOrPercent(zoneIdx, pool.MaxSurge, zoneLen, pool.Maximum)),
 			}
 
 			machineDeploymentStrategy := machinev1alpha1.MachineDeploymentStrategy{

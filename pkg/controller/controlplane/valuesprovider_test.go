@@ -35,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -156,9 +155,9 @@ var _ = Describe("ValuesProvider", func() {
 		cloudProfileConfig = &stackitv1alpha1.CloudProfileConfig{
 			KeyStoneURL:                authURL,
 			RequestTimeout:             requestTimeout,
-			RescanBlockStorageOnResize: ptr.To(rescanBlockStorageOnResize),
-			IgnoreVolumeAZ:             ptr.To(ignoreVolumeAZ),
-			NodeVolumeAttachLimit:      ptr.To[int32](nodeVoluemAttachLimit),
+			RescanBlockStorageOnResize: new(rescanBlockStorageOnResize),
+			IgnoreVolumeAZ:             new(ignoreVolumeAZ),
+			NodeVolumeAttachLimit:      &nodeVoluemAttachLimit,
 		}
 		cloudProfileConfigJSON, _ = json.Marshal(cloudProfileConfig)
 
@@ -229,7 +228,7 @@ var _ = Describe("ValuesProvider", func() {
 			Shoot: &gardencorev1beta1.Shoot{
 				Spec: gardencorev1beta1.ShootSpec{
 					Networking: &gardencorev1beta1.Networking{
-						Type: ptr.To("calico"),
+						Type: new("calico"),
 						ProviderConfig: &runtime.RawExtension{
 							Raw: []byte(`{"overlay":{"enabled": false}}`),
 						},
@@ -390,7 +389,7 @@ var _ = Describe("ValuesProvider", func() {
 		It("should not configure cloud routes when not using overlay but using BGP as backend", func() {
 			c.EXPECT().Get(ctx, cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret))
 			net := &gardencorev1beta1.Networking{
-				Type: ptr.To("calico"),
+				Type: new("calico"),
 				ProviderConfig: &runtime.RawExtension{
 					Raw: []byte(`{"backend":"bird","overlay":{"enabled": false}}`),
 				},
@@ -694,7 +693,7 @@ var _ = Describe("ValuesProvider", func() {
 			),
 			Entry("custom LoadBalancer endpoint",
 				&stackitv1alpha1.APIEndpoints{
-					LoadBalancer: ptr.To("https://custom-lb.stackit.cloud"),
+					LoadBalancer: new("https://custom-lb.stackit.cloud"),
 				},
 				nil,
 				map[string]any{
@@ -714,8 +713,8 @@ var _ = Describe("ValuesProvider", func() {
 			),
 			Entry("custom LoadBalancer and Token endpoints",
 				&stackitv1alpha1.APIEndpoints{
-					LoadBalancer:  ptr.To("https://custom-lb.stackit.cloud"),
-					TokenEndpoint: ptr.To("https://custom-auth.stackit.cloud/token"),
+					LoadBalancer:  new("https://custom-lb.stackit.cloud"),
+					TokenEndpoint: new("https://custom-auth.stackit.cloud/token"),
 				},
 				nil,
 				map[string]any{
@@ -1015,11 +1014,11 @@ var _ = Describe("ValuesProvider", func() {
 		}
 	},
 
-		Entry("missing url", nil, ptr.To("token"), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPIURLKey)),
-		Entry("empty url", ptr.To(""), ptr.To("token"), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPIURLKey)),
-		Entry("missing token", ptr.To("url"), nil, fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPITokenKey)),
-		Entry("empty token", ptr.To("url"), ptr.To(""), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPITokenKey)),
-		Entry("valid secret", ptr.To("url"), ptr.To("token"), nil),
+		Entry("missing url", nil, new("token"), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPIURLKey)),
+		Entry("empty url", new(""), new("token"), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPIURLKey)),
+		Entry("missing token", new("url"), nil, fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPITokenKey)),
+		Entry("empty token", new("url"), new(""), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPITokenKey)),
+		Entry("valid secret", new("url"), new("token"), nil),
 	)
 })
 

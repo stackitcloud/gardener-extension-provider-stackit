@@ -7,7 +7,6 @@ package helper_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
@@ -70,7 +69,7 @@ var _ = Describe("Helper", func() {
 			nil, true,
 		),
 		Entry("entry not found (architecture mismatch)",
-			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: ptr.To("amd64")}},
+			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: new("amd64")}},
 			"bar", "1.2.3", "arm64",
 			nil, true,
 		),
@@ -85,22 +84,22 @@ var _ = Describe("Helper", func() {
 			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3"}, false,
 		),
 		Entry("entry exists (architecture amd64)",
-			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: ptr.To("amd64")}},
+			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: new("amd64")}},
 			"bar", "1.2.3", "amd64",
-			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", Architecture: ptr.To("amd64")}, false,
+			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", Architecture: new("amd64")}, false,
 		),
 		Entry("entry exists (architecture arm64)",
-			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: ptr.To("arm64")}},
+			[]stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: new("arm64")}},
 			"bar", "1.2.3", "arm64",
-			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", Architecture: ptr.To("arm64")}, false,
+			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", Architecture: new("arm64")}, false,
 		),
 		Entry("entry exists (multiple architectures)",
 			[]stackitv1alpha1.MachineImage{
-				{Name: "bar", Version: "1.2.3", ID: "amd", Architecture: ptr.To("amd64")},
-				{Name: "bar", Version: "1.2.3", ID: "arm", Architecture: ptr.To("arm64")},
+				{Name: "bar", Version: "1.2.3", ID: "amd", Architecture: new("amd64")},
+				{Name: "bar", Version: "1.2.3", ID: "arm", Architecture: new("arm64")},
 			},
 			"bar", "1.2.3", "amd64",
-			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", ID: "amd", Architecture: ptr.To("amd64")}, false,
+			&stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", ID: "amd", Architecture: new("amd64")}, false,
 		),
 	)
 
@@ -137,12 +136,12 @@ var _ = Describe("Helper", func() {
 									{
 										Name:         "eu01",
 										ID:           "flatcar_eu01_3.0_amd64",
-										Architecture: ptr.To("amd64"),
+										Architecture: new("amd64"),
 									},
 									{
 										Name:         "eu01",
 										ID:           "flatcar_eu01_3.0_arm64",
-										Architecture: ptr.To("arm64"),
+										Architecture: new("arm64"),
 									},
 								},
 							},
@@ -191,7 +190,7 @@ var _ = Describe("Helper", func() {
 					Name:         "flatcar",
 					Version:      "1.0",
 					Image:        "flatcar_1.0",
-					Architecture: ptr.To("amd64"),
+					Architecture: new("amd64"),
 				}))
 			})
 
@@ -210,7 +209,7 @@ var _ = Describe("Helper", func() {
 					Name:         "flatcar",
 					Version:      "2.0",
 					Image:        "flatcar_2.0",
-					Architecture: ptr.To("amd64"),
+					Architecture: new("amd64"),
 				}))
 			})
 
@@ -221,7 +220,7 @@ var _ = Describe("Helper", func() {
 					Name:         "flatcar",
 					Version:      "2.0",
 					ID:           "flatcar_eu01_2.0",
-					Architecture: ptr.To("amd64"),
+					Architecture: new("amd64"),
 				}))
 			})
 
@@ -246,7 +245,7 @@ var _ = Describe("Helper", func() {
 					Name:         "flatcar",
 					Version:      "3.0",
 					ID:           "flatcar_eu01_3.0_arm64",
-					Architecture: ptr.To("arm64"),
+					Architecture: new("arm64"),
 				}))
 			})
 		})
@@ -283,12 +282,12 @@ var _ = Describe("Helper", func() {
 		},
 
 		Entry("no fip as list is empty", []stackitv1alpha1.FloatingPool{}, "fip-1", regionName, nil, nil),
-		Entry("return fip as there only one match in the list", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}}, "fip-1", regionName, nil, ptr.To("fip-*")),
-		Entry("return best matching fip", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}, {Name: "fip-1", Region: &regionName}}, "fip-1", regionName, nil, ptr.To("fip-1")),
-		Entry("no fip as there no entry for the same region", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: ptr.To("somewhere-else")}}, "fip-1", regionName, nil, nil),
-		Entry("no fip as there is no entry with domain", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}}, "fip-1", regionName, ptr.To("net-1"), nil),
-		Entry("return fip even if there is a non-constraing fip with better score", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}, {Name: "fip-1", Region: &regionName, NonConstraining: ptr.To(true)}}, "fip-1", regionName, nil, ptr.To("fip-*")),
-		Entry("return non-constraing fip as there is no other matching fip", []stackitv1alpha1.FloatingPool{{Name: "nofip-1", Region: &regionName}, {Name: "fip-1", Region: &regionName, NonConstraining: ptr.To(true)}}, "fip-1", regionName, nil, ptr.To("fip-1")),
+		Entry("return fip as there only one match in the list", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}}, "fip-1", regionName, nil, new("fip-*")),
+		Entry("return best matching fip", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}, {Name: "fip-1", Region: &regionName}}, "fip-1", regionName, nil, new("fip-1")),
+		Entry("no fip as there no entry for the same region", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: new("somewhere-else")}}, "fip-1", regionName, nil, nil),
+		Entry("no fip as there is no entry with domain", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}}, "fip-1", regionName, new("net-1"), nil),
+		Entry("return fip even if there is a non-constraing fip with better score", []stackitv1alpha1.FloatingPool{{Name: "fip-*", Region: &regionName}, {Name: "fip-1", Region: &regionName, NonConstraining: new(true)}}, "fip-1", regionName, nil, new("fip-*")),
+		Entry("return non-constraing fip as there is no other matching fip", []stackitv1alpha1.FloatingPool{{Name: "nofip-1", Region: &regionName}, {Name: "fip-1", Region: &regionName, NonConstraining: new(true)}}, "fip-1", regionName, nil, new("fip-1")),
 	)
 })
 

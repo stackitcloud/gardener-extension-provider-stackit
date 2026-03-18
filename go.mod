@@ -1,8 +1,6 @@
 module github.com/stackitcloud/gardener-extension-provider-stackit/v2
 
-go 1.25.6
-
-toolchain go1.26.1
+go 1.26.1
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
