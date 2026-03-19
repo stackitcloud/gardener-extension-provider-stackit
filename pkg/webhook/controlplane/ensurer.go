@@ -380,5 +380,6 @@ func getResolveConfOptions(cloudProfileConfig *stackitv1alpha1.CloudProfileConfi
 	if cloudProfileConfig == nil {
 		return nil
 	}
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	return cloudProfileConfig.ResolvConfOptions
 }

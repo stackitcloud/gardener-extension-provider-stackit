@@ -188,6 +188,7 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 	status.Networks.Router.ExternalFixedIPs = fctx.state.GetObject(IdentifierEgressCIDRs).([]string)
 	// backwards compatibility change for the deprecated field
 	if len(status.Networks.Router.ExternalFixedIPs) > 0 {
+		//nolint:staticcheck // SA1019: needed for migration purposes
 		status.Networks.Router.IP = status.Networks.Router.ExternalFixedIPs[0]
 	}
 

@@ -62,14 +62,17 @@ func (e *ensurer) EnsureCloudProviderSecret(
 
 	// If no KeyStone configuration is present at all, skip KeyStone-related fields.
 	// This is valid for STACKIT-only shoots that don't require OpenStack credentials.
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	if len(config.KeyStoneURLs) == 0 && len(config.KeyStoneURL) == 0 {
 		return nil
 	}
 
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	keyStoneURL, err := helper.FindKeyStoneURL(config.KeyStoneURLs, config.KeyStoneURL, cluster.Shoot.Spec.Region)
 	if err != nil {
 		return fmt.Errorf("could not find KeyStoneUrl: %v", err)
 	}
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	keyStoneCABundle := helper.FindKeyStoneCACert(config.KeyStoneURLs, config.KeyStoneCACert, cluster.Shoot.Spec.Region)
 
 	if new.Data == nil {
@@ -82,6 +85,7 @@ func (e *ensurer) EnsureCloudProviderSecret(
 
 	// remove key from user
 	delete(new.Data, types.Insecure)
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	if config.KeyStoneForceInsecure {
 		new.Data[types.Insecure] = []byte("true")
 	}
