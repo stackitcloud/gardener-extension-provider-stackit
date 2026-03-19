@@ -38,9 +38,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -127,12 +125,6 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 		gutil.NewShootAccessSecret(openstack.CSIResizerName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSISnapshotControllerName, namespace),
 	}
-}
-
-func makeUnstructured(gvk schema.GroupVersionKind) *unstructured.Unstructured {
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(gvk)
-	return obj
 }
 
 var (
