@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "stackit-pod-identity-webhook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "stackit-pod-identity-webhook.labels" . | nindent 4 }}
 spec:
