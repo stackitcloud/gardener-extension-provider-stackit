@@ -60,7 +60,7 @@ import (
 const (
 	caNameControlPlane               = "ca-" + openstack.Name + "-controlplane"
 	cloudControllerManagerServerName = openstack.CloudControllerManagerName + "-server"
-	stackitPodIdentityWebhookServerName = openstack.STACKITPodIdentityWebhookName + "-server"
+	stackitPodIdentityWebhookServerName = stackit.STACKITPodIdentityWebhookName + "-server"
 
 	CSIStackitPrefix = "stackit-blockstorage"
 
@@ -106,8 +106,8 @@ func secretConfigsFunc(namespace string) []extensionssecretmanager.SecretConfigW
 		{
 			Config: &secretutils.CertificateSecretConfig{
 				Name:                        stackitPodIdentityWebhookServerName,
-				CommonName:                  openstack.STACKITPodIdentityWebhookName,
-				DNSNames:                    kutil.DNSNamesForService(openstack.STACKITPodIdentityWebhookName, namespace),
+				CommonName:                  stackit.STACKITPodIdentityWebhookName,
+				DNSNames:                    kutil.DNSNamesForService(stackit.STACKITPodIdentityWebhookName, namespace),
 				CertType:                    secretutils.ServerCert,
 				SkipPublishingCACertificate: true,
 			},
@@ -212,11 +212,11 @@ var (
 				},
 			},
 			{
-				Name:   openstack.STACKITPodIdentityWebhookName,
+				Name:   stackit.STACKITPodIdentityWebhookName,
 				Images: []string{imagevector.ImageNameStackitPodIdentityWebhook},
 				Objects: []*chart.Object{
-					{Type: &appsv1.Deployment{}, Name: openstack.STACKITPodIdentityWebhookName},
-					{Type: &corev1.Service{}, Name: openstack.STACKITPodIdentityWebhookName},
+					{Type: &appsv1.Deployment{}, Name: stackit.STACKITPodIdentityWebhookName},
+					{Type: &corev1.Service{}, Name: stackit.STACKITPodIdentityWebhookName},
 				},
 			},
 		},
@@ -319,9 +319,9 @@ var (
 				},
 			},
 			{
-				Name: openstack.STACKITPodIdentityWebhookName,
+				Name: stackit.STACKITPodIdentityWebhookName,
 				Objects: []*chart.Object{
-					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: openstack.STACKITPodIdentityWebhookName},
+					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: stackit.STACKITPodIdentityWebhookName},
 				},
 			},
 		},
@@ -753,7 +753,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		},
 		openstack.CloudControllerManagerName:        ccm,
 		openstack.STACKITCloudControllerManagerName: stackitccm,
-		openstack.STACKITPodIdentityWebhookName:     podIdentityWebhook,
+		stackit.STACKITPodIdentityWebhookName:     podIdentityWebhook,
 	})
 
 	if vp.deployALBIngressController {
@@ -1085,7 +1085,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 
 	maps.Copy(values, map[string]any{
 		openstack.CloudControllerManagerName:    map[string]any{"enabled": true},
-		openstack.STACKITPodIdentityWebhookName: podIdentityWebhook,
+		stackit.STACKITPodIdentityWebhookName: podIdentityWebhook,
 	})
 
 	return values, nil
