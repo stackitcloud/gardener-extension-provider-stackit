@@ -3,8 +3,7 @@ webhook:
   # failurePolicy for the webhook (Ignore or Fail).
   # Defaults to Fail to guarantee that pods are not started without the required workload identity configuration.
   # Note: If the webhook is down, pod creation in monitored namespaces will be blocked.
-  # Specific pods or namespaces can be excluded using the skip label (see README.md).
+  # Specific pods or namespaces can be excluded using the skip label.
   failurePolicy: Fail
-  # Whether to exclude the kube-system namespace from the webhook.
-  # Defaults to true to avoid breaking critical system pods.
-  excludeKubeSystem: true
+  # Namespaces where to inject workload identity.
+  namespaces: []
