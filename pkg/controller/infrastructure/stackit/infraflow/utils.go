@@ -3,6 +3,8 @@ package infraflow
 import (
 	"context"
 	"fmt"
+
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 // ErrorMultipleMatches is returned when the findExisting finds multiple resources matching a name.
@@ -34,7 +36,7 @@ func findExisting[T any](ctx context.Context, id *string, name string,
 	if id != nil {
 		found, err := getter(ctx, *id)
 		if err != nil {
-			return nil, err
+			return nil, client.IgnoreNotFoundError(err)
 		}
 		if found != nil {
 			return found, nil
@@ -42,14 +44,14 @@ func findExisting[T any](ctx context.Context, id *string, name string,
 	}
 
 	found, err := finder(ctx, name)
+	if err != nil {
+		return nil, err
+	}
 	if len(found) == 0 {
 		return nil, nil
 	}
 	if len(found) > 1 {
 		return nil, fmt.Errorf("%w: found %d matches for name %q", ErrorMultipleMatches, len(found), name)
-	}
-	if err != nil {
-		return nil, err
 	}
 	return &found[0], nil
 }
