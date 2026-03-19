@@ -44,14 +44,14 @@ func findExisting[T any](ctx context.Context, id *string, name string,
 	}
 
 	found, err := finder(ctx, name)
+	if err != nil {
+		return nil, err
+	}
 	if len(found) == 0 {
 		return nil, nil
 	}
 	if len(found) > 1 {
 		return nil, fmt.Errorf("%w: found %d matches for name %q", ErrorMultipleMatches, len(found), name)
-	}
-	if err != nil {
-		return nil, err
 	}
 	return &found[0], nil
 }
