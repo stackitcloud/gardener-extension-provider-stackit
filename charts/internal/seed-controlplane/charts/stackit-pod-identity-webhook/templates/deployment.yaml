@@ -33,7 +33,6 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           image: {{ index .Values.images "stackit-pod-identity-webhook" }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - --cert-dir=/etc/webhook/certs
             - --port={{ .Values.webhook.port }}
