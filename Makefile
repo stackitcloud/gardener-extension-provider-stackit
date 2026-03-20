@@ -5,7 +5,8 @@ GARDENER_HACK_DIR           := $(GARDENER_DIR)/hack
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := provider-stackit
 ADMISSION                   := admission-stackit
-REPO                        := ghcr.io/stackitcloud
+REGISTRY                    ?= ghcr.io
+REPOSITORY                  := $(REGISTRY)/stackitcloud/gardener-extension-provider-stackit
 IS_DEV                      ?= true
 ifeq ($(IS_DEV),true)
 REPO_POSTFIX                := -dev
@@ -52,11 +53,11 @@ debug: ## Starts the application locally with a delve as a debugger
 PUSH ?= false
 OUTPUT_IMAGES_PATH = "images.txt"
 
-images: export KO_DOCKER_REPO = $(REPO)
+images: export KO_DOCKER_REPO = $(REPOSITORY)
 
 .PHONY: images
 images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True to also push the image to a registry
-	KO_DOCKER_REPO=$(REPO)/$(EXTENSION_PREFIX)-$(NAME)$(REPO_POSTFIX) \
+	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(NAME)$(REPO_POSTFIX) \
 	$(KO) build --image-label org.opencontainers.image.source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
 	--sbom none -t $(TAG) --bare \
 	--platform linux/amd64,linux/arm64 --push=$(PUSH) \
@@ -66,7 +67,7 @@ images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True t
 
 .PHONY: admission-images
 admission-images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True to also push the image to a registry
-	KO_DOCKER_REPO=$(REPO)/$(EXTENSION_PREFIX)-$(ADMISSION)$(REPO_POSTFIX) \
+	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(ADMISSION)$(REPO_POSTFIX) \
 	$(KO) build --image-label org.opencontainers.image.source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
 	--sbom none -t $(TAG) --bare \
 	--platform linux/amd64,linux/arm64 --push=$(PUSH) \
