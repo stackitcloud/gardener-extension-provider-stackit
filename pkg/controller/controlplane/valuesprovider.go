@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -42,7 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -1250,16 +1248,6 @@ func (vp *valuesProvider) getControlPlaneShootChartCSISTACKITValues(ctx context.
 	}
 
 	return values
-}
-
-func (vp *valuesProvider) getAllWorkerPoolsZones(cluster *extensionscontroller.Cluster) []string {
-	zones := sets.NewString()
-	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		zones.Insert(worker.Zones...)
-	}
-	list := zones.UnsortedList()
-	sort.Strings(list)
-	return list
 }
 
 func cleanupSeedLegacyCSISnapshotValidation(ctx context.Context, client k8sclient.Client, namespace string) error {

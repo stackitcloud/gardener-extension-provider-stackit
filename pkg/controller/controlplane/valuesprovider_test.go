@@ -496,12 +496,13 @@ var _ = Describe("ValuesProvider", func() {
 			},
 		})
 
-		stackitPodIdentityWebhookChartValues := map[string]any{
+		stackitPodIdentityWebhookChartSeedValues := map[string]any{
 			"replicaCount": 2,
 			"webhook": map[string]any{
 				"tlsSecretName": "stackit-pod-identity-webhook-server",
 			},
 		}
+
 
 		BeforeEach(func() {
 			c.EXPECT().Get(ctx, cpConfigKey, &corev1.Secret{}).DoAndReturn(clientGet(cpConfig))
@@ -566,7 +567,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
-				stackit.STACKITPodIdentityWebhookName:    stackitPodIdentityWebhookChartValues,
+				stackit.STACKITPodIdentityWebhookName:    stackitPodIdentityWebhookChartSeedValues,
 				openstack.STACKITALBControllerManagerName: empty(),
 			}))
 		})
@@ -610,7 +611,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
-				stackit.STACKITPodIdentityWebhookName:    stackitPodIdentityWebhookChartValues,
+				stackit.STACKITPodIdentityWebhookName:    stackitPodIdentityWebhookChartSeedValues,
 				openstack.STACKITALBControllerManagerName: empty(),
 			}))
 		})
@@ -892,6 +893,13 @@ var _ = Describe("ValuesProvider", func() {
 	})
 
 	Describe("#GetControlPlaneShootChartValues", func() {
+		stackitPodIdentityWebhookChartShootValues := map[string]any{
+			"webhook": map[string]any{
+				"caBundle":   "",
+				"namespaces": []string{namespace},
+			},
+		}
+
 		BeforeEach(func() {
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
@@ -915,12 +923,7 @@ var _ = Describe("ValuesProvider", func() {
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
 					openstack.CSINodeName: enabledFalse,
-					stackit.STACKITPodIdentityWebhookName: map[string]any{
-						"webhook": map[string]any{
-							"caBundle":   "",
-							"namespaces": []string{namespace},
-						},
-					},
+					stackit.STACKITPodIdentityWebhookName: stackitPodIdentityWebhookChartShootValues,
 				}))
 			})
 
@@ -939,12 +942,7 @@ var _ = Describe("ValuesProvider", func() {
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
 					openstack.CSINodeName: enabledFalse,
-					stackit.STACKITPodIdentityWebhookName: map[string]any{
-						"webhook": map[string]any{
-							"caBundle":   "",
-							"namespaces": []string{namespace},
-						},
-					},
+					stackit.STACKITPodIdentityWebhookName: stackitPodIdentityWebhookChartShootValues,
 				}))
 			})
 		})
