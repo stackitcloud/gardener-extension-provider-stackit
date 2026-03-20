@@ -5,5 +5,3 @@ webhook:
   # Note: If the webhook is down, pod creation in monitored namespaces will be blocked.
   # Specific pods or namespaces can be excluded using the skip label.
   failurePolicy: Fail
-  # Namespaces where to inject workload identity.
-  namespaces: []

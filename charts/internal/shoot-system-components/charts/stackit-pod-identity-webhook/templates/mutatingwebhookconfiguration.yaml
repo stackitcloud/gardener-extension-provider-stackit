@@ -23,12 +23,11 @@ webhooks:
     failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" }}
     namespaceSelector:
       matchExpressions:
-      {{- if .Values.webhook.namespaces }}
         - key: kubernetes.io/metadata.name
-          operator: In
-          values:
-            {{ toYaml .Values.webhook.namespaces | nindent 12 }}
-      {{- end }}
+          operator: NotIn
+          values: ["kube-system", "garden"]
+        - key: gardener.cloud/role
+          operator: Exists
         - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
           operator: DoesNotExist
     objectSelector:

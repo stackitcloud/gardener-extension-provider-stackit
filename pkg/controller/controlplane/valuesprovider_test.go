@@ -896,7 +896,6 @@ var _ = Describe("ValuesProvider", func() {
 		stackitPodIdentityWebhookChartShootValues := map[string]any{
 			"webhook": map[string]any{
 				"caBundle":   "",
-				"namespaces": []string{namespace},
 			},
 		}
 
