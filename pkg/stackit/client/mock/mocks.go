@@ -16,7 +16,7 @@ import (
 	logr "github.com/go-logr/logr"
 	stackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	client "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
-	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"

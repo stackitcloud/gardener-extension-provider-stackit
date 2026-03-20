@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	gomock "go.uber.org/mock/gomock"
 )
 

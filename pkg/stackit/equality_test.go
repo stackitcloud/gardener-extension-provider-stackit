@@ -3,7 +3,7 @@ package stackit_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"k8s.io/utils/ptr"
 
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -62,11 +62,11 @@ var _ = Describe("Equality", func() {
 
 		It("should work in SecurityGroupRule", func() {
 			a := iaas.SecurityGroupRule{
-				Direction: ptr.To(DirectionEgress),
+				Direction: DirectionEgress,
 				Protocol:  &iaas.Protocol{Name: ptr.To("tcp")},
 			}
 			b := iaas.SecurityGroupRule{
-				Direction: ptr.To(DirectionEgress),
+				Direction: DirectionEgress,
 				Protocol:  &iaas.Protocol{Name: ptr.To("tcp")},
 			}
 			Expect(Equality.DeepEqual(a, b)).To(BeTrue())

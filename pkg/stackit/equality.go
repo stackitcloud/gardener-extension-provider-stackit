@@ -2,7 +2,7 @@ package stackit
 
 import (
 	"github.com/google/go-cmp/cmp"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"k8s.io/apimachinery/pkg/conversion"
 )
 

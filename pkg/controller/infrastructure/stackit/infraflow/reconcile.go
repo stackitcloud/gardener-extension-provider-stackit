@@ -9,7 +9,7 @@ import (
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/utils/flow"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack/infraflow/shared"
@@ -215,7 +215,7 @@ func (fctx *FlowContext) ensureStackitSSHKeyPair(ctx context.Context) error {
 		return err
 	}
 	if keyPair != nil {
-		publicKey := ptr.Deref(keyPair.PublicKey, "")
+		publicKey := keyPair.PublicKey
 		// if the public keys are matching then return early. In all other cases we should be creating (or replacing) the keypair with a new one.
 		if publicKey != "" && publicKey == string(fctx.infra.Spec.SSHPublicKey) {
 			fctx.state.Set(NameKeyPair, *keyPair.Name)
@@ -245,7 +245,7 @@ func (fctx *FlowContext) ensureSecGroup(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
 
 	payload := iaas.CreateSecurityGroupPayload{
-		Name:        ptr.To(fctx.defaultSecurityGroupName()),
+		Name:        fctx.defaultSecurityGroupName(),
 		Description: ptr.To("Cluster Nodes"),
 	}
 
@@ -299,34 +299,34 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 
 	desiredRules := []iaas.SecurityGroupRule{
 		{
-			Direction:             ptr.To(stackit.DirectionIngress),
+			Direction:             stackit.DirectionIngress,
 			Ethertype:             ptr.To(stackit.EtherTypeIPv4),
 			RemoteSecurityGroupId: ptr.To(group.GetId()),
 			Description:           ptr.To("IPv4: allow all incoming traffic within the same security group"),
 		},
 		{
-			Direction:   ptr.To(stackit.DirectionEgress),
+			Direction:   stackit.DirectionEgress,
 			Ethertype:   ptr.To(stackit.EtherTypeIPv4),
 			Description: ptr.To("IPv4: allow all outgoing traffic"),
 		},
 		{
-			Direction: ptr.To(stackit.DirectionIngress),
+			Direction: stackit.DirectionIngress,
 			Ethertype: ptr.To(stackit.EtherTypeIPv4),
 			Protocol:  ptr.To(stackit.ProtocolTCP),
 			PortRange: &iaas.PortRange{
-				Max: ptr.To[int64](32767),
-				Min: ptr.To[int64](30000),
+				Max: 32767,
+				Min: 30000,
 			},
 			IpRange:     ptr.To(nodesCIDR),
 			Description: ptr.To("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
 		},
 		{
-			Direction: ptr.To(stackit.DirectionIngress),
+			Direction: stackit.DirectionIngress,
 			Ethertype: ptr.To(stackit.EtherTypeIPv4),
 			Protocol:  ptr.To(stackit.ProtocolUDP),
 			PortRange: &iaas.PortRange{
-				Max: ptr.To[int64](32767),
-				Min: ptr.To[int64](30000),
+				Max: 32767,
+				Min: 30000,
 			},
 			IpRange:     ptr.To(nodesCIDR),
 			Description: ptr.To("IPv4: allow all incoming udp traffic with port range 30000-32767"),
@@ -335,7 +335,7 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 
 	if fctx.cluster.Shoot.Spec.Networking != nil && fctx.cluster.Shoot.Spec.Networking.Pods != nil {
 		podCIDRRule := iaas.SecurityGroupRule{
-			Direction:   ptr.To(stackit.DirectionIngress),
+			Direction:   stackit.DirectionIngress,
 			Ethertype:   ptr.To(stackit.EtherTypeIPv4),
 			IpRange:     ptr.To(*fctx.cluster.Shoot.Spec.Networking.Pods),
 			Description: ptr.To("IPv4: allow all incoming traffic from cluster pod CIDR"),
@@ -377,15 +377,15 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 
 	network := iaas.CreateNetworkIPv4{
 		CreateNetworkIPv4WithPrefix: &iaas.CreateNetworkIPv4WithPrefix{
-			Nameservers: ptr.To(dnsServers),
-			Prefix:      ptr.To(fctx.workerCIDR()),
+			Nameservers: dnsServers,
+			Prefix:      fctx.workerCIDR(),
 		},
 	}
 
 	desired := iaas.CreateIsolatedNetworkPayload{
 		Dhcp: ptr.To(true),
 		Ipv4: ptr.To(network),
-		Name: ptr.To(fctx.technicalID),
+		Name: fctx.technicalID,
 	}
 	current, err := findExisting(ctx, fctx.state.Get(IdentifierNetwork), fctx.defaultNetworkName(), fctx.iaasClient.GetNetworkById, fctx.iaasClient.GetNetworkByName)
 	if err != nil {
@@ -424,8 +424,8 @@ func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 		return fmt.Errorf("could not find IPv4 config in network: %s", network.GetId())
 	}
 	routerIP, ok := network.Ipv4.GetPublicIpOk()
-	if ok {
-		result = append(result, routerIP)
+	if ok && routerIP != nil {
+		result = append(result, *routerIP)
 		fctx.state.SetObject(IdentifierEgressCIDRs, result)
 		return nil
 	}

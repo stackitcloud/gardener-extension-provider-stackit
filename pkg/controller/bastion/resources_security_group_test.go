@@ -6,7 +6,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -48,7 +48,7 @@ var _ = Describe("Security Group", func() {
 				iaas.SecurityGroupRule{
 					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "1.2.3.4/32")),
 
-					Direction: ptr.To(stackit.DirectionIngress),
+					Direction: stackit.DirectionIngress,
 					Ethertype: ptr.To(stackit.EtherTypeIPv4),
 					Protocol:  ptr.To(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
@@ -58,7 +58,7 @@ var _ = Describe("Security Group", func() {
 				iaas.SecurityGroupRule{
 					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, "2001:db8:1::/48")),
 
-					Direction: ptr.To(stackit.DirectionIngress),
+					Direction: stackit.DirectionIngress,
 					Ethertype: ptr.To(stackit.EtherTypeIPv6),
 					Protocol:  ptr.To(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
@@ -75,7 +75,7 @@ var _ = Describe("Security Group", func() {
 				iaas.SecurityGroupRule{
 					Description: ptr.To(fmt.Sprintf("Allow ingress to Bastion %s from world", o.Bastion.Name)),
 
-					Direction: ptr.To(stackit.DirectionIngress),
+					Direction: stackit.DirectionIngress,
 					Ethertype: ptr.To(stackit.EtherTypeIPv4),
 					Protocol:  ptr.To(stackit.ProtocolTCP),
 					PortRange: iaas.NewPortRange(22, 22),
