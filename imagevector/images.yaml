@@ -137,4 +137,4 @@ images:
   tag: "1245"
 - name: stackit-pod-identity-webhook
   repository: reg3.infra.ske.eu01.stackit.cloud/stackitcloud/stackit-pod-identity-webhook
-  tag: "latest"
+  tag: "726f2f0@sha256:fca1f67cd7e6a515e795a34ae45d0c239379d051e494dc202033f6987b41b154"
