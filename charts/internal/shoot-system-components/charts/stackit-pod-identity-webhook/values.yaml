@@ -1,3 +1,4 @@
+enabled: true
 webhook:
   caBundle: "" # will be set by valuesprovider
   # failurePolicy for the webhook (Ignore or Fail).

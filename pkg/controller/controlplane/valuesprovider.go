@@ -29,6 +29,7 @@ import (
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -56,8 +57,8 @@ import (
 )
 
 const (
-	caNameControlPlane               = "ca-" + openstack.Name + "-controlplane"
-	cloudControllerManagerServerName = openstack.CloudControllerManagerName + "-server"
+	caNameControlPlane                  = "ca-" + openstack.Name + "-controlplane"
+	cloudControllerManagerServerName    = openstack.CloudControllerManagerName + "-server"
 	stackitPodIdentityWebhookServerName = stackit.STACKITPodIdentityWebhookName + "-server"
 
 	CSIStackitPrefix = "stackit-blockstorage"
@@ -365,6 +366,12 @@ type valuesProvider struct {
 	decoder                    runtime.Decoder
 	deployALBIngressController bool
 	customLabelDomain          string
+}
+
+// isShoot returns if the cluster is a shoot or a seed by checking if the gardenlet is present in cluster
+func (vp *valuesProvider) isShoot(ctx context.Context, cluster *extensionscontroller.Cluster) bool {
+	err := vp.client.Get(ctx, k8sclient.ObjectKey{Name: "gardenlet", Namespace: "garden"}, &v1.Deployment{})
+	return errors.IsNotFound(err)
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -751,7 +758,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		},
 		openstack.CloudControllerManagerName:        ccm,
 		openstack.STACKITCloudControllerManagerName: stackitccm,
-		stackit.STACKITPodIdentityWebhookName:     podIdentityWebhook,
+		stackit.STACKITPodIdentityWebhookName:       podIdentityWebhook,
 	})
 
 	if vp.deployALBIngressController {
@@ -1076,13 +1083,14 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
-	podIdentityWebhook, err := getSTACKITPodIdentityWebhookShootChartValues(cp.Namespace, secretsReader)
+	isShoot := vp.isShoot(ctx, cluster)
+	podIdentityWebhook, err := vp.getSTACKITPodIdentityWebhookShootChartValues(isShoot, secretsReader)
 	if err != nil {
 		return nil, err
 	}
 
 	maps.Copy(values, map[string]any{
-		openstack.CloudControllerManagerName:    map[string]any{"enabled": true},
+		openstack.CloudControllerManagerName:  map[string]any{"enabled": true},
 		stackit.STACKITPodIdentityWebhookName: podIdentityWebhook,
 	})
 
@@ -1310,8 +1318,8 @@ func getSTACKITPodIdentityWebhookChartValues(
 	}, nil
 }
 
-func getSTACKITPodIdentityWebhookShootChartValues(
-	namespace string,
+func (vp *valuesProvider) getSTACKITPodIdentityWebhookShootChartValues(
+	isShoot bool,
 	secretsReader secretsmanager.Reader,
 ) (map[string]any, error) {
 	caSecret, found := secretsReader.Get(caNameControlPlane)
@@ -1320,8 +1328,9 @@ func getSTACKITPodIdentityWebhookShootChartValues(
 	}
 
 	return map[string]any{
+		"enabled": isShoot,
 		"webhook": map[string]any{
-			"caBundle":  gardenerutils.EncodeBase64(caSecret.Data[secretutils.DataKeyCertificateBundle]),
+			"caBundle": gardenerutils.EncodeBase64(caSecret.Data[secretutils.DataKeyCertificateBundle]),
 		},
 	}, nil
 }

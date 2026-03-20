@@ -27,7 +27,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system", "garden"]
         - key: gardener.cloud/role
-          operator: Exists
+          operator: DoesNotExist
         - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
           operator: DoesNotExist
     objectSelector:
