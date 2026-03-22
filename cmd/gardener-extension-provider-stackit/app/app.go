@@ -184,11 +184,9 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			configFileOpts.Completed().ApplyETCDStorage(&stackitseedprovider.DefaultAddOptions.ETCDStorage)
 			configFileOpts.Completed().ApplyHealthCheckConfig(&healthcheck.DefaultAddOptions.HealthCheckConfig)
 			configFileOpts.Completed().ApplyRegistryCaches(&stackitwebhookcontrolplane.DefaultAddOptions.RegistryCaches)
-			configFileOpts.Completed().ApplyDeployALBIngressController(&stackitcontrolplane.DeployALBIngressController)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitworker.DefaultAddOptions.CustomLabelDomain)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitcontrolplane.DefaultAddOptions.CustomLabelDomain)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitinfrastructure.DefaultAddOptions.CustomLabelDomain)
-			log.Info("DeployALBIngressController?", "deploy", configFileOpts.Completed().Config.DeployALBIngressController)
 
 			bastionCtrlOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.Controller)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitbastion.DefaultAddOptions.CustomLabelDomain)

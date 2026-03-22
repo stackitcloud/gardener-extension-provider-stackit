@@ -199,12 +199,12 @@ var (
 				},
 			},
 			{
-				Name:   openstack.STACKITALBControllerManagerName,
-				Images: []string{imagevector.ImageNameStackitAlbControllerManager},
+				Name:   openstack.STACKITApplicationLoadBalancerControllerManagerName,
+				Images: []string{imagevector.ImageNameStackitApplicationLoadBalancerControllerManager},
 				Objects: []*chart.Object{
-					// stackit-alb-controller-manager
-					{Type: &appsv1.Deployment{}, Name: openstack.STACKITALBControllerManagerName},
-					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITALBControllerManagerName},
+					// stackit-application-load-balancer-controller-manager
+					{Type: &appsv1.Deployment{}, Name: openstack.STACKITApplicationLoadBalancerControllerManagerName},
+					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITApplicationLoadBalancerControllerManagerName},
 				},
 			},
 		},
@@ -333,22 +333,20 @@ var (
 )
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string) genericactuator.ValuesProvider {
+func NewValuesProvider(mgr manager.Manager, customLabelDomain string) genericactuator.ValuesProvider {
 	return &valuesProvider{
-		client:                     mgr.GetClient(),
-		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		deployALBIngressController: deployALBIngressController,
-		customLabelDomain:          customLabelDomain,
+		client:            mgr.GetClient(),
+		decoder:           serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		customLabelDomain: customLabelDomain,
 	}
 }
 
 // valuesProvider is a ValuesProvider that provides OpenStack-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
-	client                     k8sclient.Client
-	decoder                    runtime.Decoder
-	deployALBIngressController bool
-	customLabelDomain          string
+	client            k8sclient.Client
+	decoder           runtime.Decoder
+	customLabelDomain string
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -732,17 +730,16 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		openstack.STACKITCloudControllerManagerName: stackitccm,
 	})
 
-	if vp.deployALBIngressController {
-		fmt.Println("deploying ALB Ingress Controller")
-		albcm, err := getSTACKITALBCMChartValues(cpConfig, cluster, infra, stackitCredentialsConfig, apiEndpoints, scaledDown, stackitRegion)
+	if feature.StackitApplicationLoadBalancerControllerManager(cluster) && DeploySTACKITApplicationLoadBalancer(cpConfig) {
+		albcm, err := getSTACKITApplicationLoadBalancerCMChartValues(cpConfig, cluster, infra, stackitCredentialsConfig, apiEndpoints, scaledDown, stackitRegion)
 		if err != nil {
 			return nil, err
 		}
 
-		controlPlaneValues[openstack.STACKITALBControllerManagerName] = albcm
+		controlPlaneValues[openstack.STACKITApplicationLoadBalancerControllerManagerName] = albcm
 	} else {
 		// NOTE: ensure deletion of ALB deployment, if disabled
-		if err := vp.deleteControlPlaneComponentsForGivenChart(ctx, cp.Namespace, openstack.STACKITALBControllerManagerName); err != nil {
+		if err := vp.deleteControlPlaneComponentsForGivenChart(ctx, cp.Namespace, openstack.STACKITApplicationLoadBalancerControllerManagerName); err != nil {
 			return nil, err
 		}
 	}
@@ -972,7 +969,7 @@ func getCSIControllerChartValues(cluster *extensionscontroller.Cluster, userAgen
 	return values
 }
 
-func getSTACKITALBCMChartValues(
+func getSTACKITApplicationLoadBalancerCMChartValues(
 	cpConfig *stackitv1alpha1.ControlPlaneConfig,
 	cluster *extensionscontroller.Cluster,
 	infra *stackitv1alpha1.InfrastructureStatus,
@@ -981,10 +978,6 @@ func getSTACKITALBCMChartValues(
 	scaledDown bool,
 	stackitRegion string,
 ) (map[string]any, error) {
-	if !DeploySTACKITALB(cpConfig) {
-		return nil, nil
-	}
-
 	if credentials == nil {
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
@@ -1003,8 +996,8 @@ func getSTACKITALBCMChartValues(
 			config["applicationLBApiUrl"] = apiEndpoints.ApplicationLoadBalancer
 		}
 
-		if apiEndpoints.LoadBalancerCertificate != nil {
-			config["certificateApiUrl"] = *apiEndpoints.LoadBalancerCertificate
+		if apiEndpoints.ApplicationLoadBalancerCertificate != nil {
+			config["certificateApiUrl"] = *apiEndpoints.ApplicationLoadBalancerCertificate
 		}
 
 		if apiEndpoints.TokenEndpoint != nil {
@@ -1021,7 +1014,7 @@ func getSTACKITALBCMChartValues(
 	return values, nil
 }
 
-func DeploySTACKITALB(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
+func DeploySTACKITApplicationLoadBalancer(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
 	return ptr.Deref(cpConfig.ApplicationLoadBalancer, stackitv1alpha1.ApplicationLoadBalancerConfig{}).Enabled
 }
 
