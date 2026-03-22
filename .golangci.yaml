@@ -81,9 +81,6 @@ linters:
       - std-error-handling
     rules:
       - linters:
-        - staticcheck
-        text: 'SA1019:' # Excludes messages where deprecated variables are used
-      - linters:
           - gosec
         path: _test\.go
       - linters:
