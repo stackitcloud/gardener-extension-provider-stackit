@@ -12,7 +12,6 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/go-logr/logr"
-	"k8s.io/utils/ptr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -55,7 +54,7 @@ func Timeout(timeout time.Duration) TaskOption {
 
 // DoIf creates a TaskOption for DoIf
 func DoIf(condition bool) TaskOption {
-	return TaskOption{DoIf: ptr.To(condition)}
+	return TaskOption{DoIf: new(condition)}
 }
 
 // BasicFlowContext provides logic for persisting the state and add tasks to the flow graph.
@@ -123,7 +122,7 @@ func (c *BasicFlowContext) AddTask(g *flow.Graph, name string, fn flow.TaskFn, o
 				condition = *allOptions.DoIf
 			}
 			condition = condition && *opt.DoIf
-			allOptions.DoIf = ptr.To(condition)
+			allOptions.DoIf = new(condition)
 		}
 	}
 

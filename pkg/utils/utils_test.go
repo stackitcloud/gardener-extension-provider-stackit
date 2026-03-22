@@ -7,7 +7,6 @@ package utils_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
@@ -41,7 +40,7 @@ var _ = Describe("Utils", func() {
 		Expect(utils.IsStringPtrValueEqual(a, b)).To(Equal(expected))
 	},
 		Entry("should be false as pointer points to nil", nil, "test", false),
-		Entry("should be false as pointer value is different", ptr.To("different"), "test", false),
-		Entry("should be true as pointer value is equal", ptr.To("test"), "test", true),
+		Entry("should be false as pointer value is different", new("different"), "test", false),
+		Entry("should be true as pointer value is equal", new("test"), "test", true),
 	)
 })

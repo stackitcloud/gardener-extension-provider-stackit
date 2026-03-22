@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
@@ -194,7 +194,7 @@ var _ = Describe("Machines", func() {
 				namePool2 = "pool-2"
 				minPool2 = 30
 				maxPool2 = 45
-				priorityPool2 = ptr.To[int32](100)
+				priorityPool2 = new(int32(100))
 				maxSurgePool2 = intstr.FromInt32(10)
 				maxUnavailablePool2 = intstr.FromInt32(15)
 
@@ -376,8 +376,8 @@ var _ = Describe("Machines", func() {
 									zone1,
 									zone2,
 								},
-								UpdateStrategy:    ptr.To(gardencorev1beta1.AutoInPlaceUpdate),
-								KubernetesVersion: ptr.To(shootVersion),
+								UpdateStrategy:    new(gardencorev1beta1.AutoInPlaceUpdate),
+								KubernetesVersion: new(shootVersion),
 							},
 							{
 								Name:           namePool3,
@@ -403,8 +403,8 @@ var _ = Describe("Machines", func() {
 									zone1,
 									zone2,
 								},
-								UpdateStrategy:    ptr.To(gardencorev1beta1.ManualInPlaceUpdate),
-								KubernetesVersion: ptr.To(shootVersion),
+								UpdateStrategy:    new(gardencorev1beta1.ManualInPlaceUpdate),
+								KubernetesVersion: new(shootVersion),
 							},
 						},
 					},
@@ -593,8 +593,8 @@ var _ = Describe("Machines", func() {
 							Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
 							RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool1, 2, minPool1)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(0, maxSurgePool1, 2, maxPool1)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool1, 2, minPool1)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool1, 2, maxPool1)),
 								},
 							},
 						},
@@ -613,8 +613,8 @@ var _ = Describe("Machines", func() {
 							Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
 							RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool1, 2, minPool1)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(1, maxSurgePool1, 2, maxPool1)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool1, 2, minPool1)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool1, 2, maxPool1)),
 								},
 							},
 						},
@@ -635,8 +635,8 @@ var _ = Describe("Machines", func() {
 							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
 								OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
 								},
 							},
 						},
@@ -657,8 +657,8 @@ var _ = Describe("Machines", func() {
 							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
 								OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
 								},
 							},
 						},
@@ -679,8 +679,8 @@ var _ = Describe("Machines", func() {
 							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
 								OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
 								},
 							},
 						},
@@ -701,8 +701,8 @@ var _ = Describe("Machines", func() {
 							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
 								OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
 								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: ptr.To(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       ptr.To(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
+									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
+									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
 								},
 							},
 						},
@@ -765,7 +765,7 @@ var _ = Describe("Machines", func() {
 								Name:         machineImageName,
 								Version:      machineImageVersion,
 								Image:        machineImage,
-								Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+								Architecture: new(v1beta1constants.ArchitectureAMD64),
 							},
 						},
 					}
@@ -791,7 +791,7 @@ var _ = Describe("Machines", func() {
 				It("should return the expected machine deployments for profile image types with id", func() {
 					setup(regionWithImages, "", machineImageID, archARM)
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "")
-					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
 					expectedUserDataSecretRefRead()
@@ -822,7 +822,7 @@ var _ = Describe("Machines", func() {
 								Name:         machineImageName,
 								Version:      machineImageVersion,
 								ID:           machineImageID,
-								Architecture: ptr.To(v1beta1constants.ArchitectureARM64),
+								Architecture: new(v1beta1constants.ArchitectureARM64),
 							},
 						},
 					}
@@ -958,7 +958,7 @@ var _ = Describe("Machines", func() {
 								Name:         machineImageName,
 								Version:      machineImageVersion,
 								Image:        machineImage,
-								Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+								Architecture: new(v1beta1constants.ArchitectureAMD64),
 							},
 						},
 					}
@@ -983,7 +983,7 @@ var _ = Describe("Machines", func() {
 				It("should return the expected machine deployments for STACKIT with profile image types with id", func() {
 					setup(regionWithImages, "", machineImageID, archARM)
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "kubernetes.io")
-					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
 					expectedUserDataSecretRefRead()
@@ -1014,7 +1014,7 @@ var _ = Describe("Machines", func() {
 								Name:         machineImageName,
 								Version:      machineImageVersion,
 								ID:           machineImageID,
-								Architecture: ptr.To(v1beta1constants.ArchitectureARM64),
+								Architecture: new(v1beta1constants.ArchitectureARM64),
 							},
 						},
 					}
@@ -1110,11 +1110,11 @@ var _ = Describe("Machines", func() {
 
 			It("should set expected cluster-autoscaler annotations on the machine deployment", func() {
 				w.Spec.Pools[0].ClusterAutoscaler = &extensionsv1alpha1.ClusterAutoscalerOptions{
-					MaxNodeProvisionTime:             ptr.To(metav1.Duration{Duration: time.Minute}),
-					ScaleDownGpuUtilizationThreshold: ptr.To("0.4"),
-					ScaleDownUnneededTime:            ptr.To(metav1.Duration{Duration: 2 * time.Minute}),
-					ScaleDownUnreadyTime:             ptr.To(metav1.Duration{Duration: 3 * time.Minute}),
-					ScaleDownUtilizationThreshold:    ptr.To("0.5"),
+					MaxNodeProvisionTime:             new(metav1.Duration{Duration: time.Minute}),
+					ScaleDownGpuUtilizationThreshold: new("0.4"),
+					ScaleDownUnneededTime:            new(metav1.Duration{Duration: 2 * time.Minute}),
+					ScaleDownUnreadyTime:             new(metav1.Duration{Duration: 3 * time.Minute}),
+					ScaleDownUtilizationThreshold:    new("0.5"),
 				}
 				w.Spec.Pools[1].ClusterAutoscaler = nil
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
@@ -1193,9 +1193,7 @@ func encode(obj runtime.Object) []byte {
 func useDefaultMachineClass(def map[string]any, value any) map[string]any {
 	out := make(map[string]any, len(def)+1)
 
-	for k, v := range def {
-		out[k] = v
-	}
+	maps.Copy(out, def)
 
 	out["availabilityZone"] = value
 	return out
@@ -1204,13 +1202,8 @@ func useDefaultMachineClass(def map[string]any, value any) map[string]any {
 func useDefaultMachineClassWith(def map[string]any, add map[string]any) map[string]any {
 	out := make(map[string]any, len(add))
 
-	for k, v := range def {
-		out[k] = v
-	}
-
-	for k, v := range add {
-		out[k] = v
-	}
+	maps.Copy(out, def)
+	maps.Copy(out, add)
 
 	return out
 }

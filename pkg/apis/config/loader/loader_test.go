@@ -22,10 +22,10 @@ func TestLoader(t *testing.T) {
 var _ = Describe("Loader", func() {
 	Describe("#Load", func() {
 		buildConfigYAML := func(customLabelDomain string) []byte {
-			return []byte(fmt.Sprintf(`apiVersion: stackit.provider.extensions.config.stackit.cloud/v1alpha1
+			return fmt.Appendf(nil, `apiVersion: stackit.provider.extensions.config.stackit.cloud/v1alpha1
 kind: ControllerConfiguration
 customLabelDomain: %s
-`, customLabelDomain))
+`, customLabelDomain)
 		}
 
 		It("should apply defaults when data is empty", func() {

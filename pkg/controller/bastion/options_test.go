@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -102,25 +101,25 @@ var _ = Describe("Options", func() {
 						Name:         "c1i.1",
 						CPU:          resource.MustParse("1"),
 						Memory:       resource.MustParse("2Gi"),
-						Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+						Architecture: new(v1beta1constants.ArchitectureAMD64),
 					},
 					{
 						Name:         "c1i.2",
 						CPU:          resource.MustParse("2"),
 						Memory:       resource.MustParse("4Gi"),
-						Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+						Architecture: new(v1beta1constants.ArchitectureAMD64),
 					},
 					{
 						Name:         "c1r.1",
 						CPU:          resource.MustParse("1"),
 						Memory:       resource.MustParse("2Gi"),
-						Architecture: ptr.To(v1beta1constants.ArchitectureARM64),
+						Architecture: new(v1beta1constants.ArchitectureARM64),
 					},
 					{
 						Name:         "c1r.2",
 						CPU:          resource.MustParse("2"),
 						Memory:       resource.MustParse("4Gi"),
-						Architecture: ptr.To(v1beta1constants.ArchitectureARM64),
+						Architecture: new(v1beta1constants.ArchitectureARM64),
 					},
 				},
 				MachineImages: []gardencorev1beta1.MachineImage{
@@ -130,21 +129,21 @@ var _ = Describe("Options", func() {
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
 									Version:        "1.0.0",
-									Classification: ptr.To(gardencorev1beta1.ClassificationDeprecated),
+									Classification: new(gardencorev1beta1.ClassificationDeprecated),
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
 									Version:        "1.1.0",
-									Classification: ptr.To(gardencorev1beta1.ClassificationSupported),
+									Classification: new(gardencorev1beta1.ClassificationSupported),
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
 									Version:        "2.0.0",
-									Classification: ptr.To(gardencorev1beta1.ClassificationPreview),
+									Classification: new(gardencorev1beta1.ClassificationPreview),
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
@@ -165,12 +164,12 @@ var _ = Describe("Options", func() {
 								{
 									Name:         "eu01",
 									ID:           "eu01-flatcar-1.1.0",
-									Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+									Architecture: new(v1beta1constants.ArchitectureAMD64),
 								},
 								{
 									Name:         "RegionOne",
 									ID:           "eu01-flatcar-1.1.0",
-									Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+									Architecture: new(v1beta1constants.ArchitectureAMD64),
 								},
 							},
 						},

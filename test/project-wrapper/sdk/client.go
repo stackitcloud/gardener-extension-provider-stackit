@@ -4,7 +4,6 @@ import (
 	"context"
 
 	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
-	"k8s.io/utils/ptr"
 )
 
 type Client struct {
@@ -30,7 +29,7 @@ func (c *Client) CreateProject(
 	subject string,
 ) (*resourcemanager.Project, error) {
 	payload := resourcemanager.CreateProjectPayload{
-		Labels: ptr.To(labels),
+		Labels: new(labels),
 		Members: []resourcemanager.Member{
 			{
 				Role:    "owner",

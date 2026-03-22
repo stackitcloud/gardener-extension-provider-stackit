@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -53,7 +52,7 @@ var _ = Describe("Shoot mutator", func() {
 
 			// Prepare the expected RawExtension for ProviderConfig
 			ptpOverride := configv1alpha1.ExtensionConfig{NTP: &configv1alpha1.NTPConfig{
-				Enabled: ptr.To(false),
+				Enabled: new(false),
 			}}
 			buffer := new(bytes.Buffer)
 
@@ -71,7 +70,7 @@ var _ = Describe("Shoot mutator", func() {
 					Kubernetes: gardencorev1beta1.Kubernetes{
 						Version: "1.28.2",
 					},
-					SeedName: ptr.To("stackit"),
+					SeedName: new("stackit"),
 					Provider: gardencorev1beta1.Provider{
 						Type: stackit.Type,
 						Workers: []gardencorev1beta1.Worker{
@@ -81,7 +80,7 @@ var _ = Describe("Shoot mutator", func() {
 									Type: "c1.2",
 									Image: &gardencorev1beta1.ShootMachineImage{
 										Name:    "coreos",
-										Version: ptr.To("4152.2.3"),
+										Version: new("4152.2.3"),
 									},
 								},
 							},
@@ -91,7 +90,7 @@ var _ = Describe("Shoot mutator", func() {
 									Type: "c1.2",
 									Image: &gardencorev1beta1.ShootMachineImage{
 										Name:    "ubuntu", // Non-coreos
-										Version: ptr.To("22.04"),
+										Version: new("22.04"),
 									},
 								},
 							},
@@ -99,8 +98,8 @@ var _ = Describe("Shoot mutator", func() {
 					},
 					Region: "eu01",
 					Networking: &gardencorev1beta1.Networking{
-						Nodes:      ptr.To("10.250.0.0/16"),
-						Type:       ptr.To("calico"),
+						Nodes:      new("10.250.0.0/16"),
+						Type:       new("calico"),
 						IPFamilies: []gardencorev1beta1.IPFamily{gardencorev1beta1.IPFamilyIPv4},
 					},
 				},
@@ -123,7 +122,7 @@ var _ = Describe("Shoot mutator", func() {
 					Type:           gardencorev1beta1.LastOperationTypeReconcile,
 					State:          gardencorev1beta1.LastOperationStateProcessing,
 				}
-				shoot.Status.SeedName = ptr.To("gcp-new") // Different from Spec.SeedName
+				shoot.Status.SeedName = new("gcp-new") // Different from Spec.SeedName
 				shootExpected := shoot.DeepCopy()
 
 				err := shootMutator.Mutate(ctx, shoot, oldShoot)
@@ -202,7 +201,7 @@ var _ = Describe("Shoot mutator", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// worker1 (coreos 4152.2.3) - should not get ProviderConfig because version < 4230.2.1
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(ptr.To("4152.2.3")))
+				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4152.2.3")))
 				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
 
 				// worker2 (ubuntu 22.04) - should be untouched
@@ -210,13 +209,13 @@ var _ = Describe("Shoot mutator", func() {
 			})
 
 			It("should not mutate image version but should set ProviderConfig for coreos worker with exact target version", func() {
-				shoot.Spec.Provider.Workers[0].Machine.Image.Version = ptr.To(FlatcarImageVersion) // Set to exact target
+				shoot.Spec.Provider.Workers[0].Machine.Image.Version = new(FlatcarImageVersion) // Set to exact target
 
 				err := shootMutator.Mutate(ctx, shoot, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Version should remain FlatcarImageVersion
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(ptr.To(FlatcarImageVersion)))
+				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new(FlatcarImageVersion)))
 				// ProviderConfig should be set (because version >= FlatcarImageVersion)
 				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
 
@@ -225,13 +224,13 @@ var _ = Describe("Shoot mutator", func() {
 			})
 
 			It("should not mutate image version but should set ProviderConfig for coreos worker with newer version", func() {
-				shoot.Spec.Provider.Workers[0].Machine.Image.Version = ptr.To("4300.0.0") // Newer version
+				shoot.Spec.Provider.Workers[0].Machine.Image.Version = new("4300.0.0") // Newer version
 
 				err := shootMutator.Mutate(ctx, shoot, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Version should remain 4300.0.0
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(ptr.To("4300.0.0")))
+				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4300.0.0")))
 				// ProviderConfig should be set (because version >= FlatcarImageVersion)
 				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
 			})
@@ -241,7 +240,7 @@ var _ = Describe("Shoot mutator", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Version should remain 4152.2.3 (not mutated)
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(ptr.To("4152.2.3")))
+				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4152.2.3")))
 				// ProviderConfig should be nil (because version < FlatcarImageVersion)
 				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
 			})
@@ -253,7 +252,7 @@ var _ = Describe("Shoot mutator", func() {
 						Machine: gardencorev1beta1.Machine{
 							Image: &gardencorev1beta1.ShootMachineImage{
 								Name:    "coreos",
-								Version: ptr.To("4100.0.0"), // Older
+								Version: new("4100.0.0"), // Older
 							},
 						},
 					},
@@ -262,7 +261,7 @@ var _ = Describe("Shoot mutator", func() {
 						Machine: gardencorev1beta1.Machine{
 							Image: &gardencorev1beta1.ShootMachineImage{
 								Name:    "coreos",
-								Version: ptr.To("4230.2.1"), // Exact target
+								Version: new("4230.2.1"), // Exact target
 							},
 						},
 					},
@@ -271,7 +270,7 @@ var _ = Describe("Shoot mutator", func() {
 						Machine: gardencorev1beta1.Machine{
 							Image: &gardencorev1beta1.ShootMachineImage{
 								Name:    "coreos",
-								Version: ptr.To("4500.0.0"), // Newer
+								Version: new("4500.0.0"), // Newer
 							},
 						},
 					},
@@ -280,7 +279,7 @@ var _ = Describe("Shoot mutator", func() {
 						Machine: gardencorev1beta1.Machine{
 							Image: &gardencorev1beta1.ShootMachineImage{
 								Name:    "suse-jeos",
-								Version: ptr.To("15.5"),
+								Version: new("15.5"),
 							},
 						},
 					},
@@ -292,15 +291,15 @@ var _ = Describe("Shoot mutator", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// old-coreos: version unchanged, ProviderConfig nil
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(ptr.To("4100.0.0")))
+				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4100.0.0")))
 				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
 
 				// new-coreos: version unchanged, ProviderConfig set
-				Expect(shoot.Spec.Provider.Workers[1].Machine.Image.Version).To(Equal(ptr.To("4230.2.1")))
+				Expect(shoot.Spec.Provider.Workers[1].Machine.Image.Version).To(Equal(new("4230.2.1")))
 				Expect(shoot.Spec.Provider.Workers[1].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
 
 				// newer-coreos: version unchanged, ProviderConfig set
-				Expect(shoot.Spec.Provider.Workers[2].Machine.Image.Version).To(Equal(ptr.To("4500.0.0")))
+				Expect(shoot.Spec.Provider.Workers[2].Machine.Image.Version).To(Equal(new("4500.0.0")))
 				Expect(shoot.Spec.Provider.Workers[2].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
 
 				// other-os: untouched

@@ -11,7 +11,6 @@ import (
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
@@ -48,13 +47,13 @@ var _ = Describe("Bastion Resources", func() {
 			resources.ResourceName = "test-resource"
 			resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 
-			expectedSecurityGroup := []iaas.SecurityGroup{{Name: ptr.To("test-security-group")}}
+			expectedSecurityGroup := []iaas.SecurityGroup{{Name: new("test-security-group")}}
 			mockIaaS.EXPECT().GetSecurityGroupByName(ctx, resources.ResourceName).Return(expectedSecurityGroup, nil)
 
-			expectedServer := []iaas.Server{{Name: ptr.To("test-server")}}
+			expectedServer := []iaas.Server{{Name: new("test-server")}}
 			mockIaaS.EXPECT().GetServerByName(ctx, resources.ResourceName).Return(expectedServer, nil)
 
-			expectedPublicIP := []iaas.PublicIp{{Id: ptr.To("test-ip")}}
+			expectedPublicIP := []iaas.PublicIp{{Id: new("test-ip")}}
 			mockIaaS.EXPECT().GetPublicIpByLabels(ctx, resources.Labels).Return(expectedPublicIP, nil)
 
 			err := resources.getExistingResources(ctx, logger)
@@ -70,15 +69,15 @@ var _ = Describe("Bastion Resources", func() {
 			resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 
 			mockIaaS.EXPECT().GetSecurityGroupByName(ctx, resources.ResourceName).Return(
-				[]iaas.SecurityGroup{{Id: ptr.To("test-security-group")}},
+				[]iaas.SecurityGroup{{Id: new("test-security-group")}},
 				nil,
 			)
 			mockIaaS.EXPECT().GetServerByName(ctx, resources.ResourceName).Return(
-				[]iaas.Server{{Id: ptr.To("test-server")}},
+				[]iaas.Server{{Id: new("test-server")}},
 				nil,
 			)
 			mockIaaS.EXPECT().GetPublicIpByLabels(ctx, resources.Labels).Return(
-				[]iaas.PublicIp{{Id: ptr.To("test-ip")}},
+				[]iaas.PublicIp{{Id: new("test-ip")}},
 				nil,
 			)
 
@@ -118,10 +117,10 @@ var _ = Describe("Bastion Resources", func() {
 				resources.ResourceName = "test-resource"
 				resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 				resources.Server = &iaas.Server{
-					Id: ptr.To("test-server"),
+					Id: new("test-server"),
 				}
 
-				expectedPublicIP := &iaas.PublicIp{Id: ptr.To("test-public-ip")}
+				expectedPublicIP := &iaas.PublicIp{Id: new("test-public-ip")}
 				mockIaaS.EXPECT().CreatePublicIp(ctx, gomock.Any()).Return(expectedPublicIP, nil)
 				mockIaaS.EXPECT().AddPublicIpToServer(ctx, "test-server", "test-public-ip")
 
@@ -135,10 +134,10 @@ var _ = Describe("Bastion Resources", func() {
 				resources.ResourceName = "test-resource"
 				resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 				resources.Server = &iaas.Server{
-					Id: ptr.To("test-server"),
+					Id: new("test-server"),
 				}
 
-				expectedPublicIP := &iaas.PublicIp{Id: ptr.To("test-public-ip")}
+				expectedPublicIP := &iaas.PublicIp{Id: new("test-public-ip")}
 				mockIaaS.EXPECT().CreatePublicIp(ctx, gomock.Any()).Return(expectedPublicIP, nil)
 				mockIaaS.EXPECT().AddPublicIpToServer(ctx, "test-server", "test-public-ip")
 
@@ -154,11 +153,11 @@ var _ = Describe("Bastion Resources", func() {
 			resources.ResourceName = "test-resource"
 			resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 			resources.Server = &iaas.Server{
-				Id: ptr.To("test-server"),
+				Id: new("test-server"),
 			}
 			resources.PublicIP = &iaas.PublicIp{
-				Id:               ptr.To("test-public-ip"),
-				NetworkInterface: iaas.NewNullableString(ptr.To("test-interface")),
+				Id:               new("test-public-ip"),
+				NetworkInterface: iaas.NewNullableString(new("test-interface")),
 			}
 
 			err := resources.reconcilePublicIP(ctx, logger)
@@ -180,7 +179,7 @@ var _ = Describe("Bastion Resources", func() {
 		It("deletes the public IP", func() {
 			resources.ResourceName = "test-resource"
 			resources.PublicIP = &iaas.PublicIp{
-				Id: ptr.To("test-public-ip"),
+				Id: new("test-public-ip"),
 			}
 
 			mockIaaS.EXPECT().DeletePublicIp(ctx, "test-public-ip").Return(nil)
@@ -195,7 +194,7 @@ var _ = Describe("Bastion Resources", func() {
 	Context("reconcileServer", func() {
 		It("bails out if the server already set", func() {
 			resources.Server = &iaas.Server{
-				Id: ptr.To("test-server"),
+				Id: new("test-server"),
 			}
 
 			err := resources.reconcileServer(ctx, logger)
@@ -220,29 +219,29 @@ var _ = Describe("Bastion Resources", func() {
 					},
 				},
 			}
-			resources.SecurityGroup = &iaas.SecurityGroup{Id: ptr.To("test-security-group")}
+			resources.SecurityGroup = &iaas.SecurityGroup{Id: new("test-security-group")}
 
 			expectedPayload := iaas.CreateServerPayload{
-				Name: ptr.To("test-resource"),
-				Labels: ptr.To(stackit.ToLabels(map[string]string{
+				Name: new("test-resource"),
+				Labels: new(stackit.ToLabels(map[string]string{
 					"test-label-key": "test-label-value",
 				})),
-				AvailabilityZone: ptr.To("test-az"),
-				MachineType:      ptr.To("test-machine"),
+				AvailabilityZone: new("test-az"),
+				MachineType:      new("test-machine"),
 				BootVolume: &iaas.ServerBootVolume{
-					DeleteOnTermination: ptr.To(true),
+					DeleteOnTermination: new(true),
 					Source:              iaas.NewBootVolumeSource("test-image", "image"),
-					Size:                ptr.To[int64](10),
+					Size:                new(int64(10)),
 				},
-				SecurityGroups: ptr.To([]string{"test-security-group"}),
-				Networking: ptr.To(iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
-					NetworkId: ptr.To("test-network"),
+				SecurityGroups: new([]string{"test-security-group"}),
+				Networking: new(iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
+					NetworkId: new("test-network"),
 				})),
 
-				UserData: ptr.To([]byte{1, 2, 3, 4}),
+				UserData: new([]byte{1, 2, 3, 4}),
 			}
 			expectedServer := &iaas.Server{
-				Id: ptr.To("test-server"),
+				Id: new("test-server"),
 			}
 
 			mockIaaS.EXPECT().CreateServer(ctx, expectedPayload).Return(expectedServer, nil)
@@ -266,7 +265,7 @@ var _ = Describe("Bastion Resources", func() {
 		It("deletes the server", func() {
 			resources.ResourceName = "test-resource"
 			resources.Server = &iaas.Server{
-				Id: ptr.To("test-server"),
+				Id: new("test-server"),
 			}
 
 			mockIaaS.EXPECT().DeleteServer(ctx, "test-server")
@@ -293,12 +292,12 @@ var _ = Describe("Bastion Resources", func() {
 				}
 
 				expectedPayload := iaas.CreateSecurityGroupPayload{
-					Name:        ptr.To("test-resource"),
-					Labels:      ptr.To(stackit.ToLabels(map[string]string{"test-labels-key": "test-labels-value"})),
-					Description: ptr.To("Security group for Bastion test-bastion"),
+					Name:        new("test-resource"),
+					Labels:      new(stackit.ToLabels(map[string]string{"test-labels-key": "test-labels-value"})),
+					Description: new("Security group for Bastion test-bastion"),
 				}
 				expectedSecurityGroup := &iaas.SecurityGroup{
-					Id: ptr.To("test-security-group"),
+					Id: new("test-security-group"),
 				}
 				expectedWantedRules, _ := resources.determineWantedSecurityGroupRules()
 
@@ -326,7 +325,7 @@ var _ = Describe("Bastion Resources", func() {
 		It("deletes the security group", func() {
 			resources.ResourceName = "test-resource"
 			resources.SecurityGroup = &iaas.SecurityGroup{
-				Id: ptr.To("test-security-group"),
+				Id: new("test-security-group"),
 			}
 
 			mockIaaS.EXPECT().DeleteSecurityGroup(ctx, "test-security-group").Return(nil)
@@ -342,7 +341,7 @@ var _ = Describe("Bastion Resources", func() {
 	Context("reconcileWorkerSecurityGroupRule", func() {
 		It("ignores conflicting security group rules", func() {
 			resources.SecurityGroup = &iaas.SecurityGroup{
-				Id: ptr.To("test-security-group"),
+				Id: new("test-security-group"),
 			}
 			resources.WorkerSecurityGroupID = "test-rule"
 			resources.Bastion = &extensionsv1alpha1.Bastion{
@@ -364,7 +363,7 @@ var _ = Describe("Bastion Resources", func() {
 
 		It("logs the created security group rule's ID", func() {
 			resources.SecurityGroup = &iaas.SecurityGroup{
-				Id: ptr.To("test-security-group"),
+				Id: new("test-security-group"),
 			}
 			resources.WorkerSecurityGroupID = "worker-security-group"
 			resources.Bastion = &extensionsv1alpha1.Bastion{
@@ -374,8 +373,8 @@ var _ = Describe("Bastion Resources", func() {
 			}
 
 			expectedRule := &iaas.SecurityGroupRule{
-				Id:          ptr.To("expected-rule"),
-				Description: ptr.To("expected-rule-description"),
+				Id:          new("expected-rule"),
+				Description: new("expected-rule-description"),
 			}
 			mockIaaS.EXPECT().CreateSecurityGroupRule(ctx, "worker-security-group", gomock.Any()).Return(expectedRule, nil)
 

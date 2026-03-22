@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"k8s.io/utils/ptr"
 
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -12,62 +11,62 @@ import (
 var _ = Describe("Equality", func() {
 	Context("iaas.Protocol", func() {
 		It("should match values by name", func() {
-			Expect(Equality.DeepEqual(iaas.Protocol{Name: ptr.To("tcp")}, iaas.Protocol{Name: ptr.To("tcp")})).To(BeTrue())
-			Expect(Equality.DeepEqual(iaas.Protocol{Name: ptr.To("tcp")}, iaas.Protocol{Name: ptr.To("udp")})).To(BeFalse())
+			Expect(Equality.DeepEqual(iaas.Protocol{Name: new("tcp")}, iaas.Protocol{Name: new("tcp")})).To(BeTrue())
+			Expect(Equality.DeepEqual(iaas.Protocol{Name: new("tcp")}, iaas.Protocol{Name: new("udp")})).To(BeFalse())
 		})
 
 		It("should ignore other fields", func() {
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			})).To(BeTrue())
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](2),
+				Name:   new("tcp"),
+				Number: new(int64(2)),
 			})).To(BeTrue())
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name: ptr.To("tcp"),
+				Name: new("tcp"),
 			})).To(BeTrue())
 
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name:   ptr.To("udp"),
-				Number: ptr.To[int64](1),
+				Name:   new("udp"),
+				Number: new(int64(1)),
 			})).To(BeFalse())
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name:   ptr.To("udp"),
-				Number: ptr.To[int64](2),
+				Name:   new("udp"),
+				Number: new(int64(2)),
 			})).To(BeFalse())
 			Expect(Equality.DeepEqual(iaas.Protocol{
-				Name:   ptr.To("tcp"),
-				Number: ptr.To[int64](1),
+				Name:   new("tcp"),
+				Number: new(int64(1)),
 			}, iaas.Protocol{
-				Name: ptr.To("udp"),
+				Name: new("udp"),
 			})).To(BeFalse())
 		})
 
 		It("should work in SecurityGroupRule", func() {
 			a := iaas.SecurityGroupRule{
-				Direction: ptr.To(DirectionEgress),
-				Protocol:  &iaas.Protocol{Name: ptr.To("tcp")},
+				Direction: new(DirectionEgress),
+				Protocol:  &iaas.Protocol{Name: new("tcp")},
 			}
 			b := iaas.SecurityGroupRule{
-				Direction: ptr.To(DirectionEgress),
-				Protocol:  &iaas.Protocol{Name: ptr.To("tcp")},
+				Direction: new(DirectionEgress),
+				Protocol:  &iaas.Protocol{Name: new("tcp")},
 			}
 			Expect(Equality.DeepEqual(a, b)).To(BeTrue())
 

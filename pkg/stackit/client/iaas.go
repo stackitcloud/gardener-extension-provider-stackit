@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"k8s.io/utils/ptr"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -86,7 +85,7 @@ func (c iaasClient) UpdateSecurityGroupRules(ctx context.Context, group *iaas.Se
 			IpRange:               rule.IpRange,
 		}
 		if rule.HasProtocol() {
-			createOpts.Protocol = ptr.To(iaas.StringAsCreateProtocol(rule.Protocol.Name))
+			createOpts.Protocol = new(iaas.StringAsCreateProtocol(rule.Protocol.Name))
 		}
 		// TODO: Ports are only supported for DCCP, SCTP, TCP, UDP and UDPLITE
 		if portRange, ok := rule.GetPortRangeOk(); ok {
@@ -204,7 +203,7 @@ func (c iaasClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Lo
 
 		if wantedRule := findMatchingRule(existingRule, wantedRules); wantedRule != nil {
 			// wanted rule found in the existing rules, mark the wanted rule as found by storing the ID
-			wantedRule.Id = ptr.To(existingRule.GetId())
+			wantedRule.Id = new(existingRule.GetId())
 
 			ruleLog.V(1).Info("Found existing security group rule")
 		} else {
@@ -272,7 +271,7 @@ func securityGroupRuleToCreatePayload(rule iaas.SecurityGroupRule) iaas.CreateSe
 	}
 
 	if rule.HasProtocol() {
-		payload.Protocol = ptr.To(iaas.StringAsCreateProtocol(rule.Protocol.Name))
+		payload.Protocol = new(iaas.StringAsCreateProtocol(rule.Protocol.Name))
 	}
 
 	return payload

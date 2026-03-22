@@ -16,7 +16,6 @@ import (
 	"go.uber.org/mock/gomock"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
@@ -29,8 +28,8 @@ func TestController(t *testing.T) {
 var _ = Describe("Ensurer", func() {
 	var (
 		etcdStorage = &config.ETCDStorage{
-			ClassName: ptr.To("gardener.cloud-fast"),
-			Capacity:  ptr.To(resource.MustParse("25Gi")),
+			ClassName: new("gardener.cloud-fast"),
+			Capacity:  new(resource.MustParse("25Gi")),
 		}
 
 		ctrl *gomock.Controller
