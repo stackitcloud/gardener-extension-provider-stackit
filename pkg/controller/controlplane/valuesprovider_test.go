@@ -496,6 +496,13 @@ var _ = Describe("ValuesProvider", func() {
 			},
 		})
 
+		stackitPodIdentityWebhookChartSeedValues := map[string]any{
+			"replicaCount": 2,
+			"webhook": map[string]any{
+				"tlsSecretName": "stackit-pod-identity-webhook-server",
+			},
+		}
+
 		BeforeEach(func() {
 			c.EXPECT().Get(ctx, cpConfigKey, &corev1.Secret{}).DoAndReturn(clientGet(cpConfig))
 			c.EXPECT().Delete(context.TODO(), &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-kube-apiserver-to-csi-snapshot-validation", Namespace: cp.Namespace}})
@@ -516,6 +523,7 @@ var _ = Describe("ValuesProvider", func() {
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-server", Namespace: namespace}})).To(Succeed())
+			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "stackit-pod-identity-webhook-server", Namespace: namespace}})).To(Succeed())
 
 			// This call is made for emergency Loadbalancer API access.
 			// It will return a NotFound error by default to not interfere with existing tests.
@@ -558,6 +566,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
+				stackit.STACKITPodIdentityWebhookName:     stackitPodIdentityWebhookChartSeedValues,
 				openstack.STACKITALBControllerManagerName: empty(),
 			}))
 		})
@@ -601,6 +610,7 @@ var _ = Describe("ValuesProvider", func() {
 						"replicas": 1,
 					},
 				}),
+				stackit.STACKITPodIdentityWebhookName:     stackitPodIdentityWebhookChartSeedValues,
 				openstack.STACKITALBControllerManagerName: empty(),
 			}))
 		})
@@ -882,6 +892,13 @@ var _ = Describe("ValuesProvider", func() {
 	})
 
 	Describe("#GetControlPlaneShootChartValues", func() {
+		stackitPodIdentityWebhookChartShootValues := map[string]any{
+			"enabled": true,
+			"webhook": map[string]any{
+				"caBundle": "",
+			},
+		}
+
 		BeforeEach(func() {
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
@@ -893,6 +910,7 @@ var _ = Describe("ValuesProvider", func() {
 				// Refactoring led to retrieving it three times at a lower level
 				// This is the vp.getCredentials() call
 				c.EXPECT().Get(ctx, cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret)).Times(2)
+				c.EXPECT().Get(ctx, client.ObjectKey{Name: "gardenlet", Namespace: "garden"}, &appsv1.Deployment{}).Return(errors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "deployments"}, "gardenlet"))
 
 				expectCSICleanupinControlPlane(ctx, c, openstack.CSIControllerName)
 
@@ -904,12 +922,14 @@ var _ = Describe("ValuesProvider", func() {
 						"rescanBlockStorageOnResize": rescanBlockStorageOnResize,
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
-					openstack.CSINodeName: enabledFalse,
+					openstack.CSINodeName:                 enabledFalse,
+					stackit.STACKITPodIdentityWebhookName: stackitPodIdentityWebhookChartShootValues,
 				}))
 			})
 
 			It("should return correct shoot control plane chart if CSI STACKIT is enabled", func() {
 				c.EXPECT().Get(ctx, cpSecretKey, &corev1.Secret{}).DoAndReturn(clientGet(cpSecret)).Times(2)
+				c.EXPECT().Get(ctx, client.ObjectKey{Name: "gardenlet", Namespace: "garden"}, &appsv1.Deployment{}).Return(errors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "deployments"}, "gardenlet"))
 
 				expectCSICleanupinControlPlane(ctx, c, openstack.CSIControllerName)
 
@@ -922,7 +942,8 @@ var _ = Describe("ValuesProvider", func() {
 						"rescanBlockStorageOnResize": rescanBlockStorageOnResize,
 						"userAgentHeaders":           []string{domainName, tenantName, technicalID},
 					}),
-					openstack.CSINodeName: enabledFalse,
+					openstack.CSINodeName:                 enabledFalse,
+					stackit.STACKITPodIdentityWebhookName: stackitPodIdentityWebhookChartShootValues,
 				}))
 			})
 		})

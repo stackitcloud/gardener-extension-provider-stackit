@@ -1,0 +1,8 @@
+enabled: true
+webhook:
+  caBundle: "" # will be set by valuesprovider
+  # failurePolicy for the webhook (Ignore or Fail).
+  # Defaults to Fail to guarantee that pods are not started without the required workload identity configuration.
+  # Note: If the webhook is down, pod creation in monitored namespaces will be blocked.
+  # Specific pods or namespaces can be excluded using the skip label.
+  failurePolicy: Fail
