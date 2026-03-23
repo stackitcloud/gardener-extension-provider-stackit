@@ -1,0 +1,55 @@
+replicaCount: 2
+
+# String to override the name for the chart
+nameOverride: ""
+# String to fully override the fullname of the chart
+fullnameOverride: ""
+
+webhook:
+  port: 9443
+  # The secret name containing tls.crt and tls.key for the webhook server
+  # If certmanager.enabled is true, this secret will be created by cert-manager
+  tlsSecretName: "stackit-pod-identity-webhook-certs"
+
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 9443
+
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "stackit-pod-identity-webhook"
+
+# PodSecurityContext holds pod-level security attributes and common container settings.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1239
+  runAsGroup: 1239
+  fsGroup: 1239
+
+# SecurityContext holds security configuration that will be applied to a container.
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+
+# NodeSelector is a selector which must be true for the pod to fit on a node.
+nodeSelector: {}
+
+# Tolerations are applied to pods, and allow (but do not require) the pods to schedule onto nodes with matching taints.
+tolerations: []
+
+# Affinity is a group of affinity scheduling rules.
+affinity: {}
+
+priorityClassName: gardener-system-300
