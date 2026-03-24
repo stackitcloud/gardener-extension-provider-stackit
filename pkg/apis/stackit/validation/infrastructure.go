@@ -30,14 +30,18 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 	}
 
 	networksPath := fldPath.Child("networks")
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	if len(infra.Networks.Worker) == 0 && len(infra.Networks.Workers) == 0 {
 		allErrs = append(allErrs, field.Required(networksPath.Child("workers"), "must specify the network range for the worker network"))
 	}
 
 	var workerCIDR cidrvalidation.CIDR
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	if infra.Networks.Worker != "" {
+		//nolint:staticcheck // SA1019: needed for migration purposes
 		workerCIDR = cidrvalidation.NewCIDR(infra.Networks.Worker, networksPath.Child("worker"))
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRParse(workerCIDR)...)
+		//nolint:staticcheck // SA1019: needed for migration purposes
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRIsCanonical(networksPath.Child("worker"), infra.Networks.Worker)...)
 	}
 	if infra.Networks.Workers != "" {
@@ -98,6 +102,7 @@ func ValidateInfrastructureConfigAgainstCloudProfile(oldInfra, infra *stackitv1a
 	allErrs := field.ErrorList{}
 
 	if oldInfra == nil || oldInfra.FloatingPoolName != infra.FloatingPoolName {
+		//nolint:staticcheck // SA1019: needed for migration purposes
 		allErrs = append(allErrs, validateFloatingPoolNameConstraints(cloudProfileConfig.Constraints.FloatingPools, infra.FloatingPoolName, fldPath.Child("floatingPoolName")))
 	}
 

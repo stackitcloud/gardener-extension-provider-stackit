@@ -147,6 +147,7 @@ func WorkersCIDR(config *stackitv1alpha1.InfrastructureConfig) string {
 	workersCIDR := config.Networks.Workers
 	// Backwards compatibility - remove this code in a future version.
 	if workersCIDR == "" {
+		//nolint:staticcheck // SA1019: needed for migration purposes
 		workersCIDR = config.Networks.Worker
 	}
 
