@@ -71,8 +71,8 @@ const (
 	CloudControllerManagerName = "cloud-controller-manager"
 	// STACKITCloudControllerManagerName is a constant for the name of the CloudController deployed by the worker controller. (stackit)
 	STACKITCloudControllerManagerName = "stackit-cloud-controller-manager"
-	// STACKITALBControllerManagerName is a constant for the name of the ALB CloudController. (stackit)
-	STACKITALBControllerManagerName = "stackit-alb-controller-manager"
+	// STACKITApplicationLoadBalancerControllerManagerName is a constant for the name of the ALB CloudController. (stackit)
+	STACKITApplicationLoadBalancerControllerManagerName = "stackit-application-load-balancer-controller-manager"
 	// CSIDiskDriverTopologyKey is the label on persistent volumes that represents availability by zone.
 	// See https://github.com/kubernetes/cloud-provider-openstack/blob/master/examples/cinder-csi-plugin/topology/example.yaml
 	// See https://gitlab.cern.ch/cloud/cloud-provider-openstack/-/blob/release-1.19/docs/using-cinder-csi-plugin.md#enable-topology-aware-dynamic-provisioning-for-cinder-volumes

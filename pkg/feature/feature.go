@@ -22,10 +22,14 @@ const (
 	UseSTACKITAPIInfrastructureController featuregate.Feature = "UseSTACKITAPIInfrastructureController"
 	// UseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes.
 	UseSTACKITMachineControllerManager featuregate.Feature = "UseSTACKITMachineControllerManager"
+	// STACKITApplicationLoadBalancerControllerManager Enables the STACKIT ALP controller manager.
+	STACKITApplicationLoadBalancerControllerManager featuregate.Feature = "STACKITApplicationLoadBalancerControllerManager"
 	// ShootUseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes for a specific Shoot.
 	ShootUseSTACKITMachineControllerManager = "shoot.gardener.cloud/use-stackit-machine-controller-manager"
 	// ShootUseSTACKITAPIInfrastructureController Uses the STACKIT API to create the shoot resources instead of OpenStack for a specific Shoot.
 	ShootUseSTACKITAPIInfrastructureController = "shoot.gardener.cloud/use-stackit-api-infrastructure-controller"
+	// ShootSTACKITApplicationLoadBalancerControllerManager Enables the STACKIT ALP controller manager for a specific Shoot.
+	ShootSTACKITApplicationLoadBalancerControllerManager = "shoot.gardener.cloud/stackit-application-load-balancer-controller-manager"
 )
 
 var (
@@ -42,10 +46,11 @@ var (
 	Gate featuregate.FeatureGate = MutableGate
 
 	allGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		MutateDisableNTP:                      {Default: true, PreRelease: featuregate.Alpha},
-		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
-		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
-		UseSTACKITMachineControllerManager:    {Default: true, PreRelease: featuregate.Alpha},
+		MutateDisableNTP:                                {Default: true, PreRelease: featuregate.Alpha},
+		EnsureSTACKITLBDeletion:                         {Default: true, PreRelease: featuregate.Alpha},
+		UseSTACKITAPIInfrastructureController:           {Default: true, PreRelease: featuregate.Alpha},
+		UseSTACKITMachineControllerManager:              {Default: true, PreRelease: featuregate.Alpha},
+		STACKITApplicationLoadBalancerControllerManager: {Default: false, PreRelease: featuregate.Alpha},
 	}
 )
 
@@ -77,4 +82,17 @@ func UseStackitAPIInfrastructureController(cluster *extensionscontroller.Cluster
 		}
 	}
 	return Gate.Enabled(UseSTACKITAPIInfrastructureController)
+}
+
+func StackitApplicationLoadBalancerControllerManager(cluster *extensionscontroller.Cluster) bool {
+	if cluster != nil && cluster.Shoot != nil {
+		annotation, ok := cluster.Shoot.Annotations[ShootSTACKITApplicationLoadBalancerControllerManager]
+		if ok {
+			enabledByAnnotation, err := strconv.ParseBool(annotation)
+			if err == nil {
+				return enabledByAnnotation
+			}
+		}
+	}
+	return Gate.Enabled(STACKITApplicationLoadBalancerControllerManager)
 }
