@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stackitcloud/stackit-sdk-go/services/dns"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/ptr"
 
 	mock "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock/dns"
 )
@@ -40,8 +39,8 @@ var _ = Describe("DNSClient", func() {
 			}
 			response := dns.ListZonesResponse{
 				Zones: &[]dns.Zone{
-					{Id: ptr.To("zone1"), DnsName: ptr.To("example.com.")},
-					{Id: ptr.To("zone2"), DnsName: ptr.To("example.org.")},
+					{Id: new("zone1"), DnsName: new("example.com.")},
+					{Id: new("zone2"), DnsName: new("example.org.")},
 				},
 			}
 			mockAPI.EXPECT().ListZonesExecute(ctx, client.projectID).Return(&response, nil)
@@ -60,20 +59,20 @@ var _ = Describe("DNSClient", func() {
 			mockAPI.EXPECT().ListRecordSetsExecute(ctx, client.projectID, "zone1").Return(&dns.ListRecordSetsResponse{
 				RrSets: &[]dns.RecordSet{
 					{
-						Name:    ptr.To("test.example.com."),
-						Active:  ptr.To(true),
-						Type:    dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-						Records: &[]dns.Record{{Content: ptr.To("1.1.1.1")}},
-						Id:      ptr.To("some-uuid"),
-						Ttl:     ptr.To[int64](300),
+						Name:    new("test.example.com."),
+						Active:  new(true),
+						Type:    dns.RecordSetGetTypeAttributeType(new("A")),
+						Records: &[]dns.Record{{Content: new("1.1.1.1")}},
+						Id:      new("some-uuid"),
+						Ttl:     new(int64(300)),
 					},
 					{
-						Name:    ptr.To("test.example.com."),
-						Active:  ptr.To(false),
-						Type:    dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-						Records: &[]dns.Record{{Content: ptr.To("4.4.4.4")}},
-						Id:      ptr.To("some-uuid2"),
-						Ttl:     ptr.To[int64](300),
+						Name:    new("test.example.com."),
+						Active:  new(false),
+						Type:    dns.RecordSetGetTypeAttributeType(new("A")),
+						Records: &[]dns.Record{{Content: new("4.4.4.4")}},
+						Id:      new("some-uuid2"),
+						Ttl:     new(int64(300)),
 					},
 				},
 			}, nil)
@@ -84,10 +83,10 @@ var _ = Describe("DNSClient", func() {
 		It("should create a new record set if it does not exist", func() {
 			mockAPI.EXPECT().CreateRecordSet(ctx, client.projectID, "zone1").Return(mockCreateRequest)
 			mockCreateRequest.EXPECT().CreateRecordSetPayload(dns.CreateRecordSetPayload{
-				Name:    ptr.To("new.example.com."),
-				Records: &[]dns.RecordPayload{{Content: ptr.To("1.1.1.1")}},
-				Type:    ptr.To(dns.CreateRecordSetPayloadTypes("A")),
-				Ttl:     ptr.To(int64(300)),
+				Name:    new("new.example.com."),
+				Records: &[]dns.RecordPayload{{Content: new("1.1.1.1")}},
+				Type:    new(dns.CreateRecordSetPayloadTypes("A")),
+				Ttl:     new(int64(300)),
 			}).Return(mockCreateRequest)
 			mockCreateRequest.EXPECT().Execute().Return(nil, nil)
 
@@ -97,9 +96,9 @@ var _ = Describe("DNSClient", func() {
 		It("should update the existing record set if it exists and records are different", func() {
 			mockAPI.EXPECT().PartialUpdateRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(mockUpdateRequest)
 			mockUpdateRequest.EXPECT().PartialUpdateRecordSetPayload(dns.PartialUpdateRecordSetPayload{
-				Name:    ptr.To("test.example.com."),
-				Records: &[]dns.RecordPayload{{Content: ptr.To("4.4.4.4")}},
-				Ttl:     ptr.To(int64(300)),
+				Name:    new("test.example.com."),
+				Records: &[]dns.RecordPayload{{Content: new("4.4.4.4")}},
+				Ttl:     new(int64(300)),
 			}).Return(mockUpdateRequest)
 			mockUpdateRequest.EXPECT().Execute().Return(nil, nil)
 
@@ -115,10 +114,10 @@ var _ = Describe("DNSClient", func() {
 		BeforeEach(func() {
 			mockAPI.EXPECT().ListRecordSetsExecute(ctx, client.projectID, "zone1").Return(&dns.ListRecordSetsResponse{
 				RrSets: &[]dns.RecordSet{{
-					Name:   ptr.To("test.example.com."),
-					Active: ptr.To(true),
-					Type:   dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-					Id:     ptr.To("some-uuid"),
+					Name:   new("test.example.com."),
+					Active: new(true),
+					Type:   dns.RecordSetGetTypeAttributeType(new("A")),
+					Id:     new("some-uuid"),
 				}},
 			}, nil)
 		})
@@ -144,32 +143,32 @@ var _ = Describe("DNSClient", func() {
 		BeforeEach(func() {
 			rrSets := []dns.RecordSet{
 				{
-					Name:    ptr.To("active.example.com."),
-					Active:  ptr.To(true),
-					Type:    dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-					Records: &[]dns.Record{{Content: ptr.To("1.1.1.1")}},
-					Id:      ptr.To("active-a-uuid"),
+					Name:    new("active.example.com."),
+					Active:  new(true),
+					Type:    dns.RecordSetGetTypeAttributeType(new("A")),
+					Records: &[]dns.Record{{Content: new("1.1.1.1")}},
+					Id:      new("active-a-uuid"),
 				},
 				{
-					Name:    ptr.To("active2.example.com."),
-					Active:  ptr.To(true),
-					Type:    dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-					Records: &[]dns.Record{{Content: ptr.To("1.1.1.1")}},
-					Id:      ptr.To("active2-a-uuid"),
+					Name:    new("active2.example.com."),
+					Active:  new(true),
+					Type:    dns.RecordSetGetTypeAttributeType(new("A")),
+					Records: &[]dns.Record{{Content: new("1.1.1.1")}},
+					Id:      new("active2-a-uuid"),
 				},
 				{
-					Name:    ptr.To("active.example.com."),
-					Active:  ptr.To(true),
-					Type:    dns.RecordSetGetTypeAttributeType(ptr.To("TXT")),
-					Records: &[]dns.Record{{Content: ptr.To("hello-world")}},
-					Id:      ptr.To("active-txt-uuid"),
+					Name:    new("active.example.com."),
+					Active:  new(true),
+					Type:    dns.RecordSetGetTypeAttributeType(new("TXT")),
+					Records: &[]dns.Record{{Content: new("hello-world")}},
+					Id:      new("active-txt-uuid"),
 				},
 				{
-					Name:    ptr.To("inactive.example.com."),
-					Active:  ptr.To(false),
-					Type:    dns.RecordSetGetTypeAttributeType(ptr.To("A")),
-					Records: &[]dns.Record{{Content: ptr.To("2.2.2.2")}},
-					Id:      ptr.To("inactive-a-uuid"),
+					Name:    new("inactive.example.com."),
+					Active:  new(false),
+					Type:    dns.RecordSetGetTypeAttributeType(new("A")),
+					Records: &[]dns.Record{{Content: new("2.2.2.2")}},
+					Id:      new("inactive-a-uuid"),
 				},
 			}
 			rand.Shuffle(len(rrSets), func(i, j int) {
@@ -207,22 +206,22 @@ var _ = DescribeTable("areRecordsEqual",
 		Expect(areRecordsEqual(existingRecords, newRecords)).To(Equal(expected))
 	},
 	Entry("equal records",
-		[]dns.Record{{Content: ptr.To("1.2.3.4")}},
+		[]dns.Record{{Content: new("1.2.3.4")}},
 		[]string{"1.2.3.4"},
 		true,
 	),
 	Entry("equal records, different order",
-		[]dns.Record{{Content: ptr.To("1.2.3.4")}, {Content: ptr.To("5.6.7.8")}},
+		[]dns.Record{{Content: new("1.2.3.4")}, {Content: new("5.6.7.8")}},
 		[]string{"5.6.7.8", "1.2.3.4"},
 		true,
 	),
 	Entry("different records",
-		[]dns.Record{{Content: ptr.To("1.2.3.4")}},
+		[]dns.Record{{Content: new("1.2.3.4")}},
 		[]string{"5.6.7.8"},
 		false,
 	),
 	Entry("subset records",
-		[]dns.Record{{Content: ptr.To("1.2.3.4")}},
+		[]dns.Record{{Content: new("1.2.3.4")}},
 		[]string{"1.2.3.4", "5.6.7.8"},
 		false,
 	),

@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -66,7 +65,7 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 		})
 
 		It("should skip if NamespacedCloudProfile is in deletion phase", func() {
-			namespacedCloudProfile.DeletionTimestamp = ptr.To(metav1.Now())
+			namespacedCloudProfile.DeletionTimestamp = new(metav1.Now())
 			expectedProfile := namespacedCloudProfile.DeepCopy()
 
 			Expect(namespacedCloudProfileMutator.Mutate(ctx, namespacedCloudProfile, nil)).To(Succeed())
@@ -140,7 +139,7 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 						"Name": Equal("image-1"),
 						"Versions": ContainElements(
 							stackitv1alpha1.MachineImageVersion{Version: "1.0", Image: "image-name-1", Regions: []stackitv1alpha1.RegionIDMapping{{Name: "image-region-1", ID: "id-img-reg-1"}}},
-							stackitv1alpha1.MachineImageVersion{Version: "1.1", Image: "image-name-2", Regions: []stackitv1alpha1.RegionIDMapping{{Name: "image-region-2", ID: "id-img-reg-2", Architecture: ptr.To("armhf")}}},
+							stackitv1alpha1.MachineImageVersion{Version: "1.1", Image: "image-name-2", Regions: []stackitv1alpha1.RegionIDMapping{{Name: "image-region-2", ID: "id-img-reg-2", Architecture: new("armhf")}}},
 						),
 					}),
 					MatchFields(IgnoreExtras, Fields{

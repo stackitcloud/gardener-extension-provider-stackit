@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
@@ -66,7 +65,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 
 		It("should forbid floating ip subnet when router is specified", func() {
 			infrastructureConfig.Networks.Router = &stackitv1alpha1.Router{ID: "sample-router-id"}
-			infrastructureConfig.FloatingPoolSubnetName = ptr.To("sample-floating-pool-subnet-id")
+			infrastructureConfig.FloatingPoolSubnetName = new("sample-floating-pool-subnet-id")
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
@@ -77,7 +76,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should forbid subnet id when network id is unspecified", func() {
-			infrastructureConfig.Networks.SubnetID = ptr.To(uuid.NewString())
+			infrastructureConfig.Networks.SubnetID = new(uuid.NewString())
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
@@ -89,8 +88,8 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should forbid an invalid subnet id", func() {
-			infrastructureConfig.Networks.ID = ptr.To(uuid.NewString())
-			infrastructureConfig.Networks.SubnetID = ptr.To("thisiswrong")
+			infrastructureConfig.Networks.ID = new(uuid.NewString())
+			infrastructureConfig.Networks.SubnetID = new("thisiswrong")
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
@@ -102,8 +101,8 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should allow an valid OpenStack UUID as subnet ID", func() {
-			infrastructureConfig.Networks.ID = ptr.To(uuid.NewString())
-			infrastructureConfig.Networks.SubnetID = ptr.To(uuid.NewString())
+			infrastructureConfig.Networks.ID = new(uuid.NewString())
+			infrastructureConfig.Networks.SubnetID = new(uuid.NewString())
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
@@ -178,7 +177,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		It("should allow an valid OpenStack UUID as network ID", func() {
 			id, err := uuid.NewUUID()
 			Expect(err).NotTo(HaveOccurred())
-			infrastructureConfig.Networks.ID = ptr.To(id.String())
+			infrastructureConfig.Networks.ID = new(id.String())
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
@@ -217,7 +216,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 
 		It("should forbid changing the floating pool subnet", func() {
 			newInfrastructureConfig := infrastructureConfig.DeepCopy()
-			newInfrastructureConfig.FloatingPoolSubnetName = ptr.To("test")
+			newInfrastructureConfig.FloatingPoolSubnetName = new("test")
 
 			errorList := ValidateInfrastructureConfigUpdate(infrastructureConfig, newInfrastructureConfig, nilPath)
 

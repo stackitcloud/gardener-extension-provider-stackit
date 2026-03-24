@@ -15,7 +15,7 @@ func (r *Resources) reconcilePublicIP(ctx context.Context, log logr.Logger) erro
 	if r.PublicIP == nil {
 		var err error
 		r.PublicIP, err = r.IaaS.CreatePublicIp(ctx, iaas.CreatePublicIPPayload{
-			Labels: ptr.To(stackit.ToLabels(r.Labels)),
+			Labels: new(stackit.ToLabels(r.Labels)),
 		})
 		if err != nil {
 			return fmt.Errorf("error creating public IP: %w", err)

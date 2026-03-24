@@ -13,6 +13,7 @@ linters:
     - gosec
     - importas
     - misspell
+    - modernize
     - nilerr
     - nolintlint
     - prealloc

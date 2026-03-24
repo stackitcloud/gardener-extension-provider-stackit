@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"k8s.io/utils/ptr"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -19,24 +18,24 @@ func (r *Resources) reconcileServer(ctx context.Context, log logr.Logger) error 
 
 	var err error
 	r.Server, err = r.IaaS.CreateServer(ctx, iaas.CreateServerPayload{
-		Name:   ptr.To(r.ResourceName),
-		Labels: ptr.To(stackit.ToLabels(r.Labels)),
+		Name:   new(r.ResourceName),
+		Labels: new(stackit.ToLabels(r.Labels)),
 
-		AvailabilityZone: ptr.To(r.AvailabilityZone),
-		MachineType:      ptr.To(r.MachineType),
+		AvailabilityZone: new(r.AvailabilityZone),
+		MachineType:      new(r.MachineType),
 		BootVolume: &iaas.ServerBootVolume{
-			DeleteOnTermination: ptr.To(true),
+			DeleteOnTermination: new(true),
 			Source:              iaas.NewBootVolumeSource(r.ImageID, "image"),
 			// TODO: make size and performance class configurable
-			Size: ptr.To[int64](10),
+			Size: new(int64(10)),
 		},
 
-		SecurityGroups: ptr.To([]string{r.SecurityGroup.GetId()}),
-		Networking: ptr.To(iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
-			NetworkId: ptr.To(r.NetworkID),
+		SecurityGroups: new([]string{r.SecurityGroup.GetId()}),
+		Networking: new(iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
+			NetworkId: new(r.NetworkID),
 		})),
 
-		UserData: ptr.To(r.Bastion.Spec.UserData),
+		UserData: new(r.Bastion.Spec.UserData),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating server: %w", err)
