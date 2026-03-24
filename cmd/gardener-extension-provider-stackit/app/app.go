@@ -35,7 +35,6 @@ import (
 	stackitdnsrecord "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/dnsrecord"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/healthcheck"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure"
-	stackitinfrastructure "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/stackit"
 	stackitworker "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -187,7 +186,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			configFileOpts.Completed().ApplyDeployALBIngressController(&stackitcontrolplane.DeployALBIngressController)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitworker.DefaultAddOptions.CustomLabelDomain)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitcontrolplane.DefaultAddOptions.CustomLabelDomain)
-			configFileOpts.Completed().ApplyCustomLabelDomain(&stackitinfrastructure.DefaultAddOptions.CustomLabelDomain)
+			configFileOpts.Completed().ApplyCustomLabelDomain(&infrastructure.DefaultAddOptions.CustomLabelDomain)
 			log.Info("DeployALBIngressController?", "deploy", configFileOpts.Completed().Config.DeployALBIngressController)
 
 			bastionCtrlOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.Controller)
@@ -197,13 +196,13 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			healthCheckCtrlOpts.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 			heartbeatCtrlOpts.Completed().Apply(&heartbeat.DefaultAddOptions)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&infrastructure.DefaultAddOptions.CustomLabelDomain)
-			infraCtrlOpts.Completed().Apply(&stackitinfrastructure.DefaultAddOptions.Controller)
+			infraCtrlOpts.Completed().Apply(&infrastructure.DefaultAddOptions.Controller)
 			workerCtrlOpts.Completed().Apply(&stackitworker.DefaultAddOptions.Controller)
 
 			reconcileOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.IgnoreOperationAnnotation, &stackitbastion.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation, &stackitcontrolplane.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitdnsrecord.DefaultAddOptions.IgnoreOperationAnnotation, &stackitdnsrecord.DefaultAddOptions.ExtensionClasses)
-			reconcileOpts.Completed().Apply(&stackitinfrastructure.DefaultAddOptions.IgnoreOperationAnnotation, &stackitinfrastructure.DefaultAddOptions.ExtensionClasses)
+			reconcileOpts.Completed().Apply(&infrastructure.DefaultAddOptions.IgnoreOperationAnnotation, &infrastructure.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitworker.DefaultAddOptions.IgnoreOperationAnnotation, &stackitworker.DefaultAddOptions.ExtensionClasses)
 
 			stackitworker.DefaultAddOptions.GardenCluster = gardenCluster
