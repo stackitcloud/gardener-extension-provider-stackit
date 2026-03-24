@@ -13,6 +13,6 @@ import (
 )
 
 // Migrate deletes the k8s infrastructure resources without deleting the corresponding resources in the IaaS provider.
-func (a *actuator) Migrate(ctx context.Context, log logr.Logger, infra *extensionsv1alpha1.Infrastructure, _ *controller.Cluster) error {
+func (a *actuator) Migrate(context.Context, logr.Logger, *extensionsv1alpha1.Infrastructure, *controller.Cluster) error {
 	return nil
 }
