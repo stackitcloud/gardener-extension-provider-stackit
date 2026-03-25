@@ -496,9 +496,9 @@ var _ = Describe("ValuesProvider", func() {
 		})
 
 		stackitPodIdentityWebhookChartSeedValues := map[string]any{
-			"replicaCount": 2,
+			"replicaCount": 1,
 			"webhook": map[string]any{
-				"tlsSecretName": "stackit-pod-identity-webhook-server",
+				"tlsSecretName": "pod-identity-webhook-server",
 			},
 		}
 
@@ -522,7 +522,7 @@ var _ = Describe("ValuesProvider", func() {
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-server", Namespace: namespace}})).To(Succeed())
-			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "stackit-pod-identity-webhook-server", Namespace: namespace}})).To(Succeed())
+			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pod-identity-webhook-server", Namespace: namespace}})).To(Succeed())
 
 			// This call is made for emergency Loadbalancer API access.
 			// It will return a NotFound error by default to not interfere with existing tests.
