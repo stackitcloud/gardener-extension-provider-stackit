@@ -727,7 +727,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		}
 	}
 
-	podIdentityWebhook, err := getSTACKITPodIdentityWebhookChartValues(cluster, secretsReader, scaledDown)
+	podIdentityWebhook, err := getPodIdentityWebhookChartValues(cluster, secretsReader, scaledDown)
 	if err != nil {
 		return nil, err
 	}
@@ -1081,7 +1081,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
-	podIdentityWebhook, err := vp.getSTACKITPodIdentityWebhookShootChartValues(secretsReader)
+	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(secretsReader)
 	if err != nil {
 		return nil, err
 	}
@@ -1298,7 +1298,7 @@ func cleanupCloudProviderConfigSecret(ctx context.Context, client k8sclient.Clie
 	return nil
 }
 
-func getSTACKITPodIdentityWebhookChartValues(
+func getPodIdentityWebhookChartValues(
 	cluster *extensionscontroller.Cluster,
 	secretsReader secretsmanager.Reader,
 	scaledDown bool,
@@ -1316,7 +1316,7 @@ func getSTACKITPodIdentityWebhookChartValues(
 	}, nil
 }
 
-func (vp *valuesProvider) getSTACKITPodIdentityWebhookShootChartValues(
+func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 	secretsReader secretsmanager.Reader,
 ) (map[string]any, error) {
 	caSecret, found := secretsReader.Get(caNameControlPlane)
