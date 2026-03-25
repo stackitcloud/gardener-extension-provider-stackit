@@ -1,10 +1,5 @@
 replicaCount: 2
 
-# String to override the name for the chart
-nameOverride: ""
-# String to fully override the fullname of the chart
-fullnameOverride: ""
-
 webhook:
   port: 9443
   # The secret name containing tls.crt and tls.key for the webhook server

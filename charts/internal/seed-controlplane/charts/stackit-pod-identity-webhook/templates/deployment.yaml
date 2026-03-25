@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "stackit-pod-identity-webhook.fullname" . }}
+  name: stackit-pod-identity-webhook
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "stackit-pod-identity-webhook.labels" . | nindent 4 }}
+    app.kubernetes.io/name: stackit-pod-identity-webhook
     high-availability-config.resources.gardener.cloud/type: server
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: stackit-pod-identity-webhook
   template:
     metadata:
       labels:
-        {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/name: stackit-pod-identity-webhook
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
     spec:
