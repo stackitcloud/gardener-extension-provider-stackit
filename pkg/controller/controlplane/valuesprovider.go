@@ -122,6 +122,7 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 		gutil.NewShootAccessSecret(openstack.CSISnapshotterName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSIResizerName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSISnapshotControllerName, namespace),
+		gutil.NewShootAccessSecret(stackit.STACKITPodIdentityWebhookName, namespace),
 	}
 }
 
