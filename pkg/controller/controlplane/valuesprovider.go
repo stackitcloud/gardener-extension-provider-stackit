@@ -1309,7 +1309,7 @@ func getPodIdentityWebhookChartValues(
 	}
 
 	return map[string]any{
-		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 2),
+		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"webhook": map[string]any{
 			"tlsSecretName": tlsSecret.Name,
 		},
