@@ -1324,9 +1324,14 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 		return nil, fmt.Errorf("secret %q not found", caNameControlPlane)
 	}
 
+	caBundle, ok := caSecret.Data[secretutils.DataKeyCertificateBundle]
+	if !ok || len(caBundle) == 0 {
+		return nil, fmt.Errorf("secret %q is missing non-empty %q data", caNameControlPlane, secretutils.DataKeyCertificateBundle)
+	}
+
 	return map[string]any{
 		"webhook": map[string]any{
-			"caBundle": caSecret.Data[secretutils.DataKeyCertificateBundle],
+			"caBundle": caBundle,
 		},
 	}, nil
 }
