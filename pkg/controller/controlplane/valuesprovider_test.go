@@ -16,6 +16,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/utils"
+	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
@@ -520,7 +521,7 @@ var _ = Describe("ValuesProvider", func() {
 			c.EXPECT().Delete(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CloudProviderConfigName), Namespace: namespace}})
 
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
-			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
+			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}, Data: map[string][]byte{secretutils.DataKeyCertificateBundle: []byte("fake-ca-cert")}})).To(Succeed())
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-server", Namespace: namespace}})).To(Succeed())
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "pod-identity-webhook-server", Namespace: namespace}})).To(Succeed())
 
@@ -893,13 +894,13 @@ var _ = Describe("ValuesProvider", func() {
 	Describe("#GetControlPlaneShootChartValues", func() {
 		stackitPodIdentityWebhookChartShootValues := map[string]any{
 			"webhook": map[string]any{
-				"caBundle": "",
+				"caBundle": []byte("fake-ca-cert"),
 			},
 		}
 
 		BeforeEach(func() {
 			By("creating secrets managed outside of this package for whose secretsmanager.Get() will be called")
-			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}})).To(Succeed())
+			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "ca-provider-openstack-controlplane", Namespace: namespace}, Data: map[string][]byte{secretutils.DataKeyCertificateBundle: []byte("fake-ca-cert")}})).To(Succeed())
 			Expect(fakeClient.Create(context.TODO(), &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "cloud-controller-manager-server", Namespace: namespace}})).To(Succeed())
 		})
 
