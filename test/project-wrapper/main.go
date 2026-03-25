@@ -16,7 +16,7 @@ import (
 
 	"github.com/stackitcloud/stackit-sdk-go/services/authorization"
 	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
-	"github.com/stackitcloud/stackit-sdk-go/services/serviceaccount"
+	serviceaccount "github.com/stackitcloud/stackit-sdk-go/services/serviceaccount/v2api"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/set"
 
@@ -205,13 +205,13 @@ func createServiceAccountAndKey(ctx context.Context, projectID string) (string, 
 	}
 
 	createAccountPayload := serviceaccount.CreateServiceAccountPayload{
-		Name: new("ske-intgrtn-tst"),
+		Name: "ske-intgrtn-tst",
 	}
-	resp, err := saClient.CreateServiceAccount(ctx, projectID).CreateServiceAccountPayload(createAccountPayload).Execute()
+	resp, err := saClient.DefaultAPI.CreateServiceAccount(ctx, projectID).CreateServiceAccountPayload(createAccountPayload).Execute()
 	if err != nil {
 		return "", fmt.Errorf("error when calling CreateServiceAccount: %v", err)
 	}
-	mail := *resp.Email
+	mail := resp.Email
 	validUntil := time.Now().Add(time.Hour * 3)
 
 	roles := set.New(sdk.ServiceAccountRoles...)
@@ -226,7 +226,7 @@ func createServiceAccountAndKey(ctx context.Context, projectID string) (string, 
 		Factor:   2.0,
 		Steps:    5,
 	}, func() (*serviceaccount.CreateServiceAccountKeyResponse, error) {
-		saKey, err = saClient.CreateServiceAccountKey(ctx, projectID, mail).CreateServiceAccountKeyPayload(serviceaccount.CreateServiceAccountKeyPayload{ValidUntil: &validUntil}).Execute()
+		saKey, err = saClient.DefaultAPI.CreateServiceAccountKey(ctx, projectID, mail).CreateServiceAccountKeyPayload(serviceaccount.CreateServiceAccountKeyPayload{ValidUntil: &validUntil}).Execute()
 		return saKey, err
 	})
 	if err != nil {
