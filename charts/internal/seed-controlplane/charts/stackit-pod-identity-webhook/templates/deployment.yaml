@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "stackit-pod-identity-webhook.labels" . | nindent 4 }}
+    high-availability-config.resources.gardener.cloud/type: server
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -16,7 +17,6 @@ spec:
         {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 8 }}
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
-        high-availability-config.resources.gardener.cloud/type: controller
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-public-networks: allowed
         networking.gardener.cloud/to-private-networks: allowed
