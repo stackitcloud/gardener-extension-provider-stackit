@@ -12,6 +12,7 @@ webhooks:
         name: stackit-pod-identity-webhook
         namespace: {{ .Release.Namespace }}
         path: "/mutate--v1-pod"
+        caBundle: {{ .Values.webhook.caBundle | b64enc }}
     rules:
       - operations: ["CREATE"]
         apiGroups: [""]

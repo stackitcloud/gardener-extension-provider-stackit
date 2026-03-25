@@ -1326,7 +1326,7 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 
 	return map[string]any{
 		"webhook": map[string]any{
-			"caBundle": gardenerutils.EncodeBase64(caSecret.Data[secretutils.DataKeyCertificateBundle]),
+			"caBundle": caSecret.Data[secretutils.DataKeyCertificateBundle],
 		},
 	}, nil
 }
