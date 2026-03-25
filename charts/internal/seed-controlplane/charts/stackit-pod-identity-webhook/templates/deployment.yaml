@@ -17,10 +17,6 @@ spec:
         {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 8 }}
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
-        networking.gardener.cloud/to-dns: allowed
-        networking.gardener.cloud/to-public-networks: allowed
-        networking.gardener.cloud/to-private-networks: allowed
-        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name | default (include "stackit-pod-identity-webhook.fullname" .) }}
       {{- with .Values.podSecurityContext }}
