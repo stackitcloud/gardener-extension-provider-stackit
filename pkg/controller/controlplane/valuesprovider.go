@@ -215,6 +215,7 @@ var (
 				Images: []string{imagevector.ImageNameStackitPodIdentityWebhook},
 				Objects: []*chart.Object{
 					{Type: &appsv1.Deployment{}, Name: stackit.STACKITPodIdentityWebhookName},
+					{Type: &policyv1.PodDisruptionBudget{}, Name: stackit.STACKITPodIdentityWebhookName},
 					{Type: &corev1.Service{}, Name: stackit.STACKITPodIdentityWebhookName},
 					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: stackit.STACKITPodIdentityWebhookName},
 				},
