@@ -30,7 +30,6 @@ spec:
           drop:
           - ALL
         readOnlyRootFilesystem: true
-      {{- end }}
       priorityClassName: gardener-system-200
       containers:
         - name: stackit-pod-identity-webhook
