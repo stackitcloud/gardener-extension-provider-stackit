@@ -1,5 +1,8 @@
 replicaCount: 2
 
+images:
+  stackit-pod-identity-webhook: image-repository:image-tag
+
 webhook:
   port: 9443
   # The secret name containing tls.crt and tls.key for the webhook server
