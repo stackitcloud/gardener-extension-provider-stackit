@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: stackit-pod-identity-webhook
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.webhook.port }}
