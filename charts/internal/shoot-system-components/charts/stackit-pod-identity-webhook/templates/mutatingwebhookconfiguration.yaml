@@ -2,7 +2,6 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: stackit-pod-identity-webhook
-  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: stackit-pod-identity-webhook
 webhooks:
@@ -20,7 +19,7 @@ webhooks:
         resources: ["pods"]
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" }}
+    failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
