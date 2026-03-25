@@ -25,11 +25,15 @@ spec:
         runAsGroup: 1239
         fsGroup: 1239
       securityContext:
-        {{- toYaml . | nindent 8 }}
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
       {{- end }}
       priorityClassName: gardener-system-200
       containers:
-        - name: {{ .Chart.Name }}
+        - name: stackit-pod-identity-webhook
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59,7 +63,11 @@ spec:
               path: /readyz
               port: health
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+              limits:
+                memory: 128Mi
+              requests:
+                cpu: 50m
+                memory: 64Mi
           volumeMounts:
             - name: certs
               mountPath: /etc/webhook/certs
@@ -68,15 +76,3 @@ spec:
         - name: certs
           secret:
             secretName: {{ .Values.webhook.tlsSecretName }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
