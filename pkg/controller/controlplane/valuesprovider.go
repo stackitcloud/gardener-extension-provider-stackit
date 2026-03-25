@@ -215,6 +215,7 @@ var (
 				Objects: []*chart.Object{
 					{Type: &appsv1.Deployment{}, Name: stackit.STACKITPodIdentityWebhookName},
 					{Type: &corev1.Service{}, Name: stackit.STACKITPodIdentityWebhookName},
+					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: stackit.STACKITPodIdentityWebhookName},
 				},
 			},
 		},
