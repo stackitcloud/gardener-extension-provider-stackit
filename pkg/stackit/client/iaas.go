@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -49,7 +49,7 @@ type IaaSClient interface {
 }
 
 type iaasClient struct {
-	Client    iaas.DefaultApi
+	Client    iaas.DefaultAPI
 	projectID string
 	region    string
 }
@@ -142,7 +142,7 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 		return nil, err
 	}
 	return &iaasClient{
-		Client:    apiClient,
+		Client:    apiClient.DefaultAPI,
 		projectID: credentials.ProjectID,
 		region:    region,
 	}, nil
@@ -165,12 +165,12 @@ func (c iaasClient) CreateSecurityGroup(ctx context.Context, payload iaas.Create
 }
 
 func (c iaasClient) DeleteSecurityGroup(ctx context.Context, securityGroupId string) error {
-	return c.Client.DeleteSecurityGroupExecute(ctx, c.projectID, c.region, securityGroupId)
+	return c.Client.DeleteSecurityGroup(ctx, c.projectID, c.region, securityGroupId).Execute()
 }
 
 // GetSecurityGroupByName finds the first security group with the given name.
 func (c iaasClient) GetSecurityGroupByName(ctx context.Context, name string) ([]iaas.SecurityGroup, error) {
-	securityGroups, err := c.Client.ListSecurityGroupsExecute(ctx, c.projectID, c.region)
+	securityGroups, err := c.Client.ListSecurityGroups(ctx, c.projectID, c.region).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("error listing security groups: %w", err)
 	}
@@ -208,7 +208,7 @@ func (c iaasClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Lo
 			ruleLog.V(1).Info("Found existing security group rule")
 		} else {
 			// delete unwanted rule
-			if err := c.Client.DeleteSecurityGroupRuleExecute(ctx, c.projectID, c.region, securityGroup.GetId(), existingRule.GetId()); err != nil {
+			if err := c.Client.DeleteSecurityGroupRule(ctx, c.projectID, c.region, securityGroup.GetId(), existingRule.GetId()).Execute(); err != nil {
 				return fmt.Errorf("error deleting unwanted security group rule %s in group %s: %w", existingRule.GetId(), securityGroup.GetId(), err)
 			}
 
@@ -250,7 +250,7 @@ func findMatchingRule(rule iaas.SecurityGroupRule, wantedRules []iaas.SecurityGr
 
 		// The infra controller when creating a SecGroup, unlike OpenStack infra ctrl, now initially wipes the SecGroup so
 		// that the default from OpenStack does not carry over.
-		if cmp.Equal(rule, wanted, stackit.ProtocolComparison, cmpopts.IgnoreFields(iaas.SecurityGroupRule{}, "Description", "Id", "CreatedAt", "UpdatedAt", "SecurityGroupId")) {
+		if cmp.Equal(rule, wanted, stackit.ProtocolComparison, cmpopts.IgnoreFields(iaas.SecurityGroupRule{}, "Description", "Id", "CreatedAt", "UpdatedAt", "SecurityGroupId", "AdditionalProperties", "IcmpParameters")) {
 			return &wantedRules[i]
 		}
 	}
@@ -282,12 +282,12 @@ func (c iaasClient) CreateServer(ctx context.Context, payload iaas.CreateServerP
 }
 
 func (c iaasClient) DeleteServer(ctx context.Context, serverId string) error {
-	return c.Client.DeleteServerExecute(ctx, c.projectID, c.region, serverId)
+	return c.Client.DeleteServer(ctx, c.projectID, c.region, serverId).Execute()
 }
 
 // GetServerByName finds the first server with the given name.
 func (c iaasClient) GetServerByName(ctx context.Context, name string) ([]iaas.Server, error) {
-	servers, err := c.Client.ListServersExecute(ctx, c.projectID, c.region)
+	servers, err := c.Client.ListServers(ctx, c.projectID, c.region).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("error listing servers: %w", err)
 	}
@@ -305,13 +305,13 @@ func (c iaasClient) CreatePublicIp(ctx context.Context, payload iaas.CreatePubli
 }
 
 func (c iaasClient) DeletePublicIp(ctx context.Context, publicIpId string) error {
-	return c.Client.DeletePublicIPExecute(ctx, c.projectID, c.region, publicIpId)
+	return c.Client.DeletePublicIP(ctx, c.projectID, c.region, publicIpId).Execute()
 }
 
 // GetPublicIpByLabels finds the first public IP that matches the given label selector. Public IPs don't have a name,
 // so matching by label is our best option.
 func (c iaasClient) GetPublicIpByLabels(ctx context.Context, selector stackit.LabelSelector) ([]iaas.PublicIp, error) {
-	publicIPs, err := c.Client.ListPublicIPsExecute(ctx, c.projectID, c.region)
+	publicIPs, err := c.Client.ListPublicIPs(ctx, c.projectID, c.region).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("error listing public IPs: %w", err)
 	}
@@ -325,11 +325,11 @@ func (c iaasClient) GetPublicIpByLabels(ctx context.Context, selector stackit.La
 }
 
 func (c iaasClient) AddPublicIpToServer(ctx context.Context, serverId, publicIpId string) error {
-	return c.Client.AddPublicIpToServerExecute(ctx, c.projectID, c.region, serverId, publicIpId)
+	return c.Client.AddPublicIpToServer(ctx, c.projectID, c.region, serverId, publicIpId).Execute()
 }
 
 func (c iaasClient) GetKeypair(ctx context.Context, name string) (*iaas.Keypair, error) {
-	keypair, err := c.Client.GetKeyPairExecute(ctx, name)
+	keypair, err := c.Client.GetKeyPair(ctx, name).Execute()
 	if IsNotFound(err) {
 		return nil, nil
 	}
@@ -337,18 +337,18 @@ func (c iaasClient) GetKeypair(ctx context.Context, name string) (*iaas.Keypair,
 }
 
 func (c iaasClient) CreateKeypair(ctx context.Context, name, publicKey string) (*iaas.Keypair, error) {
-	return c.Client.CreateKeyPair(ctx).CreateKeyPairPayload(iaas.CreateKeyPairPayload{Name: &name, PublicKey: &publicKey}).Execute()
+	return c.Client.CreateKeyPair(ctx).CreateKeyPairPayload(iaas.CreateKeyPairPayload{Name: &name, PublicKey: publicKey}).Execute()
 }
 
 func (c iaasClient) DeleteKeypair(ctx context.Context, name string) error {
-	return c.Client.DeleteKeyPairExecute(ctx, name)
+	return c.Client.DeleteKeyPair(ctx, name).Execute()
 }
 
 func IsolatedNetworkToPartialUpdate(network iaas.CreateIsolatedNetworkPayload) iaas.PartialUpdateNetworkPayload {
 	return iaas.PartialUpdateNetworkPayload{
 		Dhcp:   network.Dhcp,
 		Labels: network.Labels,
-		Name:   network.Name,
+		Name:   &network.Name,
 		Ipv4: &iaas.UpdateNetworkIPv4Body{
 			Gateway:     network.Ipv4.CreateNetworkIPv4WithPrefix.Gateway,
 			Nameservers: network.Ipv4.CreateNetworkIPv4WithPrefix.Nameservers,

@@ -523,7 +523,7 @@ func (fctx *FlowContext) ensureStackitSSHKeyPair(ctx context.Context) error {
 		return err
 	}
 	if keyPair != nil {
-		publicKey := ptr.Deref(keyPair.PublicKey, "")
+		publicKey := keyPair.PublicKey
 		// if the public keys are matching then return early. In all other cases we should be creating (or replacing) the keypair with a new one.
 		if publicKey != "" && publicKey == string(fctx.infra.Spec.SSHPublicKey) {
 			fctx.state.Set(NameKeyPair, *keyPair.Name)
