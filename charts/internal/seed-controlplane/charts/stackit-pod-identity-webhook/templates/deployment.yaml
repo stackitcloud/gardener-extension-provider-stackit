@@ -19,17 +19,23 @@ spec:
         gardener.cloud/role: controlplane
     spec:
       automountServiceAccountToken: false
-      {{- with .Values.podSecurityContext }}
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1239
+        runAsGroup: 1239
+        fsGroup: 1239
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      priorityClassName: {{ .Values.priorityClassName }}
+      priorityClassName: gardener-system-200
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.containerSecurityContext }}
           securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           image: {{ index .Values.images "stackit-pod-identity-webhook" }}
           args:
             - --cert-dir=/etc/webhook/certs

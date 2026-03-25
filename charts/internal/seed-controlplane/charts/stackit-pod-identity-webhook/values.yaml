@@ -28,13 +28,6 @@ serviceAccount:
   annotations: {}
   name: "stackit-pod-identity-webhook"
 
-# PodSecurityContext holds pod-level security attributes and common container settings.
-podSecurityContext:
-  runAsNonRoot: true
-  runAsUser: 1239
-  runAsGroup: 1239
-  fsGroup: 1239
-
 # SecurityContext holds security configuration that will be applied to a container.
 containerSecurityContext:
   allowPrivilegeEscalation: false
@@ -51,5 +44,3 @@ tolerations: []
 
 # Affinity is a group of affinity scheduling rules.
 affinity: {}
-
-priorityClassName: gardener-system-300
