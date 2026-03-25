@@ -6,7 +6,6 @@ images:
 webhook:
   port: 9443
   # The secret name containing tls.crt and tls.key for the webhook server
-  # If certmanager.enabled is true, this secret will be created by cert-manager
   tlsSecretName: "stackit-pod-identity-webhook-certs"
 
 service:
