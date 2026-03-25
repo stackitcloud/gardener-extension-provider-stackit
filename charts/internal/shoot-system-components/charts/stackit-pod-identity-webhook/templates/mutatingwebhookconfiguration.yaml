@@ -1,18 +1,14 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ include "stackit-pod-identity-webhook.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: stackit-pod-identity-webhook
   labels:
-    app.kubernetes.io/name: {{ .Chart.Name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: stackit-pod-identity-webhook
 webhooks:
   - name: stackit-pod-identity-webhook.stackit.cloud
     clientConfig:
-      service:
-        name: {{ include "stackit-pod-identity-webhook.fullname" . }}
-        namespace: {{ .Release.Namespace }}
-        path: "/mutate--v1-pod"
+      url: {{ .Values.webhook.url | quote }}  
+      caBundle: {{ .Values.webhook.caBundle | quote }}  
     rules:
       - operations: ["CREATE"]
         apiGroups: [""]
@@ -20,14 +16,12 @@ webhooks:
         resources: ["pods"]
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" }}
+    failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values: ["kube-system", "garden"]
-        - key: gardener.cloud/role
-          operator: DoesNotExist
         - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
           operator: DoesNotExist
     objectSelector:

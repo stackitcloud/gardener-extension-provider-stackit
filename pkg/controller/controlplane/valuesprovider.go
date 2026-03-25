@@ -58,7 +58,7 @@ import (
 const (
 	caNameControlPlane                  = "ca-" + openstack.Name + "-controlplane"
 	cloudControllerManagerServerName    = openstack.CloudControllerManagerName + "-server"
-	stackitPodIdentityWebhookServerName = stackit.STACKITPodIdentityWebhookName + "-server"
+	stackitPodIdentityWebhookServerName = stackit.PodIdentityWebhookName + "-server"
 
 	CSIStackitPrefix = "stackit-blockstorage"
 
@@ -104,8 +104,8 @@ func secretConfigsFunc(namespace string) []extensionssecretmanager.SecretConfigW
 		{
 			Config: &secretutils.CertificateSecretConfig{
 				Name:                        stackitPodIdentityWebhookServerName,
-				CommonName:                  stackit.STACKITPodIdentityWebhookName,
-				DNSNames:                    kutil.DNSNamesForService(stackit.STACKITPodIdentityWebhookName, namespace),
+				CommonName:                  stackit.PodIdentityWebhookName,
+				DNSNames:                    kutil.DNSNamesForService(stackit.PodIdentityWebhookName, namespace),
 				CertType:                    secretutils.ServerCert,
 				SkipPublishingCACertificate: true,
 			},
@@ -122,6 +122,7 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 		gutil.NewShootAccessSecret(openstack.CSISnapshotterName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSIResizerName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSISnapshotControllerName, namespace),
+		gutil.NewShootAccessSecret(stackit.PodIdentityWebhookName, namespace),
 	}
 }
 
@@ -210,11 +211,13 @@ var (
 				},
 			},
 			{
-				Name:   stackit.STACKITPodIdentityWebhookName,
+				Name:   stackit.PodIdentityWebhookName,
 				Images: []string{imagevector.ImageNameStackitPodIdentityWebhook},
 				Objects: []*chart.Object{
-					{Type: &appsv1.Deployment{}, Name: stackit.STACKITPodIdentityWebhookName},
-					{Type: &corev1.Service{}, Name: stackit.STACKITPodIdentityWebhookName},
+					{Type: &appsv1.Deployment{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &policyv1.PodDisruptionBudget{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &corev1.Service{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: stackit.PodIdentityWebhookName},
 				},
 			},
 		},
@@ -317,9 +320,9 @@ var (
 				},
 			},
 			{
-				Name: stackit.STACKITPodIdentityWebhookName,
+				Name: stackit.PodIdentityWebhookName,
 				Objects: []*chart.Object{
-					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: stackit.STACKITPodIdentityWebhookName},
+					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: stackit.PodIdentityWebhookName},
 				},
 			},
 		},
@@ -724,7 +727,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		}
 	}
 
-	podIdentityWebhook, err := getSTACKITPodIdentityWebhookChartValues(cluster, secretsReader, scaledDown)
+	podIdentityWebhook, err := getPodIdentityWebhookChartValues(cluster, secretsReader, scaledDown)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +756,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		},
 		openstack.CloudControllerManagerName:        ccm,
 		openstack.STACKITCloudControllerManagerName: stackitccm,
-		stackit.STACKITPodIdentityWebhookName:       podIdentityWebhook,
+		stackit.PodIdentityWebhookName:              podIdentityWebhook,
 	})
 
 	if vp.deployALBIngressController {
@@ -1078,14 +1081,14 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
-	podIdentityWebhook, err := vp.getSTACKITPodIdentityWebhookShootChartValues(secretsReader)
+	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(cp.Namespace, secretsReader)
 	if err != nil {
 		return nil, err
 	}
 
 	maps.Copy(values, map[string]any{
-		openstack.CloudControllerManagerName:  map[string]any{"enabled": true},
-		stackit.STACKITPodIdentityWebhookName: podIdentityWebhook,
+		openstack.CloudControllerManagerName: map[string]any{"enabled": true},
+		stackit.PodIdentityWebhookName:       podIdentityWebhook,
 	})
 
 	return values, nil
@@ -1295,7 +1298,7 @@ func cleanupCloudProviderConfigSecret(ctx context.Context, client k8sclient.Clie
 	return nil
 }
 
-func getSTACKITPodIdentityWebhookChartValues(
+func getPodIdentityWebhookChartValues(
 	cluster *extensionscontroller.Cluster,
 	secretsReader secretsmanager.Reader,
 	scaledDown bool,
@@ -1306,14 +1309,15 @@ func getSTACKITPodIdentityWebhookChartValues(
 	}
 
 	return map[string]any{
-		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 2),
+		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"webhook": map[string]any{
 			"tlsSecretName": tlsSecret.Name,
 		},
 	}, nil
 }
 
-func (vp *valuesProvider) getSTACKITPodIdentityWebhookShootChartValues(
+func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
+	controlPlaneNamespace string,
 	secretsReader secretsmanager.Reader,
 ) (map[string]any, error) {
 	caSecret, found := secretsReader.Get(caNameControlPlane)
@@ -1321,9 +1325,15 @@ func (vp *valuesProvider) getSTACKITPodIdentityWebhookShootChartValues(
 		return nil, fmt.Errorf("secret %q not found", caNameControlPlane)
 	}
 
+	caBundle, ok := caSecret.Data[secretutils.DataKeyCertificateBundle]
+	if !ok || len(caBundle) == 0 {
+		return nil, fmt.Errorf("secret %q is missing non-empty %q data", caNameControlPlane, secretutils.DataKeyCertificateBundle)
+	}
+
 	return map[string]any{
 		"webhook": map[string]any{
-			"caBundle": gardenerutils.EncodeBase64(caSecret.Data[secretutils.DataKeyCertificateBundle]),
+			"caBundle": caBundle,
+			"url":      fmt.Sprintf("https://%s.%s:443/mutate--v1-pod", stackit.PodIdentityWebhookName, controlPlaneNamespace),
 		},
 	}, nil
 }

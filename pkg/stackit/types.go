@@ -17,8 +17,8 @@ const (
 	DirectionEgress  = "egress"
 	DirectionIngress = "ingress"
 
-	// STACKITPodIdentityWebhookName is a constant for the name of the Pod Identity Webhook. (stackit)
-	STACKITPodIdentityWebhookName = "stackit-pod-identity-webhook"
+	// PodIdentityWebhookName is a constant for the name of the Pod Identity Webhook. (stackit)
+	PodIdentityWebhookName = "stackit-pod-identity-webhook"
 )
 
 var (

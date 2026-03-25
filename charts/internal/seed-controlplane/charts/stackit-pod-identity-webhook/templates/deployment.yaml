@@ -1,43 +1,66 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "stackit-pod-identity-webhook.fullname" . }}
+  name: stackit-pod-identity-webhook
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "stackit-pod-identity-webhook.labels" . | nindent 4 }}
+    app.kubernetes.io/name: stackit-pod-identity-webhook
+    high-availability-config.resources.gardener.cloud/type: server
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: stackit-pod-identity-webhook
   template:
     metadata:
       labels:
-        {{- include "stackit-pod-identity-webhook.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/name: stackit-pod-identity-webhook
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
-        high-availability-config.resources.gardener.cloud/type: controller
         networking.gardener.cloud/to-dns: allowed
-        networking.gardener.cloud/to-public-networks: allowed
-        networking.gardener.cloud/to-private-networks: allowed
         networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name | default (include "stackit-pod-identity-webhook.fullname" .) }}
-      {{- with .Values.podSecurityContext }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: "topology.kubernetes.io/zone"
+          whenUnsatisfiable: DoNotSchedule 
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: stackit-pod-identity-webhook
+        - maxSkew: 1
+          topologyKey: "kubernetes.io/hostname"
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: stackit-pod-identity-webhook
+      automountServiceAccountToken: false
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1239
+        runAsGroup: 1239
+        fsGroup: 1239
       securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      priorityClassName: {{ .Values.priorityClassName }}
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+      priorityClassName: gardener-system-200
       containers:
-        - name: {{ .Chart.Name }}
-          {{- with .Values.containerSecurityContext }}
+        - name: stackit-pod-identity-webhook
           securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           image: {{ index .Values.images "stackit-pod-identity-webhook" }}
           args:
             - --cert-dir=/etc/webhook/certs
             - --port={{ .Values.webhook.port }}
+          env:
+          - name: KUBECONFIG
+            value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           ports:
             - name: https
               containerPort: {{ .Values.webhook.port }}
@@ -57,24 +80,35 @@ spec:
               path: /readyz
               port: health
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+              limits:
+                memory: 128Mi
+              requests:
+                cpu: 50m
+                memory: 64Mi
           volumeMounts:
             - name: certs
               mountPath: /etc/webhook/certs
+              readOnly: true
+            - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+              name: kubeconfig
               readOnly: true
       volumes:
         - name: certs
           secret:
             secretName: {{ .Values.webhook.tlsSecretName }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: kubeconfig
+          projected:
+            defaultMode: 420
+            sources:
+            - secret:
+                items:
+                  - key: kubeconfig
+                    path: kubeconfig
+                name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+                optional: false
+            - secret:
+                items:
+                  - key: token
+                    path: token
+                name: shoot-access-pod-identity-webhook
+                optional: false
