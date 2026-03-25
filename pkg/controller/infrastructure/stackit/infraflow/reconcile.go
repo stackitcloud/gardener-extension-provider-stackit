@@ -72,6 +72,7 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	_ = fctx.AddTask(g, "ensure openstack keypair",
 		fctx.ensureOpenStackKeyPair,
 		shared.DoIf(fctx.hasOpenStackCredentials),
+		shared.Timeout(defaultTimeout),
 	)
 
 	_ = fctx.AddTask(g, "ensure stackit ssh key pair",
