@@ -110,7 +110,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) ## Runs golangci-lint, gofmt/goimpo
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 # generate mock types for the following services from the SDK (space-separated list)
-SDK_MOCK_SERVICES := iaas dns
+SDK_MOCK_SERVICES := dns
 
 .PHONY: generate-mocks
 generate-mocks: $(MOCKGEN)
@@ -120,7 +120,13 @@ generate-mocks: $(MOCKGEN)
 		INTERFACES=`go doc -all github.com/stackitcloud/stackit-sdk-go/services/$$service | grep '^type Api.* interface' | sed -n 's/^type \(.*\) interface.*/\1/p' | paste -sd,`,DefaultApi; \
 		$(MOCKGEN) -destination ./pkg/stackit/client/mock/$$service/$$service.go -package $$service github.com/stackitcloud/stackit-sdk-go/services/$$service $$INTERFACES; \
 	done
-	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancer/loadbalancer.go -package loadbalancer github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api DefaultAPI
+
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancer/loadbalancer.go -package loadbalancer -imports loadbalancerv2api=github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api DefaultAPI
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/iaas/iaas.go -package iaas -imports iaasv2api=github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api DefaultAPI
+
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/mocks.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client Factory,DNSClient
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/iaas_mock.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client IaaSClient
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancing_mock.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client LoadBalancingClient
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN) $(YQ) $(YAML2JSON) $(GOIMPORTS) generate-mocks ## Generates the controller-registration, other code-gen, the imagename constants as well as executes go:generate directives
