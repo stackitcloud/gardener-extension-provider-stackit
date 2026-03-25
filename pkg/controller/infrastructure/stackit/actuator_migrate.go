@@ -6,14 +6,17 @@ package stackit
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 )
 
-// Migrate deletes the k8s infrastructure resources without deleting the corresponding resources in the IaaS provider.
-func (a *actuator) Migrate(ctx context.Context, log logr.Logger, infra *extensionsv1alpha1.Infrastructure, _ *controller.Cluster) error {
-	return fmt.Errorf("not yet implemented")
+// Migrate deletes resources in the seed cluster related to the Infrastructure object without deleting the corresponding
+// IaaS resources in the cloud provider. As this Infrastructure controller does not create any Kubernetes objects in the
+// seed cluster, there is nothing to do when preparing the control plane migration. The finalizer is removed from the
+// Infrastructure object so the Delete method is not called and the IaaS resources are simply adopted by the Restore
+// method invoked on the destination seed cluster.
+func (a *actuator) Migrate(context.Context, logr.Logger, *extensionsv1alpha1.Infrastructure, *controller.Cluster) error {
+	return nil
 }
