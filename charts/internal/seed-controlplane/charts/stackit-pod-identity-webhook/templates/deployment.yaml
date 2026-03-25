@@ -18,7 +18,7 @@ spec:
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name | default (include "stackit-pod-identity-webhook.fullname" .) }}
+      automountServiceAccountToken: false
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
