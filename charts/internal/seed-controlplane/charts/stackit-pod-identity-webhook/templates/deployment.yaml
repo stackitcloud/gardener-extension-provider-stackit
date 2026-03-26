@@ -58,7 +58,7 @@ spec:
             - --port={{ .Values.webhook.port }}
           env:
           - name: KUBECONFIG
-            value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+            value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
           ports:
             - name: https
               containerPort: {{ .Values.webhook.port }}
