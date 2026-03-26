@@ -8,12 +8,16 @@ data:
     global:
       projectId: {{ .Values.config.stackitProjectID }}
       region: {{ .Values.config.stackitRegion }}
-    {{- if .Values.config.iaasApiUrl }}
-    instances:
-      api: {{ .Values.config.iaasApiUrl }}
-    {{- end }}
+      {{- if or .Values.config.iaasApiUrl .Values.config.loadBalancerApiUrl }}
+      apiEndpoints:
+        {{- if .Values.config.iaasApiUrl }}
+        iaasApi: {{ .Values.config.iaasApiUrl }}
+        {{- end }}
+        {{- if .Values.config.loadBalancerApiUrl }}
+        loadBalancerApi: {{ .Values.config.loadBalancerApiUrl }}
+        {{- end }}
+      {{- end }}
     loadBalancer:
-      api: {{ .Values.config.loadBalancerApiUrl }}
       networkId: {{ .Values.config.stackitNetworkID }}
       {{- if .Values.config.extraLabels }}
       extraLabels:
