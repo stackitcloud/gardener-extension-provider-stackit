@@ -110,17 +110,12 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) ## Runs golangci-lint, gofmt/goimpo
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 # generate mock types for the following services from the SDK (space-separated list)
-SDK_MOCK_SERVICES := dns
-
 .PHONY: generate-mocks
 generate-mocks: $(MOCKGEN)
 	@echo "Running $(MOCKGEN)"
 	@go mod download
-	@for service in $(SDK_MOCK_SERVICES); do \
-		INTERFACES=`go doc -all github.com/stackitcloud/stackit-sdk-go/services/$$service | grep '^type Api.* interface' | sed -n 's/^type \(.*\) interface.*/\1/p' | paste -sd,`,DefaultApi; \
-		$(MOCKGEN) -destination ./pkg/stackit/client/mock/$$service/$$service.go -package $$service github.com/stackitcloud/stackit-sdk-go/services/$$service $$INTERFACES; \
-	done
 
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/dns/dns.go -package dns github.com/stackitcloud/stackit-sdk-go/services/dns/v1api DefaultAPI
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancer/loadbalancer.go -package loadbalancer -imports loadbalancerv2api=github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api DefaultAPI
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/iaas/iaas.go -package iaas -imports iaasv2api=github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api DefaultAPI
 
