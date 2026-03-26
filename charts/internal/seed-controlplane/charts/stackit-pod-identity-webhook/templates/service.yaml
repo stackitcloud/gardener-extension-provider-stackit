@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: stackit-pod-identity-webhook
     endpoint-slice-hints.resources.gardener.cloud/consider: "true"
   annotations:
-    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"protocol":"TCP","port":9443}]'
+    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"protocol":"TCP","port":{{ .Values.webhook.port }}}]'
     service.kubernetes.io/topology-mode: auto
 spec:
   type: ClusterIP
