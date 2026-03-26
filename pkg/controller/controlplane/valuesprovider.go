@@ -1332,8 +1332,8 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 
 	return map[string]any{
 		"webhook": map[string]any{
-			"caBundle": caBundle,
-			"seedName": cluster.Seed.ObjectMeta.Name,
+			"caBundle":  caBundle,
+			"shootName": cluster.Shoot.ObjectMeta.Name,
 		},
 	}, nil
 }
