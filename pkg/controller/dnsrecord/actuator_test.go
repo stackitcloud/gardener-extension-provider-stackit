@@ -101,7 +101,7 @@ var _ = Describe("Actuator", func() {
 	Describe("#Reconcile", func() {
 		It("should reconcile the DNSRecord", func() {
 			dnsMock.EXPECT().ListZones(ctx).Return(zones, nil)
-			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int64(120)).
+			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int32(120)).
 				Return(nil)
 
 			Expect(a.Reconcile(ctx, logger, dns, cluster)).To(Succeed())
@@ -112,7 +112,7 @@ var _ = Describe("Actuator", func() {
 
 		It("should fail if creating the DNS record set failed", func() {
 			dns.Spec.Zone = new(zone)
-			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int64(120)).
+			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int32(120)).
 				Return(errors.New("test"))
 
 			Expect(a.Reconcile(ctx, logger, dns, cluster)).To(HaveOccurred())
@@ -131,7 +131,7 @@ var _ = Describe("Actuator", func() {
 		It("should fail with ERR_CONFIGURATION_PROBLEM if the hosted zone was deleted", func() {
 			dns.Spec.Zone = new(zone)
 			// This error is returned when the zone was deleted, but can still be re-activated
-			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int64(120)).
+			dnsMock.EXPECT().CreateOrUpdateRecordSet(ctx, zone, domainName, string(extensionsv1alpha1.DNSRecordTypeA), []string{address}, int32(120)).
 				Return(&stackitclient.Error{
 					Message:    fmt.Sprintf("zone is not ready for record set %s", domainName),
 					StatusCode: 400,
