@@ -56,6 +56,9 @@ spec:
           args:
             - --cert-dir=/etc/webhook/certs
             - --port={{ .Values.webhook.port }}
+          env:
+          - name: KUBECONFIG
+            value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
           ports:
             - name: https
               containerPort: {{ .Values.webhook.port }}
@@ -84,7 +87,26 @@ spec:
             - name: certs
               mountPath: /etc/webhook/certs
               readOnly: true
+            - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+              name: kubeconfig
+              readOnly: true
       volumes:
         - name: certs
           secret:
             secretName: {{ .Values.webhook.tlsSecretName }}
+        - name: kubeconfig
+          projected:
+            defaultMode: 420
+            sources:
+            - secret:
+                items:
+                  - key: kubeconfig
+                    path: kubeconfig
+                name: {{ .Values.global.genericTokenKubeconfigSecretName }}
+                optional: false
+            - secret:
+                items:
+                  - key: token
+                    path: token
+                name: shoot-access-pod-identity-webhook
+                optional: false
