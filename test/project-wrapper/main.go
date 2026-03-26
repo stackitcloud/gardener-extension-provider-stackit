@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stackitcloud/stackit-sdk-go/services/authorization"
+	authorization "github.com/stackitcloud/stackit-sdk-go/services/authorization/v2api"
 	resourcemanager "github.com/stackitcloud/stackit-sdk-go/services/resourcemanager/v0api"
 	"github.com/stackitcloud/stackit-sdk-go/services/serviceaccount"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -169,7 +169,7 @@ func assignRoleToServiceAccount(ctx context.Context, projectID string, email str
 		return err
 	}
 
-	_, err = client.AddMembers(ctx, projectID).AddMembersPayload(authorization.AddMembersPayload{Members: sdk.GetMembersForRoles(email, roles), ResourceType: new("project")}).Execute()
+	_, err = client.DefaultAPI.AddMembers(ctx, projectID).AddMembersPayload(authorization.AddMembersPayload{Members: sdk.GetMembersForRoles(email, roles), ResourceType: "project"}).Execute()
 	if err != nil {
 		return err
 	}
