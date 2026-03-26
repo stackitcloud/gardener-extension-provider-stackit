@@ -6,7 +6,10 @@ metadata:
 data:
   cloud.yaml: |-
     global:
+      {{- if .Values.stackitEndpoints.iaasUrl }}
+      apiEndpoints:
+        iaasApi: {{ .Values.stackitEndpoints.iaasUrl }}
+      {{- end }}
       projectId: "{{ .Values.projectID }}"
-      iaasApi: "{{ .Values.stackitEndpoints.iaasUrl }}"
     blockStorage:
       rescanOnResize: true
