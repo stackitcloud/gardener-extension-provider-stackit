@@ -8,9 +8,6 @@ webhook:
   # The secret name containing tls.crt and tls.key for the webhook server
   tlsSecretName: "stackit-pod-identity-webhook-certs"
 
-service:
-  port: 443
-
 vpa:
   resourcePolicy:
     maxAllowed:

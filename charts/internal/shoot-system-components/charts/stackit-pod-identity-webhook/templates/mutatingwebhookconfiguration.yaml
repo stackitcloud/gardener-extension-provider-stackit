@@ -7,11 +7,8 @@ metadata:
 webhooks:
   - name: stackit-pod-identity-webhook.stackit.cloud
     clientConfig:
-      service:
-        name: stackit-pod-identity-webhook
-        namespace: {{ .Release.Namespace }}
-        path: "/mutate--v1-pod"
-        caBundle: {{ .Values.webhook.caBundle | b64enc }}
+      url: {{ printf "https://stackit-pod-identity-webhook.%s:443/mutate--v1-pod" .Values.webhook.seedName | quote }}  
+      caBundle: {{ .Values.webhook.caBundle | quote }}  
     rules:
       - operations: ["CREATE"]
         apiGroups: [""]
@@ -25,8 +22,6 @@ webhooks:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values: ["kube-system", "garden"]
-        - key: gardener.cloud/role
-          operator: DoesNotExist
         - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
           operator: DoesNotExist
     objectSelector:
