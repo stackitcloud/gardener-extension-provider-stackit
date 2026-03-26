@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: stackit-pod-identity-webhook
   annotations:
-    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: {{ printf "'%s%v%s'" "[{\"port\":" .Values.service.port ",\"protocol\":\"TCP\"}]" }}
+    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"port": 443,"protocol":"TCP"}]'
     service.kubernetes.io/topology-mode: auto
 spec:
   type: ClusterIP
