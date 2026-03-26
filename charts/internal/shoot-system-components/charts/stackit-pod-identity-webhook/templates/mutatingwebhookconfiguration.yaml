@@ -7,7 +7,7 @@ metadata:
 webhooks:
   - name: stackit-pod-identity-webhook.stackit.cloud
     clientConfig:
-      url: {{ printf "https://stackit-pod-identity-webhook.%s:443/mutate--v1-pod" .Values.webhook.controlPlaneNamespace | quote }}  
+      url: {{ printf "https://stackit-pod-identity-webhook.%s-server:443/mutate--v1-pod" .Values.webhook.controlPlaneNamespace | quote }}  
       caBundle: {{ .Values.webhook.caBundle | quote }}  
     rules:
       - operations: ["CREATE"]
