@@ -113,7 +113,7 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 
 	networkIPv4Config := network.GetIpv4()
 	// In IaaS API Network can only have 1 Prefix. However, in OpenStack previously it was possible to have more.
-	// We never used this but let's bet sure by checking it here.
+	// We never used this but let's be sure by checking it here.
 	if len(networkIPv4Config.GetPrefixes()) > 1 {
 		return fmt.Errorf("multiple prefixes found for network '%s'", networkID)
 	}
