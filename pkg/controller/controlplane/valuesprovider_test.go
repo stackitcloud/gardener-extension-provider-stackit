@@ -894,8 +894,7 @@ var _ = Describe("ValuesProvider", func() {
 	Describe("#GetControlPlaneShootChartValues", func() {
 		stackitPodIdentityWebhookChartShootValues := map[string]any{
 			"webhook": map[string]any{
-				"caBundle":              []byte("fake-ca-cert"),
-				"controlPlaneNamespace": namespace,
+				"caBundle": []byte("fake-ca-cert"),
 			},
 		}
 

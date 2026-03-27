@@ -1081,7 +1081,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
-	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(cp.Namespace, secretsReader)
+	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(secretsReader)
 	if err != nil {
 		return nil, err
 	}
@@ -1317,7 +1317,6 @@ func getPodIdentityWebhookChartValues(
 }
 
 func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
-	controlPlaneNamespace string,
 	secretsReader secretsmanager.Reader,
 ) (map[string]any, error) {
 	caSecret, found := secretsReader.Get(caNameControlPlane)
@@ -1332,8 +1331,7 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 
 	return map[string]any{
 		"webhook": map[string]any{
-			"caBundle":              caBundle,
-			"controlPlaneNamespace": controlPlaneNamespace,
+			"caBundle": caBundle,
 		},
 	}, nil
 }
