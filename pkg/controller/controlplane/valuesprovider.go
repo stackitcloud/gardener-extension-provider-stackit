@@ -105,7 +105,7 @@ func secretConfigsFunc(namespace string) []extensionssecretmanager.SecretConfigW
 			Config: &secretutils.CertificateSecretConfig{
 				Name:                        stackitPodIdentityWebhookServerName,
 				CommonName:                  stackit.STACKITPodIdentityWebhookName,
-				DNSNames:                    kutil.DNSNamesForService("stackit-"+stackitPodIdentityWebhookServerName, namespace),
+				DNSNames:                    kutil.DNSNamesForService("stackit-"+stackit.STACKITPodIdentityWebhookName, namespace),
 				CertType:                    secretutils.ServerCert,
 				SkipPublishingCACertificate: true,
 			},
