@@ -895,6 +895,7 @@ var _ = Describe("ValuesProvider", func() {
 		stackitPodIdentityWebhookChartShootValues := map[string]any{
 			"webhook": map[string]any{
 				"caBundle": []byte("fake-ca-cert"),
+				"url":      fmt.Sprintf("https://stackit-pod-identity-webhook.%s:443/mutate--v1-pod", namespace),
 			},
 		}
 
