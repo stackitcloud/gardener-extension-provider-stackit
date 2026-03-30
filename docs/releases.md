@@ -2,21 +2,77 @@
 
 ## Overview
 
-This document outlines the standard procedure for creating new releases of the gardener-extension-provider-stackit.
+This document outlines the standard procedure for creating new releases of the STACKIT gardener-extension-provider-stackit.
 
-## General Information
+### 🏷️ Versioning
 
-- **Versioning:** Versioning follows official [SemVer 2.0](https://semver.org/)
-- **CI/CD System:** All release and image builds are managed by our **Prow CI** infrastructure.
+When releasing gardener-extension-provider-stackit, we follow semantic versioning (see https://semver.org/).
 
-## Automated Release Process (Primary Method)
+In short:
+- ⚠️ a new major version (`vX.0.0`, `X` is bumped)
+   - brings new features/refactorings/etc.
+   - implies breaking changes to consumers of the package (i.e., incompatible with the last major)
+- 🚀 a new minor version (`vX.Y.0`, `Y` is bumped)
+   - brings new features/refactorings/etc.
+   - does not imply breaking changes (i.e., compatible with the last minor)
+- 🚑 a new patch version (`vX.Y.Z`, `Z` is bumped)
+   - brings bug fixes without new features/refactorings/etc.
+   - does not imply breaking changes (i.e., compatible with the last patch)
 
-The primary release method is automated using a tool called `release-tool`. This process is designed to be straightforward and require minimal manual intervention.
+For major version changes, the configuration typically needs to be adapted to accommodate breaking changes before successfully upgrading. For minor and patch updates, no configuration adjustments are required.
 
-1. **Draft Creation:** On every successful merge (post-submit) to the `main` branch, a Prow job automatically runs the `release-tool`. This tool creates a new draft release on GitHub or updates the existing one with a changelog generated from recent commits.
-2. **Publishing the Release:** When the draft is ready, navigate to the repository's "Releases" page on GitHub. Locate the draft, review the changelog, replace the placeholder with your GitHub handle and publish it by clicking the "Publish release" button.
+Both major and minor releases are created from the main branch. Patch releases are created from a release branch that is based on a minor version release.
 
-Publishing the release automatically creates the corresponding Git tag (e.g., `v1.3.1`), which triggers a separate Prow job to build the final container images and attach them to the GitHub release.
+### 🚑 Hotfixes
+
+A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in production, but the main branch has already moved forward with breaking changes or features not yet ready for release.
+
+We follow a "Fix-First-in-Main" policy. All fixes must be merged into the main branch before being cherry-picked into a specific release branch.
+
+For example:
+
+```mermaid
+gitGraph:
+    commit id: "v1.0.0" tag: "v1.0.0"
+    branch release-v1.0
+    checkout main
+    commit id: "Feature A"
+    commit id: "Breaking Change" tag: "v2.0.0-beta"
+    commit id: "Critical Bugfix"
+    commit id: "Feature B"
+    checkout release-v1.0
+    commit id: "cherry-pick Bugfix" tag: "v1.0.1"
+```
+
+> In the example above, the "Critical Bugfix" cannot be released via the main branch because main contains a "Breaking Change" that isn't ready for general availability. By using a release branch (release-v1.0), we can ship the fix as a patch (v1.0.1) immediately.
+
+1. Create a Pull Request (PR) targeting the main branch. Once reviewed and merged, identify the PR number.
+2. If a branch for your specific minor version (e.g., release-v1.x) doesn't exist yet, create it from the last known stable tag:
+   ```bash
+   git fetch --all --tags
+   git checkout -b release-vx.y vx.y.0
+   git push -u origin release-vx.y
+   ```
+3. Use our helper script to pull the specific PR(s) into your release branch. This ensures metadata and credits remain intact.
+4. Once the cherry-pick PR has been reviewed, approved, and merged, you can promote the changes by creating a new patch release of gardener-extension-provider-stackit.
+   For this, publish the draft release on the `release-vx.y` branch for the next patch version (`vx.y.z`) (see [Publishing a Release](#-publishing-a-release)).
+
+
+To make sure we release with the correct version bump, every breaking PR needs to be labeled with the breaking label (e.g., via /label breaking) so that it is automatically categorized correctly when generating release notes.
+
+## 🔖 Publishing a Release
+
+When changes are merged into `main` or a `release-v*` branch, the `release-tool` creates a draft release to preview the upcoming updates.
+The tool automatically determines the appropriate version tag based on the target branch and the labels of the merged Pull Requests:
+
+To publish a release, follow these steps:
+
+1. Open the repository's releases page.
+2. Navigate to the corresponding draft release (minor/major for `main`, patch for `release-v*`).
+3. Review to-be-released changes by checking the release notes.
+4. Edit the release by pressing the pen icon.
+5. Change `REPLACE_ME` with your github username.
+6. Press the "Publish release" button.
 
 ## Manual Release Process (Fallback Method)
 
