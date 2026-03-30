@@ -546,7 +546,7 @@ func (m *MockDNSClient) EXPECT() *MockDNSClientMockRecorder {
 }
 
 // CreateOrUpdateRecordSet mocks base method.
-func (m *MockDNSClient) CreateOrUpdateRecordSet(ctx context.Context, zoneID, name, recordType string, records []string, ttl int64) error {
+func (m *MockDNSClient) CreateOrUpdateRecordSet(ctx context.Context, zoneID, name, recordType string, records []string, ttl int32) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOrUpdateRecordSet", ctx, zoneID, name, recordType, records, ttl)
 	ret0, _ := ret[0].(error)

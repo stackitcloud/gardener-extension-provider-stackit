@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 
@@ -52,7 +53,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, dns *extensio
 	ttl := extensionsv1alpha1helper.GetDNSRecordTTL(dns.Spec.TTL)
 
 	log.Info("Creating or updating DNS recordset", "zone", zoneID, "name", dns.Spec.Name, "type", dns.Spec.RecordType, "values", dns.Spec.Values)
-	if err := dnsClient.CreateOrUpdateRecordSet(ctx, zoneID, dns.Spec.Name, string(dns.Spec.RecordType), dns.Spec.Values, ttl); err != nil {
+	if err := dnsClient.CreateOrUpdateRecordSet(ctx, zoneID, dns.Spec.Name, string(dns.Spec.RecordType), dns.Spec.Values, toInt32(ttl)); err != nil {
 		if isZoneNotReadyError(err) {
 			return gardencorev1beta1helper.NewErrorWithCodes(err, gardencorev1beta1.ErrorConfigurationProblem)
 		}
@@ -141,4 +142,16 @@ func isZoneNotReadyError(err error) bool {
 		return false
 	}
 	return stackitErr.StatusCode == http.StatusBadRequest && strings.HasPrefix(stackitErr.Message, "zone is not ready")
+}
+
+func toInt32(i int64) int32 {
+	if i < math.MinInt32 {
+		return math.MinInt32
+	}
+
+	if i > math.MaxInt32 {
+		return math.MinInt32
+	}
+
+	return int32(i)
 }
