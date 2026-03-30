@@ -6,7 +6,7 @@ import (
 	"net/netip"
 
 	"github.com/go-logr/logr"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
@@ -20,8 +20,8 @@ func (r *Resources) reconcileSecurityGroup(ctx context.Context, log logr.Logger)
 	if r.SecurityGroup == nil {
 		var err error
 		r.SecurityGroup, err = r.IaaS.CreateSecurityGroup(ctx, iaas.CreateSecurityGroupPayload{
-			Name:   new(r.ResourceName),
-			Labels: new(stackit.ToLabels(r.Labels)),
+			Name:   r.ResourceName,
+			Labels: stackit.ToLabels(r.Labels),
 
 			Description: new("Security group for Bastion " + r.Bastion.Name),
 		})
@@ -61,7 +61,7 @@ func (o *Options) determineWantedSecurityGroupRules() ([]iaas.SecurityGroupRule,
 			// DHCP tells us our IP and the route to the metadata server
 			Description: new("Allow DHCP requests"),
 
-			Direction: new(stackit.DirectionEgress),
+			Direction: stackit.DirectionEgress,
 			Ethertype: new(stackit.EtherTypeIPv4),
 			Protocol:  new(stackit.ProtocolUDP),
 			PortRange: iaas.NewPortRange(68, 67),
@@ -71,7 +71,7 @@ func (o *Options) determineWantedSecurityGroupRules() ([]iaas.SecurityGroupRule,
 		{
 			Description: new("Allow egress to metadata server"),
 
-			Direction: new(stackit.DirectionEgress),
+			Direction: stackit.DirectionEgress,
 			Ethertype: new(stackit.EtherTypeIPv4),
 			Protocol:  new(stackit.ProtocolTCP),
 			PortRange: iaas.NewPortRange(80, 80),
@@ -81,7 +81,7 @@ func (o *Options) determineWantedSecurityGroupRules() ([]iaas.SecurityGroupRule,
 		{
 			Description: new(fmt.Sprintf("Allow egress from Bastion %s to %s worker nodes", o.Bastion.Name, o.TechnicalID)),
 
-			Direction: new(stackit.DirectionEgress),
+			Direction: stackit.DirectionEgress,
 			Ethertype: new(stackit.EtherTypeIPv4),
 			Protocol:  new(stackit.ProtocolTCP),
 			PortRange: portRangeSSH,
@@ -95,7 +95,7 @@ func (o *Options) determineWantedSecurityGroupRules() ([]iaas.SecurityGroupRule,
 		rules = append(rules, iaas.SecurityGroupRule{
 			Description: new(fmt.Sprintf("Allow ingress to Bastion %s from world", o.Bastion.Name)),
 
-			Direction: new(stackit.DirectionIngress),
+			Direction: stackit.DirectionIngress,
 			Ethertype: new(stackit.EtherTypeIPv4),
 			Protocol:  new(stackit.ProtocolTCP),
 			PortRange: portRangeSSH,
@@ -120,7 +120,7 @@ func (o *Options) determineWantedSecurityGroupRules() ([]iaas.SecurityGroupRule,
 		rules = append(rules, iaas.SecurityGroupRule{
 			Description: new(fmt.Sprintf("Allow ingress to Bastion %s from %s", o.Bastion.Name, normalizedCIDR)),
 
-			Direction: new(stackit.DirectionIngress),
+			Direction: stackit.DirectionIngress,
 			Ethertype: new(etherType),
 			Protocol:  new(stackit.ProtocolTCP),
 			PortRange: portRangeSSH,
@@ -137,7 +137,7 @@ func (r *Resources) reconcileWorkerSecurityGroupRule(ctx context.Context, log lo
 	wantedRule := iaas.SecurityGroupRule{
 		Description: new(fmt.Sprintf("Allow ingress to shoot worker nodes from Bastion %s", r.Bastion.Name)),
 
-		Direction: new(stackit.DirectionIngress),
+		Direction: stackit.DirectionIngress,
 		Ethertype: new(stackit.EtherTypeIPv4),
 		Protocol:  new(stackit.ProtocolTCP),
 		PortRange: portRangeSSH,

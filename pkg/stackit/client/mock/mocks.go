@@ -16,7 +16,7 @@ import (
 	logr "github.com/go-logr/logr"
 	stackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	client "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
-	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	v2api "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
@@ -131,10 +131,10 @@ func (mr *MockIaaSClientMockRecorder) AddPublicIpToServer(ctx, serverId, publicI
 }
 
 // CreateIsolatedNetwork mocks base method.
-func (m *MockIaaSClient) CreateIsolatedNetwork(ctx context.Context, payload iaas.CreateIsolatedNetworkPayload) (*iaas.Network, error) {
+func (m *MockIaaSClient) CreateIsolatedNetwork(ctx context.Context, payload v2api.CreateIsolatedNetworkPayload) (*v2api.Network, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIsolatedNetwork", ctx, payload)
-	ret0, _ := ret[0].(*iaas.Network)
+	ret0, _ := ret[0].(*v2api.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -146,10 +146,10 @@ func (mr *MockIaaSClientMockRecorder) CreateIsolatedNetwork(ctx, payload any) *g
 }
 
 // CreateKeypair mocks base method.
-func (m *MockIaaSClient) CreateKeypair(ctx context.Context, name, publicKey string) (*iaas.Keypair, error) {
+func (m *MockIaaSClient) CreateKeypair(ctx context.Context, name, publicKey string) (*v2api.Keypair, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateKeypair", ctx, name, publicKey)
-	ret0, _ := ret[0].(*iaas.Keypair)
+	ret0, _ := ret[0].(*v2api.Keypair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -161,10 +161,10 @@ func (mr *MockIaaSClientMockRecorder) CreateKeypair(ctx, name, publicKey any) *g
 }
 
 // CreatePublicIp mocks base method.
-func (m *MockIaaSClient) CreatePublicIp(ctx context.Context, payload iaas.CreatePublicIPPayload) (*iaas.PublicIp, error) {
+func (m *MockIaaSClient) CreatePublicIp(ctx context.Context, payload v2api.CreatePublicIPPayload) (*v2api.PublicIp, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePublicIp", ctx, payload)
-	ret0, _ := ret[0].(*iaas.PublicIp)
+	ret0, _ := ret[0].(*v2api.PublicIp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -176,10 +176,10 @@ func (mr *MockIaaSClientMockRecorder) CreatePublicIp(ctx, payload any) *gomock.C
 }
 
 // CreateSecurityGroup mocks base method.
-func (m *MockIaaSClient) CreateSecurityGroup(ctx context.Context, payload iaas.CreateSecurityGroupPayload) (*iaas.SecurityGroup, error) {
+func (m *MockIaaSClient) CreateSecurityGroup(ctx context.Context, payload v2api.CreateSecurityGroupPayload) (*v2api.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityGroup", ctx, payload)
-	ret0, _ := ret[0].(*iaas.SecurityGroup)
+	ret0, _ := ret[0].(*v2api.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -191,10 +191,10 @@ func (mr *MockIaaSClientMockRecorder) CreateSecurityGroup(ctx, payload any) *gom
 }
 
 // CreateSecurityGroupRule mocks base method.
-func (m *MockIaaSClient) CreateSecurityGroupRule(ctx context.Context, securityGroupId string, wantedRule iaas.SecurityGroupRule) (*iaas.SecurityGroupRule, error) {
+func (m *MockIaaSClient) CreateSecurityGroupRule(ctx context.Context, securityGroupId string, wantedRule v2api.SecurityGroupRule) (*v2api.SecurityGroupRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityGroupRule", ctx, securityGroupId, wantedRule)
-	ret0, _ := ret[0].(*iaas.SecurityGroupRule)
+	ret0, _ := ret[0].(*v2api.SecurityGroupRule)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -206,10 +206,10 @@ func (mr *MockIaaSClientMockRecorder) CreateSecurityGroupRule(ctx, securityGroup
 }
 
 // CreateServer mocks base method.
-func (m *MockIaaSClient) CreateServer(ctx context.Context, payload iaas.CreateServerPayload) (*iaas.Server, error) {
+func (m *MockIaaSClient) CreateServer(ctx context.Context, payload v2api.CreateServerPayload) (*v2api.Server, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateServer", ctx, payload)
-	ret0, _ := ret[0].(*iaas.Server)
+	ret0, _ := ret[0].(*v2api.Server)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -291,10 +291,10 @@ func (mr *MockIaaSClientMockRecorder) DeleteServer(ctx, serverId any) *gomock.Ca
 }
 
 // GetKeypair mocks base method.
-func (m *MockIaaSClient) GetKeypair(ctx context.Context, name string) (*iaas.Keypair, error) {
+func (m *MockIaaSClient) GetKeypair(ctx context.Context, name string) (*v2api.Keypair, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetKeypair", ctx, name)
-	ret0, _ := ret[0].(*iaas.Keypair)
+	ret0, _ := ret[0].(*v2api.Keypair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -306,10 +306,10 @@ func (mr *MockIaaSClientMockRecorder) GetKeypair(ctx, name any) *gomock.Call {
 }
 
 // GetNetworkById mocks base method.
-func (m *MockIaaSClient) GetNetworkById(ctx context.Context, id string) (*iaas.Network, error) {
+func (m *MockIaaSClient) GetNetworkById(ctx context.Context, id string) (*v2api.Network, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNetworkById", ctx, id)
-	ret0, _ := ret[0].(*iaas.Network)
+	ret0, _ := ret[0].(*v2api.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -321,10 +321,10 @@ func (mr *MockIaaSClientMockRecorder) GetNetworkById(ctx, id any) *gomock.Call {
 }
 
 // GetNetworkByName mocks base method.
-func (m *MockIaaSClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.Network, error) {
+func (m *MockIaaSClient) GetNetworkByName(ctx context.Context, name string) ([]v2api.Network, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNetworkByName", ctx, name)
-	ret0, _ := ret[0].([]iaas.Network)
+	ret0, _ := ret[0].([]v2api.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -336,10 +336,10 @@ func (mr *MockIaaSClientMockRecorder) GetNetworkByName(ctx, name any) *gomock.Ca
 }
 
 // GetPublicIpByLabels mocks base method.
-func (m *MockIaaSClient) GetPublicIpByLabels(ctx context.Context, selector stackit.LabelSelector) ([]iaas.PublicIp, error) {
+func (m *MockIaaSClient) GetPublicIpByLabels(ctx context.Context, selector stackit.LabelSelector) ([]v2api.PublicIp, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPublicIpByLabels", ctx, selector)
-	ret0, _ := ret[0].([]iaas.PublicIp)
+	ret0, _ := ret[0].([]v2api.PublicIp)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -351,10 +351,10 @@ func (mr *MockIaaSClientMockRecorder) GetPublicIpByLabels(ctx, selector any) *go
 }
 
 // GetSecurityGroupById mocks base method.
-func (m *MockIaaSClient) GetSecurityGroupById(ctx context.Context, securityGroupId string) (*iaas.SecurityGroup, error) {
+func (m *MockIaaSClient) GetSecurityGroupById(ctx context.Context, securityGroupId string) (*v2api.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroupById", ctx, securityGroupId)
-	ret0, _ := ret[0].(*iaas.SecurityGroup)
+	ret0, _ := ret[0].(*v2api.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -366,10 +366,10 @@ func (mr *MockIaaSClientMockRecorder) GetSecurityGroupById(ctx, securityGroupId 
 }
 
 // GetSecurityGroupByName mocks base method.
-func (m *MockIaaSClient) GetSecurityGroupByName(ctx context.Context, name string) ([]iaas.SecurityGroup, error) {
+func (m *MockIaaSClient) GetSecurityGroupByName(ctx context.Context, name string) ([]v2api.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroupByName", ctx, name)
-	ret0, _ := ret[0].([]iaas.SecurityGroup)
+	ret0, _ := ret[0].([]v2api.SecurityGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -381,10 +381,10 @@ func (mr *MockIaaSClientMockRecorder) GetSecurityGroupByName(ctx, name any) *gom
 }
 
 // GetServerByName mocks base method.
-func (m *MockIaaSClient) GetServerByName(ctx context.Context, name string) ([]iaas.Server, error) {
+func (m *MockIaaSClient) GetServerByName(ctx context.Context, name string) ([]v2api.Server, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetServerByName", ctx, name)
-	ret0, _ := ret[0].([]iaas.Server)
+	ret0, _ := ret[0].([]v2api.Server)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -410,7 +410,7 @@ func (mr *MockIaaSClientMockRecorder) ProjectID() *gomock.Call {
 }
 
 // ReconcileSecurityGroupRules mocks base method.
-func (m *MockIaaSClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Logger, securityGroup *iaas.SecurityGroup, wantedRules []iaas.SecurityGroupRule) error {
+func (m *MockIaaSClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Logger, securityGroup *v2api.SecurityGroup, wantedRules []v2api.SecurityGroupRule) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReconcileSecurityGroupRules", ctx, log, securityGroup, wantedRules)
 	ret0, _ := ret[0].(error)
@@ -424,10 +424,10 @@ func (mr *MockIaaSClientMockRecorder) ReconcileSecurityGroupRules(ctx, log, secu
 }
 
 // UpdateNetwork mocks base method.
-func (m *MockIaaSClient) UpdateNetwork(ctx context.Context, networkId string, payload iaas.PartialUpdateNetworkPayload) (*iaas.Network, error) {
+func (m *MockIaaSClient) UpdateNetwork(ctx context.Context, networkId string, payload v2api.PartialUpdateNetworkPayload) (*v2api.Network, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateNetwork", ctx, networkId, payload)
-	ret0, _ := ret[0].(*iaas.Network)
+	ret0, _ := ret[0].(*v2api.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -439,7 +439,7 @@ func (mr *MockIaaSClientMockRecorder) UpdateNetwork(ctx, networkId, payload any)
 }
 
 // UpdateSecurityGroupRules mocks base method.
-func (m *MockIaaSClient) UpdateSecurityGroupRules(ctx context.Context, group *iaas.SecurityGroup, desiredRules []iaas.SecurityGroupRule, allowDelete func(*iaas.SecurityGroupRule) bool) (bool, error) {
+func (m *MockIaaSClient) UpdateSecurityGroupRules(ctx context.Context, group *v2api.SecurityGroup, desiredRules []v2api.SecurityGroupRule, allowDelete func(*v2api.SecurityGroupRule) bool) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecurityGroupRules", ctx, group, desiredRules, allowDelete)
 	ret0, _ := ret[0].(bool)

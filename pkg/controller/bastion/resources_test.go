@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -47,10 +47,10 @@ var _ = Describe("Bastion Resources", func() {
 			resources.ResourceName = "test-resource"
 			resources.Labels = map[string]string{"test-labels-key": "test-labels-value"}
 
-			expectedSecurityGroup := []iaas.SecurityGroup{{Name: new("test-security-group")}}
+			expectedSecurityGroup := []iaas.SecurityGroup{{Name: "test-security-group"}}
 			mockIaaS.EXPECT().GetSecurityGroupByName(ctx, resources.ResourceName).Return(expectedSecurityGroup, nil)
 
-			expectedServer := []iaas.Server{{Name: new("test-server")}}
+			expectedServer := []iaas.Server{{Name: "test-server"}}
 			mockIaaS.EXPECT().GetServerByName(ctx, resources.ResourceName).Return(expectedServer, nil)
 
 			expectedPublicIP := []iaas.PublicIp{{Id: new("test-ip")}}
@@ -157,7 +157,7 @@ var _ = Describe("Bastion Resources", func() {
 			}
 			resources.PublicIP = &iaas.PublicIp{
 				Id:               new("test-public-ip"),
-				NetworkInterface: iaas.NewNullableString(new("test-interface")),
+				NetworkInterface: *iaas.NewNullableString(new("test-interface")),
 			}
 
 			err := resources.reconcilePublicIP(ctx, logger)
@@ -222,23 +222,23 @@ var _ = Describe("Bastion Resources", func() {
 			resources.SecurityGroup = &iaas.SecurityGroup{Id: new("test-security-group")}
 
 			expectedPayload := iaas.CreateServerPayload{
-				Name: new("test-resource"),
-				Labels: new(stackit.ToLabels(map[string]string{
+				Name: "test-resource",
+				Labels: stackit.ToLabels(map[string]string{
 					"test-label-key": "test-label-value",
-				})),
+				}),
 				AvailabilityZone: new("test-az"),
-				MachineType:      new("test-machine"),
-				BootVolume: &iaas.ServerBootVolume{
+				MachineType:      "test-machine",
+				BootVolume: &iaas.BootVolume{
 					DeleteOnTermination: new(true),
 					Source:              iaas.NewBootVolumeSource("test-image", "image"),
 					Size:                new(int64(10)),
 				},
-				SecurityGroups: new([]string{"test-security-group"}),
-				Networking: new(iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
+				SecurityGroups: []string{"test-security-group"},
+				Networking: iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{
 					NetworkId: new("test-network"),
-				})),
+				}),
 
-				UserData: new([]byte{1, 2, 3, 4}),
+				UserData: new(string([]byte{1, 2, 3, 4})),
 			}
 			expectedServer := &iaas.Server{
 				Id: new("test-server"),
@@ -292,8 +292,8 @@ var _ = Describe("Bastion Resources", func() {
 				}
 
 				expectedPayload := iaas.CreateSecurityGroupPayload{
-					Name:        new("test-resource"),
-					Labels:      new(stackit.ToLabels(map[string]string{"test-labels-key": "test-labels-value"})),
+					Name:        "test-resource",
+					Labels:      stackit.ToLabels(map[string]string{"test-labels-key": "test-labels-value"}),
 					Description: new("Security group for Bastion test-bastion"),
 				}
 				expectedSecurityGroup := &iaas.SecurityGroup{
