@@ -17,6 +17,8 @@ spec:
         app.kubernetes.io/name: stackit-pod-identity-webhook
         workload-identity.stackit.cloud/skip-pod-identity-webhook: "true"
         gardener.cloud/role: controlplane
+        networking.gardener.cloud/to-dns: allowed
+        networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
     spec:
       topologySpreadConstraints:
         - maxSkew: 1
