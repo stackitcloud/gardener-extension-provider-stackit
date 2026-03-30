@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
-	"github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
+	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -17,12 +17,12 @@ type LoadBalancingClient interface {
 }
 
 type loadBalancingClient struct {
-	Client    loadbalancer.DefaultApi
+	Client    loadbalancer.DefaultAPI
 	projectID string
 	region    string
 }
 
-func NewLoadBalancingClient(ctx context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (LoadBalancingClient, error) {
+func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (LoadBalancingClient, error) {
 	options := clientOptions(endpoints, credentials)
 
 	if endpoints.LoadBalancer != nil {
@@ -34,14 +34,14 @@ func NewLoadBalancingClient(ctx context.Context, region string, endpoints stacki
 		return nil, err
 	}
 	return &loadBalancingClient{
-		Client:    apiClient,
+		Client:    apiClient.DefaultAPI,
 		projectID: credentials.ProjectID,
 		region:    region,
 	}, nil
 }
 
 func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error) {
-	lbResponse, err := l.Client.ListLoadBalancersExecute(ctx, l.projectID, l.region)
+	lbResponse, err := l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalan
 }
 
 func (l loadBalancingClient) DeleteLoadBalancer(ctx context.Context, lbName string) error {
-	_, err := l.Client.DeleteLoadBalancerExecute(ctx, l.projectID, l.region, lbName)
+	_, err := l.Client.DeleteLoadBalancer(ctx, l.projectID, l.region, lbName).Execute()
 	return err
 }
 

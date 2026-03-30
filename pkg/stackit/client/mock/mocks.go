@@ -17,7 +17,7 @@ import (
 	stackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	client "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer"
+	v2api "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
 	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 	client0 "sigs.k8s.io/controller-runtime/pkg/client"
@@ -492,10 +492,10 @@ func (mr *MockLoadBalancingClientMockRecorder) DeleteLoadBalancer(ctx, lbName an
 }
 
 // GetLoadBalancer mocks base method.
-func (m *MockLoadBalancingClient) GetLoadBalancer(ctx context.Context, id string) (*loadbalancer.LoadBalancer, error) {
+func (m *MockLoadBalancingClient) GetLoadBalancer(ctx context.Context, id string) (*v2api.LoadBalancer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLoadBalancer", ctx, id)
-	ret0, _ := ret[0].(*loadbalancer.LoadBalancer)
+	ret0, _ := ret[0].(*v2api.LoadBalancer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -507,10 +507,10 @@ func (mr *MockLoadBalancingClientMockRecorder) GetLoadBalancer(ctx, id any) *gom
 }
 
 // ListLoadBalancers mocks base method.
-func (m *MockLoadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error) {
+func (m *MockLoadBalancingClient) ListLoadBalancers(ctx context.Context) ([]v2api.LoadBalancer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListLoadBalancers", ctx)
-	ret0, _ := ret[0].([]loadbalancer.LoadBalancer)
+	ret0, _ := ret[0].([]v2api.LoadBalancer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
