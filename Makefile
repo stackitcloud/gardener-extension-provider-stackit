@@ -110,7 +110,7 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) ## Runs golangci-lint, gofmt/goimpo
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 # generate mock types for the following services from the SDK (space-separated list)
-SDK_MOCK_SERVICES := iaas loadbalancer dns
+SDK_MOCK_SERVICES := iaas dns
 
 .PHONY: generate-mocks
 generate-mocks: $(MOCKGEN)
@@ -120,6 +120,7 @@ generate-mocks: $(MOCKGEN)
 		INTERFACES=`go doc -all github.com/stackitcloud/stackit-sdk-go/services/$$service | grep '^type Api.* interface' | sed -n 's/^type \(.*\) interface.*/\1/p' | paste -sd,`,DefaultApi; \
 		$(MOCKGEN) -destination ./pkg/stackit/client/mock/$$service/$$service.go -package $$service github.com/stackitcloud/stackit-sdk-go/services/$$service $$INTERFACES; \
 	done
+	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancer/loadbalancer.go -package loadbalancer github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api DefaultAPI
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN) $(YQ) $(YAML2JSON) $(GOIMPORTS) generate-mocks ## Generates the controller-registration, other code-gen, the imagename constants as well as executes go:generate directives
