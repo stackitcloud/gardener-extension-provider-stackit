@@ -19,9 +19,6 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: app.kubernetes.io/name
-          operator: NotIn
-          values: ["gardener-extension-provider-stackit"]
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values: ["kube-system", "garden"]
