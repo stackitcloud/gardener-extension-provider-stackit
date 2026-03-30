@@ -35,4 +35,6 @@ const (
 	ImageNameStackitAlbControllerManager = "stackit-alb-controller-manager"
 	// ImageNameStackitCloudControllerManager is a constant for an image in the image vector with name 'stackit-cloud-controller-manager'.
 	ImageNameStackitCloudControllerManager = "stackit-cloud-controller-manager"
+	// ImageNameStackitPodIdentityWebhook is a constant for an image in the image vector with name 'stackit-pod-identity-webhook'.
+	ImageNameStackitPodIdentityWebhook = "stackit-pod-identity-webhook"
 )
