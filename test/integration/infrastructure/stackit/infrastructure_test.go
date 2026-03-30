@@ -593,6 +593,7 @@ func prepareIsolatedNetwork(log logr.Logger, networkName string) (*string, error
 	log.Info("Waiting until network is created", "networkName", networkName)
 
 	createOpts := iaas.CreateIsolatedNetworkPayload{
+		Dhcp: new(true),
 		Name: new(networkName),
 		Ipv4: &iaas.CreateNetworkIPv4{
 			CreateNetworkIPv4WithPrefix: &iaas.CreateNetworkIPv4WithPrefix{
