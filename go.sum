@@ -465,8 +465,8 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/spf13/pflag v1.0.10 h1:4EBh2KAYBwaONj6b2Ye1GiHfwjqyROoF4RwYO+vPwFk=
 github.com/spf13/pflag v1.0.10/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/stackitcloud/stackit-sdk-go/core v0.23.0 h1:zPrOhf3Xe47rKRs1fg/AqKYUiJJRYjdcv+3qsS50mEs=
-github.com/stackitcloud/stackit-sdk-go/core v0.23.0/go.mod h1:osMglDby4csGZ5sIfhNyYq1bS1TxIdPY88+skE/kkmI=
+github.com/stackitcloud/stackit-sdk-go/core v0.24.0 h1:kHCcezCJ5OGSP7RRuGOxD5rF2wejpkEiRr/OdvNcuPQ=
+github.com/stackitcloud/stackit-sdk-go/core v0.24.0/go.mod h1:osMglDby4csGZ5sIfhNyYq1bS1TxIdPY88+skE/kkmI=
 github.com/stackitcloud/stackit-sdk-go/services/authorization v0.14.1 h1:9qIh4vsE1qnSF1n/yf45PCpl5PoaGkFp8LmmIU4QDgg=
 github.com/stackitcloud/stackit-sdk-go/services/authorization v0.14.1/go.mod h1:hZc0FvlEhN8zmlORsKLBjBep6iYAY/QLnoV1rDnY69A=
 github.com/stackitcloud/stackit-sdk-go/services/dns v0.17.6 h1:GBRb49x5Nax/oQQaaf2F3kKwv8DQQOL0TQOC0C/v/Ew=
@@ -475,8 +475,8 @@ github.com/stackitcloud/stackit-sdk-go/services/iaas v1.3.5 h1:W57+XRa8wTLsi5CV9
 github.com/stackitcloud/stackit-sdk-go/services/iaas v1.3.5/go.mod h1:lTWjW57eAq1bwfM6nsNinhoBr3MHFW/GaFasdAsYfDM=
 github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.0 h1:81q4OIt54bw4Of5UP/sqXTgT8LkzeY+uHIgSvzQQl3w=
 github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.0/go.mod h1:hjXxEkJ247sa9IxoACRK8oUvly7Hux2qnIw7rj4c6xs=
-github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.0 h1:ey0wPQLM9DjQPcpTFsJHYuNu1huCKBxi9Pc5XFdIWNA=
-github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.0/go.mod h1:yjrIuyp6+6RCYTiP77NGV1DniULFyhLTz9B5ebwvF40=
+github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.1 h1:P9KuN1n1KCokpHYN9xhuweCLPYJbrZYyJQobrYuM1nM=
+github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.1/go.mod h1:x1bUcSfqVt72hdrx1b5bmZlZ2SMoZtiZ/3POJ1tC6Ec=
 github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0 h1:n+NNJvhJYs7oFuIXZWCnMTHR3dukMXOHXlycBGZ3sEc=
 github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0/go.mod h1:2nXRRpjYPKijMf3muc2fxv46ArqGdpG8IoePS/SUnoQ=
 github.com/stoewer/go-strcase v1.3.1 h1:iS0MdW+kVTxgMoE1LAZyMiYJFKlOzLooE4MxjirtkAs=
