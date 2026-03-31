@@ -4,26 +4,15 @@
 
 This document outlines the standard procedure for creating new releases of the STACKIT gardener-extension-provider-stackit.
 
-### 🏷️ Versioning
+### Versioning
 
 When releasing gardener-extension-provider-stackit, we follow semantic versioning (see https://semver.org/).
-
-In short:
-- ⚠️ a new major version (`vX.0.0`, `X` is bumped)
-   - brings new features/refactorings/etc.
-   - implies breaking changes to consumers of the package (i.e., incompatible with the last major)
-- 🚀 a new minor version (`vX.Y.0`, `Y` is bumped)
-   - brings new features/refactorings/etc.
-   - does not imply breaking changes (i.e., compatible with the last minor)
-- 🚑 a new patch version (`vX.Y.Z`, `Z` is bumped)
-   - brings bug fixes without new features/refactorings/etc.
-   - does not imply breaking changes (i.e., compatible with the last patch)
 
 For major version changes, the configuration typically needs to be adapted to accommodate breaking changes before successfully upgrading. For minor and patch updates, no configuration adjustments are required.
 
 Both major and minor releases are created from the main branch. Patch releases are created from a release branch that is based on a minor version release.
 
-### 🚑 Hotfixes
+### Hotfixes
 
 A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in production, but the main branch has already moved forward with breaking changes or features not yet ready for release.
 
@@ -53,14 +42,12 @@ gitGraph:
    git checkout -b release-vx.y vx.y.0
    git push -u origin release-vx.y
    ```
-3. Use our helper script to pull the specific PR(s) into your release branch. This ensures metadata and credits remain intact.
+3. Use `/cherry-pick release-vx.y` command in the PR with the changes. The ronovate will open the cherry-pick PR automatically.
 4. Once the cherry-pick PR has been reviewed, approved, and merged, you can promote the changes by creating a new patch release of gardener-extension-provider-stackit.
    For this, publish the draft release on the `release-vx.y` branch for the next patch version (`vx.y.z`) (see [Publishing a Release](#-publishing-a-release)).
 
 
-To make sure we release with the correct version bump, every breaking PR needs to be labeled with the breaking label (e.g., via /label breaking) so that it is automatically categorized correctly when generating release notes.
-
-## 🔖 Publishing a Release
+### Publishing a Release
 
 When changes are merged into `main` or a `release-v*` branch, the `release-tool` creates a draft release to preview the upcoming updates.
 The tool automatically determines the appropriate version tag based on the target branch and the labels of the merged Pull Requests:
@@ -74,7 +61,7 @@ To publish a release, follow these steps:
 5. Change `REPLACE_ME` with your github username.
 6. Press the "Publish release" button.
 
-## Manual Release Process (Fallback Method)
+### Manual Release Process (Fallback Method)
 
 If the `release-tool` or its associated Prow job fails, use the GitHub web UI to create and publish a release:
 
