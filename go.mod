@@ -22,8 +22,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/stackitcloud/stackit-sdk-go/core v0.23.0
-	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.14.1
+	github.com/stackitcloud/stackit-sdk-go/core v0.24.0
+	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.14.2
 	github.com/stackitcloud/stackit-sdk-go/services/dns v0.17.6
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.7.0
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.0
