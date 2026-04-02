@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: stackit-pod-identity-webhook
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: stackit-pod-identity-webhook
+    endpoint-slice-hints.resources.gardener.cloud/consider: "true"
+  annotations:
+    networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"protocol":"TCP","port":{{ .Values.webhook.port }}}]'
+    service.kubernetes.io/topology-mode: auto
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: {{ .Values.webhook.port }}
+      protocol: TCP
+      name: https
+  selector:
+    app.kubernetes.io/name: stackit-pod-identity-webhook
+  trafficDistribution: PreferClose

@@ -1,0 +1,30 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: stackit-pod-identity-webhook
+  labels:
+    app.kubernetes.io/name: stackit-pod-identity-webhook
+webhooks:
+  - name: stackit-pod-identity-webhook.stackit.cloud
+    clientConfig:
+      url: {{ .Values.webhook.url | quote }}  
+      caBundle: {{ .Values.webhook.caBundle | quote }}  
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system", "garden"]
+        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+          operator: DoesNotExist
+    objectSelector:
+      matchExpressions:
+        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+          operator: DoesNotExist
