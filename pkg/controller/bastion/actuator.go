@@ -10,7 +10,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/controllerutils/reconciler"
 	"github.com/go-logr/logr"
-	iaaswait "github.com/stackitcloud/stackit-sdk-go/services/iaas/wait"
+	iaaswait "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api/wait"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"

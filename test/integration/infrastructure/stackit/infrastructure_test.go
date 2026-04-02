@@ -24,7 +24,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -593,12 +593,12 @@ func prepareIsolatedNetwork(log logr.Logger, networkName string) (*string, error
 	log.Info("Waiting until network is created", "networkName", networkName)
 
 	createOpts := iaas.CreateIsolatedNetworkPayload{
+		Name: networkName,
 		Dhcp: new(true),
-		Name: new(networkName),
 		Ipv4: &iaas.CreateNetworkIPv4{
 			CreateNetworkIPv4WithPrefix: &iaas.CreateNetworkIPv4WithPrefix{
-				Nameservers: new([]string{dnsServer}),
-				Prefix:      new(workerCIDR),
+				Nameservers: []string{dnsServer},
+				Prefix:      workerCIDR,
 			},
 		},
 	}
@@ -608,7 +608,7 @@ func prepareIsolatedNetwork(log logr.Logger, networkName string) (*string, error
 	}
 
 	log.Info("Network is created", "networkName", networkName)
-	return network.Id, nil
+	return new(network.Id), nil
 }
 
 func teardownNetwork(log logr.Logger, networkID string) error {
@@ -638,12 +638,13 @@ func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, provide
 
 	var externalFixedIPs []string
 	ip, ok := net.Ipv4.GetPublicIpOk()
-	if ok {
-		externalFixedIPs = append(externalFixedIPs, ip)
+	if ok && ip != nil {
+		externalFixedIPs = append(externalFixedIPs, *ip)
 	}
 
 	// verify router ip in status
-	Expect(ip).NotTo(BeEmpty())
+	Expect(ip).NotTo(BeNil())
+	Expect(*ip).NotTo(BeEmpty())
 	Expect(providerStatus.Networks.Router.ExternalFixedIPs).To(ContainElements(externalFixedIPs))
 
 	// network is created

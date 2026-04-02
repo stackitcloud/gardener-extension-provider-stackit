@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/stackitcloud/stackit-sdk-go/services/iaas"
-	"k8s.io/utils/ptr"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -15,7 +14,7 @@ func (r *Resources) reconcilePublicIP(ctx context.Context, log logr.Logger) erro
 	if r.PublicIP == nil {
 		var err error
 		r.PublicIP, err = r.IaaS.CreatePublicIp(ctx, iaas.CreatePublicIPPayload{
-			Labels: new(stackit.ToLabels(r.Labels)),
+			Labels: stackit.ToLabels(r.Labels),
 		})
 		if err != nil {
 			return fmt.Errorf("error creating public IP: %w", err)
@@ -24,7 +23,7 @@ func (r *Resources) reconcilePublicIP(ctx context.Context, log logr.Logger) erro
 		log.Info("Created public IP", "publicIP", r.PublicIP.GetId())
 	}
 
-	if networkInterface := ptr.Deref(r.PublicIP.GetNetworkInterface(), ""); networkInterface != "" {
+	if networkInterface := r.PublicIP.GetNetworkInterface(); networkInterface != "" {
 		log.V(1).Info("Public IP is already associated with network interface", "publicIP", r.PublicIP.GetId(), "networkInterface", networkInterface)
 		return nil
 	}
