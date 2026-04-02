@@ -22,13 +22,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	github.com/stackitcloud/stackit-sdk-go/core v0.23.0
+	github.com/stackitcloud/stackit-sdk-go/core v0.24.0
 	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.14.1
 	github.com/stackitcloud/stackit-sdk-go/services/dns v0.17.6
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.7.0
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.0
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.0
-	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0
+	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.1
 	go.uber.org/atomic v1.11.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/mod v0.34.0
