@@ -462,9 +462,9 @@ func runTest(
 		log,
 		infra,
 		"Infrastucture",
-		2*time.Second,
-		6*time.Minute,
-		16*time.Minute,
+		5*time.Second,
+		7*time.Minute,
+		10*time.Minute,
 		nil,
 	)).To(Succeed())
 

@@ -172,8 +172,8 @@ verify-extended: check-generate check check-format test ## Run check-generate, c
 test-integration-infra: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run infrastructure integration tests
 	@GINKGO=$(GINKGO) ./hack/test-integration.sh \
 		-v --show-node-events \
-		--procs 2 --timeout 6m \
-		--grace-period 2m \
+		--procs 2 --timeout 15m \
+		--grace-period 3m \
 		./test/integration/infrastructure/stackit \
 		-- \
 		$(INFRA_TEST_FLAGS)
