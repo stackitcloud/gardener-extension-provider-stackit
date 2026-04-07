@@ -1309,6 +1309,7 @@ func getPodIdentityWebhookChartValues(
 	}
 
 	return map[string]any{
+		"enabled":      feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity),
 		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"webhook": map[string]any{
 			"tlsSecretName": tlsSecret.Name,
@@ -1331,6 +1332,7 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 	}
 
 	return map[string]any{
+		"enabled": feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity),
 		"webhook": map[string]any{
 			"caBundle": caBundle,
 			"url":      fmt.Sprintf("https://%s.%s:443/mutate--v1-pod", stackit.PodIdentityWebhookName, controlPlaneNamespace),

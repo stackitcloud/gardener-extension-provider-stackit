@@ -14,7 +14,7 @@ const (
 	// // MyFeature enables Foo.
 	// MyFeature featuregate.Feature = "MyFeature"
 
-	// MutateDisableNTP enables the mutation that disables NTP if any worker's flatcar image version is greater than or eqaul to `FlatcarImageVersion`
+	// MutateDisableNTP enables the mutation that disables NTP if any worker's flatcar image version is greater than or equal to `FlatcarImageVersion`
 	MutateDisableNTP featuregate.Feature = "MutateDisableNTP"
 	// EnsureSTACKITLBDeletion enables the STACKIT LB deletion cleanup. The function checks for dangling/zombied LB's and then tries to delete them.
 	EnsureSTACKITLBDeletion featuregate.Feature = "EnsureSTACKITLBDeletion"
@@ -26,6 +26,8 @@ const (
 	ShootUseSTACKITMachineControllerManager = "shoot.gardener.cloud/use-stackit-machine-controller-manager"
 	// ShootUseSTACKITAPIInfrastructureController Uses the STACKIT API to create the shoot resources instead of OpenStack for a specific Shoot.
 	ShootUseSTACKITAPIInfrastructureController = "shoot.gardener.cloud/use-stackit-api-infrastructure-controller"
+	// EnableSTACKITWorkloadIdentity activates the deployment of the stackit-pod-identity-webhook to enable workload identity injection into pods.
+	EnableSTACKITWorkloadIdentity featuregate.Feature = "EnableSTACKITWorkloadIdentity"
 )
 
 var (
@@ -46,6 +48,7 @@ var (
 		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
 		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
 		UseSTACKITMachineControllerManager:    {Default: true, PreRelease: featuregate.Alpha},
+		EnableSTACKITWorkloadIdentity:         {Default: false, PreRelease: featuregate.Alpha},
 	}
 )
 

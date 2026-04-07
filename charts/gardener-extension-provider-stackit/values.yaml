@@ -77,11 +77,11 @@ config:
     # Must be base64 encoded
     caBundle: ""
   registryCaches:
-  # - server: reg.example.com
-  #   cache: reg-cache.example.com
-  #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
-  #   capabilities: ["pull", "resolve"]
-  # deployALBIngressController: true
+    # - server: reg.example.com
+    #   cache: reg-cache.example.com
+    #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
+    #   capabilities: ["pull", "resolve"]
+    # deployALBIngressController: true
 gardener:
   version: ""
   gardenlet:
@@ -98,5 +98,5 @@ usablePorts:
 - 8081 # health
 - 10250 # webhook server
 
-featureGates: {}
-# NoopFeature: false
+featureGates:
+  EnableSTACKITWorkloadIdentity: false

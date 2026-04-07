@@ -497,6 +497,7 @@ var _ = Describe("ValuesProvider", func() {
 		})
 
 		stackitPodIdentityWebhookChartSeedValues := map[string]any{
+			"enabled":      false,
 			"replicaCount": 1,
 			"webhook": map[string]any{
 				"tlsSecretName": stackitPodIdentityWebhookServerName,
@@ -893,6 +894,7 @@ var _ = Describe("ValuesProvider", func() {
 
 	Describe("#GetControlPlaneShootChartValues", func() {
 		stackitPodIdentityWebhookChartShootValues := map[string]any{
+			"enabled": false,
 			"webhook": map[string]any{
 				"caBundle": []byte("fake-ca-cert"),
 				"url":      fmt.Sprintf("https://stackit-pod-identity-webhook.%s:443/mutate--v1-pod", namespace),
