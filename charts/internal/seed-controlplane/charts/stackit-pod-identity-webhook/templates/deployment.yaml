@@ -110,5 +110,5 @@ spec:
                 items:
                   - key: token
                     path: token
-                name: shoot-access-pod-identity-webhook
+                name: shoot-access-stackit-pod-identity-webhook
                 optional: false
