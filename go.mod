@@ -28,7 +28,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.7.0
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.2
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.2
-	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0
+	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.1
 	go.uber.org/atomic v1.11.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/mod v0.34.0
