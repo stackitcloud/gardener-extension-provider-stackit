@@ -31,7 +31,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/mock v0.6.0
-	golang.org/x/mod v0.34.0
+	golang.org/x/mod v0.35.0
 	golang.org/x/tools v0.43.0
 	k8s.io/api v0.35.2
 	k8s.io/apiextensions-apiserver v0.35.2
