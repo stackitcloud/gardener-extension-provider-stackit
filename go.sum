@@ -477,8 +477,8 @@ github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.2 h1:HK+9boGu
 github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.11.2/go.mod h1:8GLrgPVEZ8HDNYZXZjsElwV59fJFpE9xWNc0rYq2s/o=
 github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.2 h1:0o2DNmR+pzyot65foG4ZcGMxrSZhPbSK5zkQdL3ZNIg=
 github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.21.2/go.mod h1:WRo2Z23PsvUiSa7u+qij9oGX5S9Hm5tobrdKldpTUmk=
-github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0 h1:n+NNJvhJYs7oFuIXZWCnMTHR3dukMXOHXlycBGZ3sEc=
-github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.0/go.mod h1:2nXRRpjYPKijMf3muc2fxv46ArqGdpG8IoePS/SUnoQ=
+github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.1 h1:2PqyOXAIhLqOSw62G7+YDYlRiu3clJCVQejg+YPc1Ro=
+github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.15.1/go.mod h1:XC5YHmlRVDOVTjcUYSyCGR9ZzRmgjAm3D4aUoXF3qGc=
 github.com/stoewer/go-strcase v1.3.1 h1:iS0MdW+kVTxgMoE1LAZyMiYJFKlOzLooE4MxjirtkAs=
 github.com/stoewer/go-strcase v1.3.1/go.mod h1:fAH5hQ5pehh+j3nZfvwdk2RgEgQjAoM8wodgtPmh1xo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
