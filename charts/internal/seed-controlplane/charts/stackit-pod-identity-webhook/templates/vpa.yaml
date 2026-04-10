@@ -9,7 +9,7 @@ spec:
     kind: Deployment
     name: stackit-pod-identity-webhook
   updatePolicy:
-    updateMode: Auto
+    updateMode: InPlaceOrRecreate
   resourcePolicy:
     containerPolicies:
     - containerName: stackit-pod-identity-webhook
