@@ -14,8 +14,12 @@ spec:
     containerPolicies:
     - containerName: stackit-pod-identity-webhook
       minAllowed:
-        memory: 80M
+        cpu: {{ .Values.vpa.resourcePolicy.minAllowed.cpu }}
+        memory: {{ .Values.vpa.resourcePolicy.minAllowed.memory }}
       maxAllowed:
         cpu: {{ .Values.vpa.resourcePolicy.maxAllowed.cpu }}
         memory: {{ .Values.vpa.resourcePolicy.maxAllowed.memory }}
-      controlledValues: RequestsOnly
+      controlledValues: RequestsAndLimits
+      controlledResources:
+      - cpu
+      - memory

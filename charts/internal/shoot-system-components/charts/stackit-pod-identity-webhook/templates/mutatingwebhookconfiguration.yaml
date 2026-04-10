@@ -7,8 +7,8 @@ metadata:
 webhooks:
   - name: stackit-pod-identity-webhook.stackit.cloud
     clientConfig:
-      url: {{ .Values.webhook.url | quote }}  
-      caBundle: {{ .Values.webhook.caBundle | quote }}  
+      url: {{ .Values.webhook.url | quote }}
+      caBundle: {{ .Values.webhook.caBundle | quote }}
     rules:
       - operations: ["CREATE"]
         apiGroups: [""]
@@ -16,15 +16,17 @@ webhooks:
         resources: ["pods"]
     admissionReviewVersions: ["v1"]
     sideEffects: None
+    timeoutSeconds: 3 # Do not block control-plane API calls too long.
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system", "garden"]
-        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
-          operator: DoesNotExist
+      - key: gardener.cloud/purpose # see https://github.com/gardener/gardener/blob/master/docs/usage/shoot/shoot_status.md#constraints
+        operator: NotIn
+        values:
+          - kube-system
+      - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+        operator: DoesNotExist
     objectSelector:
       matchExpressions:
-        - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
-          operator: DoesNotExist
+      - key: workload-identity.stackit.cloud/skip-pod-identity-webhook
+        operator: DoesNotExist

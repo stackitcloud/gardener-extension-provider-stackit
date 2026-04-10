@@ -13,3 +13,6 @@ vpa:
     maxAllowed:
       cpu: 1
       memory: 512Mi
+    minAllowed:
+      cpu: 50m
+      memory: 64Mi

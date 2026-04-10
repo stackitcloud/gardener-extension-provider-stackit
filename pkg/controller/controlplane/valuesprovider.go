@@ -323,6 +323,8 @@ var (
 				Name: stackit.PodIdentityWebhookName,
 				Objects: []*chart.Object{
 					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &rbacv1.ClusterRole{}, Name: "extensions.gardener.cloud:provider-stackit:stackit-pod-identity-webhook"},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: "extensions.gardener.cloud:provider-stackit:stackit-pod-identity-webhook"},
 				},
 			},
 		},

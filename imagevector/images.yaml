@@ -136,5 +136,6 @@ images:
   repository: reg3.infra.ske.eu01.stackit.cloud/temp/alb-controller-manager
   tag: "1245"
 - name: stackit-pod-identity-webhook
+  sourceRepository: github.com/stackitcloud/stackit-pod-identity-webhook
   repository: ghcr.io/stackitcloud/stackit-pod-identity-webhook
-  tag: "v0.1.0@sha256:5c124efb00b5b5e0fd64b635e1643cebbd407b4abafdb966e02639627f41631c"
+  tag: "v0.1.0"
