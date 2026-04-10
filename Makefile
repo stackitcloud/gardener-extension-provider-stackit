@@ -22,7 +22,7 @@ FLOATING_POOL_NAME := floating-net
 
 INFRA_TEST_FLAGS   := --region='$(REGION)'
 
-SHELL=/bin/bash -e -o pipefail
+SHELL=/usr/bin/env bash -o pipefail
 
 #########################################
 # Tools                                 #
