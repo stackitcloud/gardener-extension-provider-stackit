@@ -20,6 +20,9 @@ spec:
         gardener.cloud/role: controlplane
         networking.gardener.cloud/to-dns: allowed
         networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.metrics.port | quote }}
+        prometheus.io/name: "{{ .Release.Name }}"
     spec:
       automountServiceAccountToken: false
       podSecurityContext:
@@ -46,6 +49,7 @@ spec:
           args:
             - --cert-dir=/etc/webhook/certs
             - --port={{ .Values.webhook.port }}
+            - --metrics-bind-address={{ .Values.metrics.port }}
           env:
           - name: KUBECONFIG
             value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
@@ -54,7 +58,7 @@ spec:
               containerPort: {{ .Values.webhook.port }}
               protocol: TCP
             - name: metrics
-              containerPort: 8080
+              containerPort: {{ .Values.metrics.port }}
               protocol: TCP
             - name: health
               containerPort: 8081
