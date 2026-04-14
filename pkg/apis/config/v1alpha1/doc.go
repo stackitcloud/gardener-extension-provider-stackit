@@ -7,6 +7,8 @@
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 
+//go:generate crd-ref-docs --source-path=. --config=../../../../hack/api-reference/config.yaml --renderer=markdown --templates-dir=$GARDENER_HACK_DIR/api-reference/template --log-level=ERROR --output-path=../../../../hack/api-reference/config.md
+
 // Package v1alpha1 contains the STACKIT provider configuration API resources.
 // +groupName=stackit.provider.extensions.config.stackit.cloud
 package v1alpha1 // import "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config/v1alpha1"
