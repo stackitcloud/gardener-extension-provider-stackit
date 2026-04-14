@@ -467,8 +467,8 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/spf13/pflag v1.0.10 h1:4EBh2KAYBwaONj6b2Ye1GiHfwjqyROoF4RwYO+vPwFk=
 github.com/spf13/pflag v1.0.10/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/stackitcloud/stackit-sdk-go/core v0.24.1 h1:IrG0XBlJivUpXC4Y6TE+6FeSxNPs1JQXsero0ivwh0o=
-github.com/stackitcloud/stackit-sdk-go/core v0.24.1/go.mod h1:osMglDby4csGZ5sIfhNyYq1bS1TxIdPY88+skE/kkmI=
+github.com/stackitcloud/stackit-sdk-go/core v0.25.0 h1:ra3VEk684MNoq741g+xbZrKjZzhyztq5liUAwwew4DY=
+github.com/stackitcloud/stackit-sdk-go/core v0.25.0/go.mod h1:WU1hhxnjXw2EV7CYa1nlEvNpMiRY6CvmIOaHuL3pOaA=
 github.com/stackitcloud/stackit-sdk-go/services/authorization v0.15.0 h1:Dux5tbbQ+vlT1+91gzP040MIWaFX8AtSBTwI5xy1fFw=
 github.com/stackitcloud/stackit-sdk-go/services/authorization v0.15.0/go.mod h1:eRiHw7dSZW6uqJmaiUnGV5syDIL1o7eWBXUtubTdWKQ=
 github.com/stackitcloud/stackit-sdk-go/services/dns v0.20.0 h1:q/KWOTd1tVYkQruJwIU5N8OPkRvBIAmJxafSu3TuXiU=
