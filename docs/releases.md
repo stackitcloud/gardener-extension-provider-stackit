@@ -13,11 +13,11 @@ This document outlines the standard procedure for creating new releases of the S
 
 ## General Information
 
-- **Branching Strategy:** All major and minor releases are created from `main` branches. Patch releases are created from  `release-v*` branches (see [Patch Release (Hotfix)](#hotfixes) for more details).
+- **Branching Strategy:** All major and minor releases are created from `main` branches. Patch releases are created from  `release-v*` branches (see [Patch Release (Hotfix)](#patch-version-hotfix) for more details).
 - **Versioning:** Versioning follows official [SemVer 2.0](https://semver.org/)
 - **CI/CD System:** All release and image builds are managed by our **Prow CI** infrastructure.
 
-### Hotfixes
+### Patch Version (Hotfix)
 
 A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in use, but the main branch has already moved forward with breaking changes or features.
 
