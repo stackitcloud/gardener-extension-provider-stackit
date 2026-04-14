@@ -5,11 +5,11 @@ go 1.26.1
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/coreos/go-systemd/v22 v22.7.0
-	github.com/gardener/etcd-druid/api v0.36.1
-	github.com/gardener/gardener v1.140.0
+	github.com/gardener/etcd-druid/api v0.36.2
+	github.com/gardener/gardener v1.140.1
 	github.com/gardener/gardener-extension-networking-calico v1.58.0
 	github.com/gardener/gardener-extension-os-coreos v1.29.0
-	github.com/gardener/gardener/pkg/apis v1.140.0
+	github.com/gardener/gardener/pkg/apis v1.140.1
 	github.com/gardener/machine-controller-manager v0.61.3
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
