@@ -124,7 +124,7 @@ generate-mocks: $(MOCKGEN)
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancing_mock.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client LoadBalancingClient
 
 .PHONY: generate
-generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN) $(YQ) $(YAML2JSON) $(GOIMPORTS) generate-mocks ## Generates the controller-registration, other code-gen, the imagename constants as well as executes go:generate directives
+generate: $(CONTROLLER_GEN) $(CRD_REF_DOCS) $(HELM) $(MOCKGEN) $(YQ) $(YAML2JSON) $(GOIMPORTS) generate-mocks ## Generates the controller-registration, other code-gen, the imagename constants as well as executes go:generate directives
 	@cd imagevector && bash $(GARDENER_HACK_DIR)/generate-imagename-constants.sh
 	@REPO_ROOT=$(REPO_ROOT) VGOPATH=$(VGOPATH) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./charts/... ./cmd/... ./pkg/...
 
