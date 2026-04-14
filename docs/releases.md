@@ -4,6 +4,7 @@
 
 - [Overview](#overview)
 - [General Information](#general-information)
+- [Patch Version (Hotfix)](#patch-version-hotfix)
 - [Automated Release Process (Primary Method)](#automated-release-process-primary-method)
 - [Manual Release Process (Fallback Method)](#manual-release-process-fallback-method)
 
@@ -17,7 +18,7 @@ This document outlines the standard procedure for creating new releases of the S
 - **Versioning:** Versioning follows official [SemVer 2.0](https://semver.org/)
 - **CI/CD System:** All release and image builds are managed by our **Prow CI** infrastructure.
 
-### Patch Version (Hotfix)
+## Patch Version (Hotfix)
 
 A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in use, but the main branch has already moved forward with breaking changes or features.
 
