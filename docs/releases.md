@@ -1,20 +1,26 @@
 # Release Procedure
 
+# Table of Contents
+
+- [Overview](#overview)
+- [General Information](#general-information)
+- [Patch Version (Hotfix)](#patch-version-hotfix)
+- [Automated Release Process (Primary Method)](#automated-release-process-primary-method)
+- [Manual Release Process (Fallback Method)](#manual-release-process-fallback-method)
+
 ## Overview
 
 This document outlines the standard procedure for creating new releases of the STACKIT gardener-extension-provider-stackit.
 
-### Versioning
+## General Information
 
-When releasing gardener-extension-provider-stackit, we follow semantic versioning (see https://semver.org/).
+- **Branching Strategy:** All major and minor releases are created from `main` branches. Patch releases are created from  `release-v*` branches (see [Patch Release (Hotfix)](#patch-version-hotfix) for more details).
+- **Versioning:** Versioning follows official [SemVer 2.0](https://semver.org/)
+- **CI/CD System:** All release and image builds are managed by our **Prow CI** infrastructure.
 
-For major version changes, the configuration typically needs to be adapted to accommodate breaking changes before successfully upgrading. For minor and patch updates, no configuration adjustments are required.
+## Patch Version (Hotfix)
 
-Both major and minor releases are created from the main branch. Patch releases are created from a release branch that is based on a minor version release.
-
-### Hotfixes
-
-A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in production, but the main branch has already moved forward with breaking changes or features not yet ready for release.
+A Hotfix is required when a critical bug or security vulnerability is discovered in a stable version that is currently in use, but the main branch has already moved forward with breaking changes or features.
 
 We follow a "Fix-First-in-Main" policy. All fixes must be merged into the main branch before being cherry-picked into a specific release branch.
 
@@ -26,42 +32,37 @@ gitGraph:
     branch release-v1.0
     checkout main
     commit id: "Feature A"
-    commit id: "Breaking Change" tag: "v2.0.0-beta"
-    commit id: "Critical Bugfix"
-    commit id: "Feature B"
+    commit id: "Breaking Change"
+    commit id: "Bugfix"
     checkout release-v1.0
-    commit id: "cherry-pick Bugfix" tag: "v1.0.1"
+    cherry-pick id: "Bugfix"
+    commit id: "v1.0.1" tag: "v1.0.1"
 ```
 
-> In the example above, the "Critical Bugfix" cannot be released via the main branch because main contains a "Breaking Change" that isn't ready for general availability. By using a release branch (release-v1.0), we can ship the fix as a patch (v1.0.1) immediately.
+> As shown in the example, the `Critical Bugfix` cannot be released directly from main because that branch already contains unreleased work (like `Feature A` or the `Breaking Change`) that shouldn't be shipped alongside a patch. Isolating the fix on `release-v1.0` ensures we release only the `Critical Bugfix` in the patch release (`v1.0.1`).
 
-1. Create a Pull Request (PR) targeting the main branch. Once reviewed and merged, identify the PR number.
-2. If a branch for your specific minor version (e.g., release-v1.x) doesn't exist yet, create it from the last known stable tag:
+1. Create a Pull Request with the bug fix targeting the main branch.
+2. Review and merge the `main` branch Pull Request.
+3. If a branch for your specific minor version (e.g., `release-v1.0`) doesn't exist yet, create it from the corresponding tag:
    ```bash
    git fetch --all --tags
    git checkout -b release-vx.y vx.y.0
    git push -u origin release-vx.y
    ```
-3. Use `/cherry-pick release-vx.y` command in the PR with the changes. The ronovate will open the cherry-pick PR automatically.
-4. Once the cherry-pick PR has been reviewed, approved, and merged, you can promote the changes by creating a new patch release of gardener-extension-provider-stackit.
-   For this, publish the draft release on the `release-vx.y` branch for the next patch version (`vx.y.z`) (see [Publishing a Release](#-publishing-a-release)).
+4. Use `/cherry-pick release-vx.y` command in the `main` branch Pull Request. The prow will open the cherry-pick Pull Request against `release-vx.y` branch automatically.
+5. Once the cherry-pick PR has been reviewed, approved, and merged, you can promote the changes by creating a new patch release of gardener-extension-provider-stackit.
+   For this, publish the draft release on the `release-vx.y` branch for the next patch version (`vx.y.z`) (see [Automated Release Process (Primary Method)](#automated-release-process-primary-method)).
 
+## Automated Release Process (Primary Method)
 
-### Publishing a Release
+The primary release method is automated using a tool called `release-tool`. This process is designed to be straightforward and require minimal manual intervention.
 
-When changes are merged into `main` or a `release-v*` branch, the `release-tool` creates a draft release to preview the upcoming updates.
-The tool automatically determines the appropriate version tag based on the target branch and the labels of the merged Pull Requests:
+1. **Draft Creation:** On every successful merge (post-submit) to the `main` branch and `release-v*` branchs, a Prow job automatically runs the `release-tool`. This tool creates a new draft release on GitHub or updates the existing one with a changelog generated from recent commits.
+2. **Publishing the Release:** When the draft is ready, navigate to the repository's "Releases" page on GitHub. Locate the draft, review the changelog, replace the placeholder with your GitHub handle and publish it by clicking the "Publish release" button.
 
-To publish a release, follow these steps:
+Publishing the release automatically creates the corresponding Git tag (e.g., `v1.3.1`), which triggers a separate Prow job to build the final container images and attach them to the GitHub release.
 
-1. Open the repository's releases page.
-2. Navigate to the corresponding draft release (minor/major for `main`, patch for `release-v*`).
-3. Review to-be-released changes by checking the release notes.
-4. Edit the release by pressing the pen icon.
-5. Change `REPLACE_ME` with your github username.
-6. Press the "Publish release" button.
-
-### Manual Release Process (Fallback Method)
+## Manual Release Process (Fallback Method)
 
 If the `release-tool` or its associated Prow job fails, use the GitHub web UI to create and publish a release:
 
