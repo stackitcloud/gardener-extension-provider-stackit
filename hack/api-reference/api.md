@@ -971,6 +971,44 @@ string
 </table>
 
 
+<h3 id="loadbalancerconfig">LoadBalancerConfig
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#selfhostedshootexposureconfig">SelfHostedShootExposureConfig</a>)
+</p>
+
+<p>
+LoadBalancerConfig contains configuration for the load balancer.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>planId</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>PlanId specifies the service plan (size) of the load balancer.<br />Currently supported plans are p10, p50, p250, p750 (compare API docs).</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
 <h3 id="machineimage">MachineImage
 </h3>
 
@@ -1679,6 +1717,40 @@ string
 </td>
 <td>
 <p>Name is the security group name.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="selfhostedshootexposureconfig">SelfHostedShootExposureConfig
+</h3>
+
+
+<p>
+SelfHostedShootExposureConfig contains configuration settings for exposing self-hosted shoots.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>loadBalancer</code></br>
+<em>
+<a href="#loadbalancerconfig">LoadBalancerConfig</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>LoadBalancer contains configuration for the load balancer.</p>
 </td>
 </tr>
 
