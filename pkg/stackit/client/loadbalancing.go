@@ -11,9 +11,14 @@ import (
 )
 
 type LoadBalancingClient interface {
+	ProjectID() string
+
 	ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error)
 	DeleteLoadBalancer(ctx context.Context, lbName string) error
 	GetLoadBalancer(ctx context.Context, id string) (*loadbalancer.LoadBalancer, error)
+	CreateLoadBalancer(ctx context.Context, payload loadbalancer.CreateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error)
+	UpdateLoadBalancer(ctx context.Context, lbName string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error)
+	UpdateLoadBalancerTargetPool(ctx context.Context, lbName, tpName string, payload loadbalancer.UpdateTargetPoolPayload) (*loadbalancer.TargetPool, error)
 }
 
 type loadBalancingClient struct {
@@ -40,6 +45,10 @@ func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv
 	}, nil
 }
 
+func (l loadBalancingClient) ProjectID() string {
+	return l.projectID
+}
+
 func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error) {
 	lbResponse, err := l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
 	if err != nil {
@@ -54,5 +63,24 @@ func (l loadBalancingClient) DeleteLoadBalancer(ctx context.Context, lbName stri
 }
 
 func (l loadBalancingClient) GetLoadBalancer(ctx context.Context, lbName string) (*loadbalancer.LoadBalancer, error) {
-	return l.Client.GetLoadBalancer(ctx, l.projectID, l.region, lbName).Execute()
+	lb, err := l.Client.GetLoadBalancer(ctx, l.projectID, l.region, lbName).Execute()
+	if err != nil {
+		if IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return lb, nil
+}
+
+func (l loadBalancingClient) CreateLoadBalancer(ctx context.Context, payload loadbalancer.CreateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+	return l.Client.CreateLoadBalancer(ctx, l.projectID, l.region).CreateLoadBalancerPayload(payload).Execute()
+}
+
+func (l loadBalancingClient) UpdateLoadBalancer(ctx context.Context, lbName string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+	return l.Client.UpdateLoadBalancer(ctx, l.projectID, l.region, lbName).UpdateLoadBalancerPayload(payload).Execute()
+}
+
+func (l loadBalancingClient) UpdateLoadBalancerTargetPool(ctx context.Context, lbName, tpName string, payload loadbalancer.UpdateTargetPoolPayload) (*loadbalancer.TargetPool, error) {
+	return l.Client.UpdateTargetPool(ctx, l.projectID, l.region, lbName, tpName).UpdateTargetPoolPayload(payload).Execute()
 }
