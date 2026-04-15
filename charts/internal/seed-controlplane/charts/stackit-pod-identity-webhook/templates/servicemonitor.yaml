@@ -11,4 +11,4 @@ spec:
     matchLabels:
       app.kubernetes.io/name: stackit-pod-identity-webhook
   endpoints:
-    port: metrics
+  - port: metrics
