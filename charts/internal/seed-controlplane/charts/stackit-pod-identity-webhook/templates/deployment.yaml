@@ -20,6 +20,7 @@ spec:
         gardener.cloud/role: controlplane
         networking.gardener.cloud/to-dns: allowed
         networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
+        networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"port":{{ .Values.metrics.port }},"protocol":"TCP"}]'
     spec:
       automountServiceAccountToken: false
       podSecurityContext:

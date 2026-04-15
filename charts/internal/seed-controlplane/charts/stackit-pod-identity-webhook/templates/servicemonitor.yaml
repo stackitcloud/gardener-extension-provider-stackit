@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: stackit-pod-identity-webhook
-    prometheus: seed
+    prometheus: shoot
 spec:
   selector:
     matchLabels:
