@@ -12,6 +12,7 @@ import (
 	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	extensionsinfrastructurecontroller "github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
+	extensionsselfhostedshootcontroller "github.com/gardener/gardener/extensions/pkg/controller/selfhostedshootexposure"
 	extensionsworkercontroller "github.com/gardener/gardener/extensions/pkg/controller/worker"
 	extensionscloudproviderwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cloudprovider"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
@@ -22,6 +23,7 @@ import (
 	dnsrecordcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/dnsrecord"
 	healthcheckcontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/healthcheck"
 	infrastructurecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure"
+	selfhostedshootexposurecontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/selfhostedshootexposure"
 	workercontroller "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	cloudproviderwebhook "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/cloudprovider"
 	controlplanewebhook "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane"
@@ -35,6 +37,7 @@ func ControllerSwitchOptions() *controllercmd.SwitchOptions {
 		controllercmd.Switch(extensionscontrolplanecontroller.ControllerName, controlplanecontroller.AddToManager),
 		controllercmd.Switch(extensionsdnsrecordcontroller.ControllerName, dnsrecordcontroller.AddToManager),
 		controllercmd.Switch(extensionsinfrastructurecontroller.ControllerName, infrastructurecontroller.AddToManager),
+		controllercmd.Switch(extensionsselfhostedshootcontroller.ControllerName, selfhostedshootexposurecontroller.AddToManager),
 		controllercmd.Switch(extensionsworkercontroller.ControllerName, workercontroller.AddToManager),
 		controllercmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
 		controllercmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
