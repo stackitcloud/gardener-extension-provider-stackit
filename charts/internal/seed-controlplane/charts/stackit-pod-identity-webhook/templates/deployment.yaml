@@ -69,12 +69,9 @@ spec:
               path: /readyz
               port: health
           resources:
-              limits:
-                cpu: {{ .Values.vpa.resourcePolicy.maxAllowed.cpu }}
-                memory: {{ .Values.vpa.resourcePolicy.maxAllowed.memory }}
               requests:
-                cpu: {{ .Values.vpa.resourcePolicy.minAllowed.cpu }}
-                memory: {{ .Values.vpa.resourcePolicy.minAllowed.memory }}
+                cpu: 50m
+                memory: 64Mi
           volumeMounts:
             - name: certs
               mountPath: /etc/webhook/certs
