@@ -27,6 +27,7 @@ import (
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -218,6 +219,7 @@ var (
 					{Type: &policyv1.PodDisruptionBudget{}, Name: stackit.PodIdentityWebhookName},
 					{Type: &corev1.Service{}, Name: stackit.PodIdentityWebhookName},
 					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &monitoringv1.ServiceMonitor{}, Name: stackit.PodIdentityWebhookName},
 				},
 			},
 		},

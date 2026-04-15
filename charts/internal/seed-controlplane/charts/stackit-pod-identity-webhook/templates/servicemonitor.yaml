@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: stackit-pod-identity-webhook
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: stackit-pod-identity-webhook
+    prometheus: shoot
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stackit-pod-identity-webhook
+  endpoints:
+    port: metrics
