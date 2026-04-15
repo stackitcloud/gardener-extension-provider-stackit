@@ -35,6 +35,7 @@ import (
 	stackitdnsrecord "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/dnsrecord"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/healthcheck"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure"
+	stackitselfhostedshootexposure "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/selfhostedshootexposure"
 	stackitworker "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -92,6 +93,11 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			MaxConcurrentReconciles: 5,
 		}
 
+		// options for the selfhostedshootexposure controller
+		selfHostedShootExposureCtrlOpts = &controllercmd.ControllerOptions{
+			MaxConcurrentReconciles: 5,
+		}
+
 		// options for the worker controller
 		workerCtrlOpts = &controllercmd.ControllerOptions{
 			MaxConcurrentReconciles: 5,
@@ -121,6 +127,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			controllercmd.PrefixOption("controlplane-", controlPlaneCtrlOpts),
 			controllercmd.PrefixOption("dnsrecord-", dnsRecordCtrlOpts),
 			controllercmd.PrefixOption("infrastructure-", infraCtrlOpts),
+			controllercmd.PrefixOption("selfhostedshootexposure-", selfHostedShootExposureCtrlOpts),
 			controllercmd.PrefixOption("worker-", workerCtrlOpts),
 			controllercmd.PrefixOption("healthcheck-", healthCheckCtrlOpts),
 			controllercmd.PrefixOption("heartbeat-", heartbeatCtrlOpts),
@@ -197,12 +204,14 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			heartbeatCtrlOpts.Completed().Apply(&heartbeat.DefaultAddOptions)
 			configFileOpts.Completed().ApplyCustomLabelDomain(&infrastructure.DefaultAddOptions.CustomLabelDomain)
 			infraCtrlOpts.Completed().Apply(&infrastructure.DefaultAddOptions.Controller)
+			selfHostedShootExposureCtrlOpts.Completed().Apply(&stackitselfhostedshootexposure.DefaultAddOptions.Controller)
 			workerCtrlOpts.Completed().Apply(&stackitworker.DefaultAddOptions.Controller)
 
 			reconcileOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.IgnoreOperationAnnotation, &stackitbastion.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation, &stackitcontrolplane.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitdnsrecord.DefaultAddOptions.IgnoreOperationAnnotation, &stackitdnsrecord.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&infrastructure.DefaultAddOptions.IgnoreOperationAnnotation, &infrastructure.DefaultAddOptions.ExtensionClasses)
+			reconcileOpts.Completed().Apply(&stackitselfhostedshootexposure.DefaultAddOptions.IgnoreOperationAnnotation, &stackitselfhostedshootexposure.DefaultAddOptions.ExtensionClasses)
 			reconcileOpts.Completed().Apply(&stackitworker.DefaultAddOptions.IgnoreOperationAnnotation, &stackitworker.DefaultAddOptions.ExtensionClasses)
 
 			stackitworker.DefaultAddOptions.GardenCluster = gardenCluster
