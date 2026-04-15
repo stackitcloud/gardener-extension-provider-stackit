@@ -46,7 +46,7 @@ spec:
           args:
             - --cert-dir=/etc/webhook/certs
             - --port={{ .Values.webhook.port }}
-            - --metrics-bind-address={{ .Values.metrics.port }}
+            - --metrics-bind-address=:{{ .Values.metrics.port }}
           env:
           - name: KUBECONFIG
             value: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
