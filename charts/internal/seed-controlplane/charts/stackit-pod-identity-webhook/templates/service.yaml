@@ -8,6 +8,7 @@ metadata:
     endpoint-slice-hints.resources.gardener.cloud/consider: "true"
   annotations:
     networking.resources.gardener.cloud/from-all-webhook-targets-allowed-ports: '[{"protocol":"TCP","port":{{ .Values.webhook.port }}}]'
+    networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"protocol":"TCP","port":{{ .Values.metrics.port }}}]'
     service.kubernetes.io/topology-mode: auto
 spec:
   type: ClusterIP
