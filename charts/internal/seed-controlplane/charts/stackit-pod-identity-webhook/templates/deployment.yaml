@@ -20,9 +20,6 @@ spec:
         gardener.cloud/role: controlplane
         networking.gardener.cloud/to-dns: allowed
         networking.resources.gardener.cloud/to-kube-apiserver-tcp-443: allowed
-        prometheus.io/scrape: "true"
-        prometheus.io/port: {{ .Values.metrics.port | quote }}
-        prometheus.io/name: "{{ .Release.Name }}"
     spec:
       automountServiceAccountToken: false
       podSecurityContext:
@@ -72,6 +69,9 @@ spec:
               path: /readyz
               port: health
           resources:
+              limits:
+                cpu: {{ .Values.vpa.resourcePolicy.maxAllowed.cpu }}
+                memory: {{ .Values.vpa.resourcePolicy.maxAllowed.memory }}
               requests:
                 cpu: {{ .Values.vpa.resourcePolicy.minAllowed.cpu }}
                 memory: {{ .Values.vpa.resourcePolicy.minAllowed.memory }}
