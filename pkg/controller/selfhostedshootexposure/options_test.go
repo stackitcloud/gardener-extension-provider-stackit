@@ -144,6 +144,23 @@ var _ = Describe("Options", func() {
 		Expect(opts.PlanId).To(Equal("p250"))
 	})
 
+	It("should reject an invalid AllowedSourceRanges CIDR", func() {
+		encoder := serializer.NewCodecFactory(fakeClient.Scheme()).EncoderForVersion(&json.Serializer{}, stackitv1alpha1.SchemeGroupVersion)
+		providerConfig := &stackitv1alpha1.SelfHostedShootExposureConfig{
+			LoadBalancer: &stackitv1alpha1.LoadBalancerConfig{
+				AccessControl: &stackitv1alpha1.AccessControlConfig{
+					AllowedSourceRanges: []string{"not-a-cidr"},
+				},
+			},
+		}
+		providerConfigBytes, err := runtime.Encode(encoder, providerConfig)
+		Expect(err).NotTo(HaveOccurred())
+		exposure.Spec.ProviderConfig = &runtime.RawExtension{Raw: providerConfigBytes}
+
+		_, err = a.DetermineOptions(ctx, exposure, cluster, projectID)
+		Expect(err).To(MatchError(ContainSubstring("allowedSourceRanges[0]")))
+	})
+
 	It("should handle the RegionOne value", func() {
 		shoot.Spec.Region = "RegionOne"
 

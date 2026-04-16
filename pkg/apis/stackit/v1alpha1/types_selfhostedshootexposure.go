@@ -22,4 +22,15 @@ type LoadBalancerConfig struct {
 	// Currently supported plans are p10, p50, p250, p750 (compare API docs).
 	// +optional
 	PlanId *string `json:"planId,omitempty"`
+	// AccessControl restricts which source IP ranges may reach the load balancer.
+	// +optional
+	AccessControl *AccessControlConfig `json:"accessControl,omitempty"`
+}
+
+// AccessControlConfig restricts access to the load balancer by source IP range.
+type AccessControlConfig struct {
+	// AllowedSourceRanges is the list of CIDRs permitted to reach the load balancer.
+	// An empty or missing list means no source-IP restriction is applied.
+	// +optional
+	AllowedSourceRanges []string `json:"allowedSourceRanges,omitempty"`
 }
