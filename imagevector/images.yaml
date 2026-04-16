@@ -24,22 +24,22 @@ images:
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.32.15"
+  tag: "v1.32.16"
   targetVersion: "1.32.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.33.14"
+  tag: "v1.33.15"
   targetVersion: "1.33.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.34.7"
+  tag: "v1.34.8"
   targetVersion: "1.34.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.35.2"
+  tag: "v1.35.3"
   targetVersion: ">= 1.35"
 
 - name: machine-controller-manager-provider-openstack
@@ -75,22 +75,22 @@ images:
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.32.15"
+  tag: "v1.32.16"
   targetVersion: "1.32.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.33.14"
+  tag: "v1.33.15"
   targetVersion: "1.33.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.34.7"
+  tag: "v1.34.8"
   targetVersion: "1.34.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.35.2"
+  tag: "v1.35.3"
   targetVersion: ">= 1.35"
 
 - name: csi-provisioner
