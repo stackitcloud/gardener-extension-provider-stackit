@@ -108,6 +108,44 @@ string
 </table>
 
 
+<h3 id="accesscontrolconfig">AccessControlConfig
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#loadbalancerconfig">LoadBalancerConfig</a>)
+</p>
+
+<p>
+AccessControlConfig restricts access to the load balancer by source IP range.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>allowedSourceRanges</code></br>
+<em>
+string array
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>AllowedSourceRanges is the list of CIDRs permitted to reach the load balancer.<br />An empty or missing list means no source-IP restriction is applied.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
 <h3 id="applicationloadbalancerconfig">ApplicationLoadBalancerConfig
 </h3>
 
@@ -1002,6 +1040,18 @@ string
 <td>
 <em>(Optional)</em>
 <p>PlanId specifies the service plan (size) of the load balancer.<br />Currently supported plans are p10, p50, p250, p750 (compare API docs).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>accessControl</code></br>
+<em>
+<a href="#accesscontrolconfig">AccessControlConfig</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>AccessControl restricts which source IP ranges may reach the load balancer.</p>
 </td>
 </tr>
 

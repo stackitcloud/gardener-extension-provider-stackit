@@ -111,6 +111,30 @@ var _ = Describe("reconcileLoadBalancer", func() {
 			Expect(r.LoadBalancer).To(Equal(createdLB))
 		})
 
+		It("should create a load balancer with AccessControl when AllowedSourceRanges is set", func() {
+			r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
+			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
+				{
+					NodeName: "node-1",
+					Addresses: []corev1.NodeAddress{
+						{Type: corev1.NodeInternalIP, Address: "10.0.1.10"},
+					},
+				},
+			}
+
+			mockLBClient.EXPECT().
+				CreateLoadBalancer(ctx, gomock.Any()).
+				DoAndReturn(func(_ context.Context, payload loadbalancer.CreateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					Expect(payload.Options).NotTo(BeNil())
+					Expect(payload.Options.AccessControl).NotTo(BeNil())
+					Expect(payload.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("10.0.0.0/8", "192.168.0.0/16"))
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should return error when CreateLoadBalancer fails", func() {
 			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
 				{
@@ -202,6 +226,41 @@ var _ = Describe("reconcileLoadBalancer", func() {
 
 			err := r.reconcileLoadBalancer(ctx, logger)
 
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should do nothing when LB already has the same AllowedSourceRanges, in any order", func() {
+			r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
+			// LB returns the set in the opposite order — diff must be set-based, not sequence-based.
+			r.LoadBalancer.Options = &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"192.168.0.0/16", "10.0.0.0/8"},
+				},
+			}
+
+			// No mock expectations — nothing should be called.
+			err := r.reconcileLoadBalancer(ctx, logger)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should update via UpdateLoadBalancer when AllowedSourceRanges changed", func() {
+			r.AllowedSourceRanges = []string{"10.0.0.0/8", "172.16.0.0/12"}
+			r.LoadBalancer.Options = &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8"},
+				},
+			}
+
+			mockLBClient.EXPECT().
+				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					Expect(payload.Options).NotTo(BeNil())
+					Expect(payload.Options.AccessControl).NotTo(BeNil())
+					Expect(payload.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("10.0.0.0/8", "172.16.0.0/12"))
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -632,5 +691,91 @@ var _ = Describe("targetPoolNeedsUpdate", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(needsUpdate).To(BeFalse())
+	})
+})
+
+var _ = Describe("accessControlNeedsUpdate", func() {
+	var r *Resources
+
+	BeforeEach(func() {
+		r = &Resources{}
+	})
+
+	It("should return false when neither desired nor current has any ranges", func() {
+		r.LoadBalancer = &loadbalancer.LoadBalancer{}
+		Expect(r.accessControlNeedsUpdate()).To(BeFalse())
+	})
+
+	It("should return true when desired is set but LB has no Options", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{}
+		Expect(r.accessControlNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when desired is set but LB has no AccessControl", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when desired is empty but LB has ranges", func() {
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return false when sets match in the same order", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeFalse())
+	})
+
+	It("should return false when sets match in a different order", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"192.168.0.0/16", "10.0.0.0/8"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeFalse())
+	})
+
+	It("should return true when one range differs", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8", "172.16.0.0/12"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when lengths differ", func() {
+		r.AllowedSourceRanges = []string{"10.0.0.0/8"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeTrue())
 	})
 })

@@ -529,7 +529,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("change plan only (full PUT update)")
 		versionBeforePlanChange := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposurePlanId(exposure, "p50")
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p50")})
 		})
 
 		Eventually(func(g Gomega) {
@@ -551,7 +551,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("change plan and endpoints together (full PUT update)")
 		versionBeforeCombined := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposurePlanId(exposure, "p250")
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p250")})
 			// Add node-2 back, so we're changing targets *and* plan in the same reconcile.
 			exposure.Spec.Endpoints = append(exposure.Spec.Endpoints, extensionsv1alpha1.ControlPlaneEndpoint{
 				NodeName:  "node-2",
@@ -572,6 +572,81 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 
 			g.Expect(lb.Version).NotTo(BeNil())
 			g.Expect(*lb.Version).NotTo(Equal(versionBeforeCombined))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+		By("add AccessControl.AllowedSourceRanges (full PUT update)")
+		versionBeforeACLAdd := *lb.Version
+		patchExposureReconcile(exposure, func() {
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{
+				PlanId: new("p250"),
+				AccessControl: &stackitv1alpha1.AccessControlConfig{
+					AllowedSourceRanges: []string{"0.0.0.0/0"},
+				},
+			})
+		})
+
+		Eventually(func(g Gomega) {
+			var err error
+			lb, err = lbClient.GetLoadBalancer(ctx, lbName)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(lb.Options).NotTo(BeNil())
+			g.Expect(lb.Options.AccessControl).NotTo(BeNil())
+			g.Expect(lb.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("0.0.0.0/0"))
+
+			g.Expect(lb.Version).NotTo(BeNil())
+			g.Expect(*lb.Version).NotTo(Equal(versionBeforeACLAdd))
+
+			// Plan + targets unchanged by AccessControl-only addition.
+			g.Expect(*lb.PlanId).To(Equal("p250"))
+			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+		By("update AllowedSourceRanges to a different set (order-independent)")
+		versionBeforeACLUpdate := *lb.Version
+		patchExposureReconcile(exposure, func() {
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{
+				PlanId: new("p250"),
+				AccessControl: &stackitv1alpha1.AccessControlConfig{
+					AllowedSourceRanges: []string{"192.168.0.0/16", "10.0.0.0/8"},
+				},
+			})
+		})
+
+		Eventually(func(g Gomega) {
+			var err error
+			lb, err = lbClient.GetLoadBalancer(ctx, lbName)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(lb.Options).NotTo(BeNil())
+			g.Expect(lb.Options.AccessControl).NotTo(BeNil())
+			g.Expect(lb.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("10.0.0.0/8", "192.168.0.0/16"))
+
+			g.Expect(lb.Version).NotTo(BeNil())
+			g.Expect(*lb.Version).NotTo(Equal(versionBeforeACLUpdate))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+		By("remove AccessControl (full PUT update)")
+		versionBeforeACLRemove := *lb.Version
+		patchExposureReconcile(exposure, func() {
+			// Drop AccessControl entirely from the providerConfig.
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p250")})
+		})
+
+		Eventually(func(g Gomega) {
+			var err error
+			lb, err = lbClient.GetLoadBalancer(ctx, lbName)
+			g.Expect(err).NotTo(HaveOccurred())
+			// After removal, the LB API may report Options.AccessControl as nil OR with an empty
+			// AllowedSourceRanges slice; both mean "unrestricted".
+			if lb.Options != nil && lb.Options.AccessControl != nil {
+				g.Expect(lb.Options.AccessControl.AllowedSourceRanges).To(BeEmpty())
+			}
+
+			g.Expect(lb.Version).NotTo(BeNil())
+			g.Expect(*lb.Version).NotTo(Equal(versionBeforeACLRemove))
+
+			// Plan + targets unchanged.
+			g.Expect(*lb.PlanId).To(Equal("p250"))
+			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
 		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 		By("delete SelfHostedShootExposure")
@@ -620,15 +695,13 @@ func targetIPs(lb *loadbalancer.LoadBalancer) []string {
 	return ips
 }
 
-// setExposurePlanId encodes a SelfHostedShootExposureConfig with the given plan and sets it
-// as the exposure's ProviderConfig.
-func setExposurePlanId(exposure *extensionsv1alpha1.SelfHostedShootExposure, planId string) {
+// setExposureLBConfig encodes a SelfHostedShootExposureConfig wrapping lbConfig and sets it
+// as the exposure's ProviderConfig. Fully replaces any previous ProviderConfig.
+func setExposureLBConfig(exposure *extensionsv1alpha1.SelfHostedShootExposure, lbConfig *stackitv1alpha1.LoadBalancerConfig) {
 	GinkgoHelper()
 	buf := new(bytes.Buffer)
 	Expect(encoder.Encode(&stackitv1alpha1.SelfHostedShootExposureConfig{
-		LoadBalancer: &stackitv1alpha1.LoadBalancerConfig{
-			PlanId: &planId,
-		},
+		LoadBalancer: lbConfig,
 	}, buf)).To(Succeed())
 	exposure.Spec.ProviderConfig = &runtime.RawExtension{Raw: buf.Bytes()}
 }

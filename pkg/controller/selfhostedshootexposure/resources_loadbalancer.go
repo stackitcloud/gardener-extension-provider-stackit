@@ -3,6 +3,7 @@ package selfhostedshootexposure
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -51,15 +52,15 @@ func (r *Resources) reconcileLoadBalancer(ctx context.Context, log logr.Logger) 
 	if err != nil {
 		return err
 	}
-	planNeedsUpdate := r.planNeedsUpdate()
+	fullStateNeedsUpdate := r.planNeedsUpdate() || r.accessControlNeedsUpdate()
 
-	if !targetPoolNeedsUpdate && !planNeedsUpdate {
+	if !targetPoolNeedsUpdate && !fullStateNeedsUpdate {
 		return nil
 	}
 
 	// Fast path: only targets changed (e.g. control-plane node added/removed). The sub-resource
 	// endpoint is scoped to the target pool, so we avoid re-sending the full LB state.
-	if targetPoolNeedsUpdate && !planNeedsUpdate {
+	if targetPoolNeedsUpdate && !fullStateNeedsUpdate {
 		return r.updateTargetPool(ctx, log, targets)
 	}
 
@@ -185,6 +186,11 @@ func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 	if r.LoadBalancer == nil {
 		opts.EphemeralAddress = new(true)
 	}
+	if len(r.AllowedSourceRanges) > 0 {
+		opts.AccessControl = &loadbalancer.LoadbalancerOptionAccessControl{
+			AllowedSourceRanges: r.AllowedSourceRanges,
+		}
+	}
 	return opts
 }
 
@@ -194,6 +200,24 @@ func (r *Resources) planNeedsUpdate() bool {
 		currentPlan = *r.LoadBalancer.PlanId
 	}
 	return currentPlan != r.PlanId
+}
+
+// accessControlNeedsUpdate reports whether the LB's currently configured source-IP allowlist
+// differs from the desired set. The desired set is order-independent; we compare as sorted lists.
+// An empty desired list means "no restriction" — detected by diff against whatever the LB reports.
+func (r *Resources) accessControlNeedsUpdate() bool {
+	var current []string
+	if r.LoadBalancer != nil &&
+		r.LoadBalancer.Options != nil &&
+		r.LoadBalancer.Options.AccessControl != nil {
+		current = r.LoadBalancer.Options.AccessControl.AllowedSourceRanges
+	}
+	return !stringSetsEqual(current, r.AllowedSourceRanges)
+}
+
+// stringSetsEqual compares two string slices as unordered sets.
+func stringSetsEqual(a, b []string) bool {
+	return slices.Equal(slices.Sorted(slices.Values(a)), slices.Sorted(slices.Values(b)))
 }
 
 // wrapLBAPIError classifies STACKIT LB API errors: 409 Conflicts are transient (another caller
