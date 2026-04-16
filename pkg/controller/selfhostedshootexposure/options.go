@@ -9,10 +9,12 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	reconcilerutils "github.com/gardener/gardener/pkg/controllerutils/reconciler"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
@@ -39,6 +41,9 @@ type Options struct {
 	NetworkID string
 	// PlanId specifies the service plan (size) of the load balancer.
 	PlanId string
+	// AllowedSourceRanges restricts which source CIDRs may reach the load balancer.
+	// Empty means unrestricted.
+	AllowedSourceRanges []string
 }
 
 func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1alpha1.SelfHostedShootExposure, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
@@ -68,8 +73,16 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 		if _, _, err := a.Decoder.Decode(exposure.Spec.ProviderConfig.Raw, nil, providerConfig); err != nil {
 			return nil, fmt.Errorf("error decoding providerConfig: %w", err)
 		}
-		if providerConfig.LoadBalancer != nil && providerConfig.LoadBalancer.PlanId != nil {
-			opts.PlanId = *providerConfig.LoadBalancer.PlanId
+		if errs := validation.ValidateSelfHostedShootExposureConfig(providerConfig, field.NewPath("providerConfig")); len(errs) > 0 {
+			return nil, fmt.Errorf("invalid providerConfig: %w", errs.ToAggregate())
+		}
+		if providerConfig.LoadBalancer != nil {
+			if providerConfig.LoadBalancer.PlanId != nil {
+				opts.PlanId = *providerConfig.LoadBalancer.PlanId
+			}
+			if providerConfig.LoadBalancer.AccessControl != nil {
+				opts.AllowedSourceRanges = providerConfig.LoadBalancer.AccessControl.AllowedSourceRanges
+			}
 		}
 	}
 	// Default plan if not specified
