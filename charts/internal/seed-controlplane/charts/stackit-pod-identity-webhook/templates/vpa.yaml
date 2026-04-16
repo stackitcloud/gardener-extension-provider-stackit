@@ -19,7 +19,7 @@ spec:
       maxAllowed:
         cpu: {{ .Values.vpa.resourcePolicy.maxAllowed.cpu }}
         memory: {{ .Values.vpa.resourcePolicy.maxAllowed.memory }}
-      controlledValues: RequestsAndLimits
+      controlledValues: RequestsOnly
       controlledResources:
       - cpu
       - memory
