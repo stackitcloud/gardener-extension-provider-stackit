@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -1042,6 +1043,78 @@ var _ = Describe("ValuesProvider", func() {
 		Entry("empty token", new("url"), new(""), fmt.Errorf("missing or empty secret key %s", LoadBalancerEmergencyAccessAPITokenKey)),
 		Entry("valid secret", new("url"), new("token"), nil),
 	)
+
+	Describe("#shouldEnablePodIdentityWebhook", func() {
+		It("should return false when feature gate is disabled", func() {
+			defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, false)()
+			Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeFalse())
+		})
+
+		Context("feature gate enabled", func() {
+			It("should return false when shoot annotations are nil and no custom issuer is set", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = nil
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = nil
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeFalse())
+			})
+
+			It("should return true when shoot annotations are nil but custom issuer is set", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = nil
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
+					ServiceAccountConfig: &gardencorev1beta1.ServiceAccountConfig{
+						Issuer: ptr.To("foo"),
+					},
+				}
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeTrue())
+			})
+
+			It("should return false when issuer annotation is missing and no custom issuer is set", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = map[string]string{}
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = nil
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeFalse())
+			})
+
+			It("should return false when issuer annotation is not managed", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = map[string]string{
+					v1beta1constants.AnnotationAuthenticationIssuer: "foo",
+				}
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeFalse())
+			})
+
+			It("should return true when issuer annotation is managed", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = map[string]string{
+					v1beta1constants.AnnotationAuthenticationIssuer: v1beta1constants.AnnotationAuthenticationIssuerManaged,
+				}
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeTrue())
+			})
+
+			It("should return false when KubeAPIServer ServiceAccountConfig Issuer is explicitly nil", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = map[string]string{}
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
+					ServiceAccountConfig: &gardencorev1beta1.ServiceAccountConfig{
+						Issuer: nil,
+					},
+				}
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeFalse())
+			})
+
+			It("should return true when KubeAPIServer ServiceAccountConfig Issuer is set", func() {
+				defer testutils.WithFeatureGate(feature.MutableGate, feature.EnableSTACKITWorkloadIdentity, true)()
+				cluster.Shoot.Annotations = map[string]string{}
+				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
+					ServiceAccountConfig: &gardencorev1beta1.ServiceAccountConfig{
+						Issuer: ptr.To("foo"),
+					},
+				}
+				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeTrue())
+			})
+		})
+	})
 })
 
 func expectCSICleanupinControlPlane(ctx context.Context, c *mockclient.MockClient, subChartName string) {

@@ -1085,7 +1085,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
-	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(cp.Namespace, secretsReader)
+	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(cp.Namespace, cluster, secretsReader)
 	if err != nil {
 		return nil, err
 	}
@@ -1302,6 +1302,24 @@ func cleanupCloudProviderConfigSecret(ctx context.Context, client k8sclient.Clie
 	return nil
 }
 
+// shouldEnablePodIdentityWebhook returns true if the pod identity webhook should be enabled for the given cluster.
+func shouldEnablePodIdentityWebhook(cluster *extensionscontroller.Cluster) bool {
+	if !feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity) {
+		return false
+	}
+	if cluster.Shoot.Annotations != nil {
+		if val, ok := cluster.Shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer]; ok && val == v1beta1constants.AnnotationAuthenticationIssuerManaged {
+			return true
+		}
+	}
+	if cluster.Shoot.Spec.Kubernetes.KubeAPIServer != nil &&
+		cluster.Shoot.Spec.Kubernetes.KubeAPIServer.ServiceAccountConfig != nil &&
+		cluster.Shoot.Spec.Kubernetes.KubeAPIServer.ServiceAccountConfig.Issuer != nil {
+		return true
+	}
+	return false
+}
+
 func getPodIdentityWebhookChartValues(
 	cluster *extensionscontroller.Cluster,
 	secretsReader secretsmanager.Reader,
@@ -1313,7 +1331,7 @@ func getPodIdentityWebhookChartValues(
 	}
 
 	return map[string]any{
-		"enabled":      feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity),
+		"enabled":      shouldEnablePodIdentityWebhook(cluster),
 		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"webhook": map[string]any{
 			"tlsSecretName": tlsSecret.Name,
@@ -1323,6 +1341,7 @@ func getPodIdentityWebhookChartValues(
 
 func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 	controlPlaneNamespace string,
+	cluster *extensionscontroller.Cluster,
 	secretsReader secretsmanager.Reader,
 ) (map[string]any, error) {
 	caSecret, found := secretsReader.Get(caNameControlPlane)
@@ -1336,7 +1355,7 @@ func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
 	}
 
 	return map[string]any{
-		"enabled": feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity),
+		"enabled": shouldEnablePodIdentityWebhook(cluster),
 		"webhook": map[string]any{
 			"caBundle": caBundle,
 			"url":      fmt.Sprintf("https://%s.%s:443/mutate--v1-pod", stackit.PodIdentityWebhookName, controlPlaneNamespace),
