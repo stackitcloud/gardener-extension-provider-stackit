@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -1063,7 +1062,7 @@ var _ = Describe("ValuesProvider", func() {
 				cluster.Shoot.Annotations = nil
 				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
 					ServiceAccountConfig: &gardencorev1beta1.ServiceAccountConfig{
-						Issuer: ptr.To("foo"),
+						Issuer: new("foo"),
 					},
 				}
 				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeTrue())
@@ -1108,7 +1107,7 @@ var _ = Describe("ValuesProvider", func() {
 				cluster.Shoot.Annotations = map[string]string{}
 				cluster.Shoot.Spec.Kubernetes.KubeAPIServer = &gardencorev1beta1.KubeAPIServerConfig{
 					ServiceAccountConfig: &gardencorev1beta1.ServiceAccountConfig{
-						Issuer: ptr.To("foo"),
+						Issuer: new("foo"),
 					},
 				}
 				Expect(shouldEnablePodIdentityWebhook(cluster)).To(BeTrue())
