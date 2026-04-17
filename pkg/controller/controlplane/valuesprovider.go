@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -28,6 +27,8 @@ import (
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -37,13 +38,10 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,8 +57,9 @@ import (
 )
 
 const (
-	caNameControlPlane               = "ca-" + openstack.Name + "-controlplane"
-	cloudControllerManagerServerName = openstack.CloudControllerManagerName + "-server"
+	caNameControlPlane                  = "ca-" + openstack.Name + "-controlplane"
+	cloudControllerManagerServerName    = openstack.CloudControllerManagerName + "-server"
+	stackitPodIdentityWebhookServerName = stackit.PodIdentityWebhookName + "-server"
 
 	CSIStackitPrefix = "stackit-blockstorage"
 
@@ -103,6 +102,16 @@ func secretConfigsFunc(namespace string) []extensionssecretmanager.SecretConfigW
 			},
 			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caNameControlPlane)},
 		},
+		{
+			Config: &secretutils.CertificateSecretConfig{
+				Name:                        stackitPodIdentityWebhookServerName,
+				CommonName:                  stackit.PodIdentityWebhookName,
+				DNSNames:                    kutil.DNSNamesForService(stackit.PodIdentityWebhookName, namespace),
+				CertType:                    secretutils.ServerCert,
+				SkipPublishingCACertificate: true,
+			},
+			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(caNameControlPlane)},
+		},
 	}
 }
 
@@ -114,13 +123,8 @@ func shootAccessSecretsFunc(namespace string) []*gutil.AccessSecret {
 		gutil.NewShootAccessSecret(openstack.CSISnapshotterName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSIResizerName, namespace),
 		gutil.NewShootAccessSecret(openstack.CSISnapshotControllerName, namespace),
+		gutil.NewShootAccessSecret(stackit.PodIdentityWebhookName, namespace),
 	}
-}
-
-func makeUnstructured(gvk schema.GroupVersionKind) *unstructured.Unstructured {
-	obj := &unstructured.Unstructured{}
-	obj.SetGroupVersionKind(gvk)
-	return obj
 }
 
 var (
@@ -205,6 +209,17 @@ var (
 					// stackit-alb-controller-manager
 					{Type: &appsv1.Deployment{}, Name: openstack.STACKITALBControllerManagerName},
 					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITALBControllerManagerName},
+				},
+			},
+			{
+				Name:   stackit.PodIdentityWebhookName,
+				Images: []string{imagevector.ImageNameStackitPodIdentityWebhook},
+				Objects: []*chart.Object{
+					{Type: &appsv1.Deployment{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &policyv1.PodDisruptionBudget{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &corev1.Service{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &monitoringv1.ServiceMonitor{}, Name: stackit.PodIdentityWebhookName},
 				},
 			},
 		},
@@ -304,6 +319,14 @@ var (
 					{Type: &rbacv1.ClusterRoleBinding{}, Name: openstack.UsernamePrefix + openstack.CSIResizerName},
 					{Type: &rbacv1.Role{}, Name: openstack.UsernamePrefix + openstack.CSIResizerName},
 					{Type: &rbacv1.RoleBinding{}, Name: openstack.UsernamePrefix + openstack.CSIResizerName},
+				},
+			},
+			{
+				Name: stackit.PodIdentityWebhookName,
+				Objects: []*chart.Object{
+					{Type: &admissionregistrationv1.MutatingWebhookConfiguration{}, Name: stackit.PodIdentityWebhookName},
+					{Type: &rbacv1.ClusterRole{}, Name: "extensions.gardener.cloud:provider-stackit:stackit-pod-identity-webhook"},
+					{Type: &rbacv1.ClusterRoleBinding{}, Name: "extensions.gardener.cloud:provider-stackit:stackit-pod-identity-webhook"},
 				},
 			},
 		},
@@ -478,7 +501,7 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	ctx context.Context,
 	cp *extensionsv1alpha1.ControlPlane,
 	cluster *extensionscontroller.Cluster,
-	_ secretsmanager.Reader,
+	secretsReader secretsmanager.Reader,
 	_ map[string]string,
 ) (map[string]any, error) {
 	// Decode providerConfig
@@ -493,7 +516,7 @@ func (vp *valuesProvider) GetControlPlaneShootChartValues(
 	if err != nil {
 		return nil, err
 	}
-	return vp.getControlPlaneShootChartValues(ctx, cpConfig, cp, cloudProfileConfig, cluster)
+	return vp.getControlPlaneShootChartValues(ctx, cpConfig, cp, cloudProfileConfig, cluster, secretsReader)
 }
 
 // GetStorageClassesChartValues returns the values for the shoot storageclasses chart applied by the generic actuator.
@@ -708,6 +731,11 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		}
 	}
 
+	podIdentityWebhook, err := getPodIdentityWebhookChartValues(cluster, secretsReader, scaledDown)
+	if err != nil {
+		return nil, err
+	}
+
 	storageCSIDriver := getCSIDriver(cpConfig)
 	switch storageCSIDriver {
 	case stackitv1alpha1.OPENSTACK:
@@ -732,6 +760,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		},
 		openstack.CloudControllerManagerName:        ccm,
 		openstack.STACKITCloudControllerManagerName: stackitccm,
+		stackit.PodIdentityWebhookName:              podIdentityWebhook,
 	})
 
 	if vp.deployALBIngressController {
@@ -1028,7 +1057,7 @@ func DeploySTACKITALB(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
 }
 
 // getControlPlaneShootChartValues collects and returns the control plane shoot chart values.
-func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, cpConfig *stackitv1alpha1.ControlPlaneConfig, cp *extensionsv1alpha1.ControlPlane, cloudProfileConfig *stackitv1alpha1.CloudProfileConfig, cluster *extensionscontroller.Cluster) (map[string]any, error) {
+func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, cpConfig *stackitv1alpha1.ControlPlaneConfig, cp *extensionsv1alpha1.ControlPlane, cloudProfileConfig *stackitv1alpha1.CloudProfileConfig, cluster *extensionscontroller.Cluster, secretsReader secretsmanager.Reader) (map[string]any, error) {
 	var csiNodeDriverValues map[string]any
 
 	values := make(map[string]any)
@@ -1056,8 +1085,14 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		return nil, err
 	}
 
+	podIdentityWebhook, err := vp.getPodIdentityWebhookShootChartValues(cp.Namespace, cluster, secretsReader)
+	if err != nil {
+		return nil, err
+	}
+
 	maps.Copy(values, map[string]any{
 		openstack.CloudControllerManagerName: map[string]any{"enabled": true},
+		stackit.PodIdentityWebhookName:       podIdentityWebhook,
 	})
 
 	return values, nil
@@ -1225,16 +1260,6 @@ func (vp *valuesProvider) getControlPlaneShootChartCSISTACKITValues(ctx context.
 	return values
 }
 
-func (vp *valuesProvider) getAllWorkerPoolsZones(cluster *extensionscontroller.Cluster) []string {
-	zones := sets.NewString()
-	for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-		zones.Insert(worker.Zones...)
-	}
-	list := zones.UnsortedList()
-	sort.Strings(list)
-	return list
-}
-
 func cleanupSeedLegacyCSISnapshotValidation(ctx context.Context, client k8sclient.Client, namespace string) error {
 	stackitSnapShotName := fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CSISnapshotValidationName)
 
@@ -1275,4 +1300,64 @@ func cleanupCloudProviderConfigSecret(ctx context.Context, client k8sclient.Clie
 	}
 
 	return nil
+}
+
+// shouldEnablePodIdentityWebhook returns true if the pod identity webhook should be enabled for the given cluster.
+func shouldEnablePodIdentityWebhook(cluster *extensionscontroller.Cluster) bool {
+	if !feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity) {
+		return false
+	}
+	if cluster.Shoot.Annotations != nil &&
+		cluster.Shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] == v1beta1constants.AnnotationAuthenticationIssuerManaged {
+		return true
+	}
+	if cluster.Shoot.Spec.Kubernetes.KubeAPIServer != nil &&
+		cluster.Shoot.Spec.Kubernetes.KubeAPIServer.ServiceAccountConfig != nil &&
+		cluster.Shoot.Spec.Kubernetes.KubeAPIServer.ServiceAccountConfig.Issuer != nil {
+		return true
+	}
+	return false
+}
+
+func getPodIdentityWebhookChartValues(
+	cluster *extensionscontroller.Cluster,
+	secretsReader secretsmanager.Reader,
+	scaledDown bool,
+) (map[string]any, error) {
+	tlsSecret, found := secretsReader.Get(stackitPodIdentityWebhookServerName)
+	if !found {
+		return nil, fmt.Errorf("secret %q not found", stackitPodIdentityWebhookServerName)
+	}
+
+	return map[string]any{
+		"enabled":      shouldEnablePodIdentityWebhook(cluster),
+		"replicaCount": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
+		"webhook": map[string]any{
+			"tlsSecretName": tlsSecret.Name,
+		},
+	}, nil
+}
+
+func (vp *valuesProvider) getPodIdentityWebhookShootChartValues(
+	controlPlaneNamespace string,
+	cluster *extensionscontroller.Cluster,
+	secretsReader secretsmanager.Reader,
+) (map[string]any, error) {
+	caSecret, found := secretsReader.Get(caNameControlPlane)
+	if !found {
+		return nil, fmt.Errorf("secret %q not found", caNameControlPlane)
+	}
+
+	caBundle, ok := caSecret.Data[secretutils.DataKeyCertificateBundle]
+	if !ok || len(caBundle) == 0 {
+		return nil, fmt.Errorf("secret %q is missing non-empty %q data", caNameControlPlane, secretutils.DataKeyCertificateBundle)
+	}
+
+	return map[string]any{
+		"enabled": shouldEnablePodIdentityWebhook(cluster),
+		"webhook": map[string]any{
+			"caBundle": caBundle,
+			"url":      fmt.Sprintf("https://%s.%s:443/mutate--v1-pod", stackit.PodIdentityWebhookName, controlPlaneNamespace),
+		},
+	}, nil
 }

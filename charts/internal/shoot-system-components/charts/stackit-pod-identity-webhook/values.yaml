@@ -1,0 +1,2 @@
+webhook:
+  caBundle: "" # will be set by valuesprovider

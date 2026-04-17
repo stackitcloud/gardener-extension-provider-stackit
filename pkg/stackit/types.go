@@ -16,6 +16,9 @@ const (
 	EtherTypeIPv6    = "IPv6"
 	DirectionEgress  = "egress"
 	DirectionIngress = "ingress"
+
+	// PodIdentityWebhookName is a constant for the name of the Pod Identity Webhook. (stackit)
+	PodIdentityWebhookName = "stackit-pod-identity-webhook"
 )
 
 var (

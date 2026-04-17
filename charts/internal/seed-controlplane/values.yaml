@@ -8,3 +8,5 @@ csi-driver-controller:
   enabled: true
 stackit-alb-controller-manager:
   enabled: false
+stackit-pod-identity-webhook:
+  enabled: false

@@ -1,0 +1,21 @@
+replicaCount: 2
+
+images:
+  stackit-pod-identity-webhook: image-repository:image-tag
+
+webhook:
+  port: 9443
+  # The secret name containing tls.crt and tls.key for the webhook server
+  tlsSecretName: "stackit-pod-identity-webhook-certs"
+
+vpa:
+  resourcePolicy:
+    maxAllowed:
+      cpu: 1
+      memory: 512Mi
+    minAllowed:
+      cpu: 50m
+      memory: 64Mi
+  
+metrics:
+  port: 8080
