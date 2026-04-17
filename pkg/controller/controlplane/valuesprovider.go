@@ -1307,10 +1307,9 @@ func shouldEnablePodIdentityWebhook(cluster *extensionscontroller.Cluster) bool 
 	if !feature.Gate.Enabled(feature.EnableSTACKITWorkloadIdentity) {
 		return false
 	}
-	if cluster.Shoot.Annotations != nil {
-		if val, ok := cluster.Shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer]; ok && val == v1beta1constants.AnnotationAuthenticationIssuerManaged {
-			return true
-		}
+	if cluster.Shoot.Annotations != nil &&
+		cluster.Shoot.Annotations[v1beta1constants.AnnotationAuthenticationIssuer] == v1beta1constants.AnnotationAuthenticationIssuerManaged {
+		return true
 	}
 	if cluster.Shoot.Spec.Kubernetes.KubeAPIServer != nil &&
 		cluster.Shoot.Spec.Kubernetes.KubeAPIServer.ServiceAccountConfig != nil &&
