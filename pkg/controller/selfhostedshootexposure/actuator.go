@@ -71,7 +71,7 @@ func (a *Actuator) delete(ctx context.Context, log logr.Logger, exposure *extens
 	}
 
 	if err := r.deleteLoadBalancer(ctx, log); err != nil {
-		return fmt.Errorf("error deleting loadbalancer: %w", err)
+		return fmt.Errorf("error deleting load balancer: %w", err)
 	}
 
 	return nil

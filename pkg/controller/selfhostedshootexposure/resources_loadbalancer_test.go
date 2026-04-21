@@ -755,6 +755,20 @@ var _ = Describe("accessControlNeedsUpdate", func() {
 		Expect(r.accessControlNeedsUpdate()).To(BeFalse())
 	})
 
+	It("should return false when desired has duplicates but LB has the de-duped set", func() {
+		// The LB API may normalize/de-duplicate; treating duplicates as significant would
+		// oscillate the diff and cause unnecessary full-state PUTs.
+		r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16", "10.0.0.0/8"}
+		r.LoadBalancer = &loadbalancer.LoadBalancer{
+			Options: &loadbalancer.LoadBalancerOptions{
+				AccessControl: &loadbalancer.LoadbalancerOptionAccessControl{
+					AllowedSourceRanges: []string{"10.0.0.0/8", "192.168.0.0/16"},
+				},
+			},
+		}
+		Expect(r.accessControlNeedsUpdate()).To(BeFalse())
+	})
+
 	It("should return true when one range differs", func() {
 		r.AllowedSourceRanges = []string{"10.0.0.0/8", "192.168.0.0/16"}
 		r.LoadBalancer = &loadbalancer.LoadBalancer{
