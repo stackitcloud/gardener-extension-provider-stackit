@@ -215,9 +215,17 @@ func (r *Resources) accessControlNeedsUpdate() bool {
 	return !stringSetsEqual(current, r.AllowedSourceRanges)
 }
 
-// stringSetsEqual compares two string slices as unordered sets.
+// stringSetsEqual compares two string slices as unordered sets, ignoring duplicates.
+// The LB API may or may not de-duplicate (causing reconciliation loop), remove duplicates
+// for a clean approach.
 func stringSetsEqual(a, b []string) bool {
-	return slices.Equal(slices.Sorted(slices.Values(a)), slices.Sorted(slices.Values(b)))
+	return slices.Equal(sortedUnique(a), sortedUnique(b))
+}
+
+// sortedUnique returns the input as a sorted slice with consecutive duplicates removed,
+// i.e. the canonical representation of the set.
+func sortedUnique(s []string) []string {
+	return slices.Compact(slices.Sorted(slices.Values(s)))
 }
 
 // wrapLBAPIError classifies STACKIT LB API errors: 409 Conflicts are transient (another caller
@@ -357,7 +365,7 @@ func (r *Resources) buildTargets() ([]loadbalancer.Target, error) {
 }
 
 // extractInternalIP finds and returns the internal IP address from an endpoint's addresses.
-// This function requires InternalIP because the STACKIT LB only supposts IPs as target.
+// This function requires InternalIP because the STACKIT LB only supports IPs as target.
 func extractInternalIP(endpoint *extensionsv1alpha1.ControlPlaneEndpoint) (string, error) {
 	for _, addr := range endpoint.Addresses {
 		if addr.Type == corev1.NodeInternalIP {
