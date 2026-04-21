@@ -33,7 +33,7 @@ The service account needs the following permissions:
 | `blockstorage.admin`           | CSI driver                                                                              |
 | `compute.admin`                | CCM node-controller and MCM                                                             |
 | `iaas.network.admin`           | bastion and infrastructure controller                                                   |
-| `iaas.isoplated-network.admin` | infrastructure controller                                                               |
+| `iaas.isolated-network.admin`  | infrastructure controller                                                               |
 
 ## CloudProfileConfig Fields
 
