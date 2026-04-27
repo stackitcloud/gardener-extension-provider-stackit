@@ -6,7 +6,6 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/util"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -77,31 +76,23 @@ func (a *Actuator) delete(ctx context.Context, log logr.Logger, exposure *extens
 	return nil
 }
 
-func (a *Actuator) ForceDelete(ctx context.Context, log logr.Logger, exposure *extensionsv1alpha1.SelfHostedShootExposure, cluster *extensionscontroller.Cluster) error {
-	return a.Delete(ctx, log, exposure, cluster)
+func (a *Actuator) ForceDelete(_ context.Context, _ logr.Logger, _ *extensionsv1alpha1.SelfHostedShootExposure, _ *extensionscontroller.Cluster) error {
+	return nil
 }
 
 // getResources initializes Resources and Options for the given SelfHostedShootExposure, needed for reconciliation/deletion.
 func (a *Actuator) getResources(ctx context.Context, log logr.Logger, exposure *extensionsv1alpha1.SelfHostedShootExposure, cluster *extensionscontroller.Cluster) (*Resources, error) {
 	region := stackit.DetermineRegion(cluster)
 
-	// Determine which secret to use for credentials.
-	// Support explicit CredentialsRef (required by GEP-0036), with fallback to default cloud-provider secret.
+	// Support explicit CredentialsRef (required by GEP-0036).
 	// TODO(jamand): Support WorkloadIdentity once integrated into SKE.
 	// For now, we only support secret-based credentials via ObjectReference pointing to a Secret.
-	var secretRef corev1.SecretReference
-	if exposure.Spec.CredentialsRef != nil {
-		// Use the explicitly provided ObjectReference (must point to a Secret for now)
-		secretRef = corev1.SecretReference{
-			Name:      exposure.Spec.CredentialsRef.Name,
-			Namespace: exposure.Spec.CredentialsRef.Namespace,
-		}
-	} else {
-		// Fall back to the default cloud-provider secret
-		secretRef = corev1.SecretReference{
-			Name:      v1beta1constants.SecretNameCloudProvider,
-			Namespace: exposure.Namespace,
-		}
+	if exposure.Spec.CredentialsRef == nil {
+		return nil, fmt.Errorf("spec.credentialsRef is required")
+	}
+	secretRef := corev1.SecretReference{
+		Name:      exposure.Spec.CredentialsRef.Name,
+		Namespace: exposure.Spec.CredentialsRef.Namespace,
 	}
 
 	lbClient, err := stackitclient.New(region, cluster).LoadBalancing(ctx, a.Client, secretRef)

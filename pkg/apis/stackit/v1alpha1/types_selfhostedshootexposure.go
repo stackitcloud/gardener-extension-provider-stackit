@@ -13,22 +13,24 @@ type SelfHostedShootExposureConfig struct {
 
 	// LoadBalancer contains configuration for the load balancer.
 	// +optional
-	LoadBalancer *LoadBalancerConfig `json:"loadBalancer,omitempty"`
+	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
-// LoadBalancerConfig contains configuration for the load balancer.
-type LoadBalancerConfig struct {
-	// PlanId specifies the service plan (size) of the load balancer.
+// LoadBalancer contains configuration for the load balancer.
+type LoadBalancer struct {
+	// PlanID specifies the service plan (size) of the load balancer.
 	// Currently supported plans are p10, p50, p250, p750 (compare API docs).
+	// See https://docs.stackit.cloud/products/network/load-balancing-and-content-delivery/network-load-balancer/reference/service-plans/
+	// Defaults to "p10".
 	// +optional
-	PlanId *string `json:"planId,omitempty"`
+	PlanID *string `json:"planID,omitempty"`
 	// AccessControl restricts which source IP ranges may reach the load balancer.
 	// +optional
-	AccessControl *AccessControlConfig `json:"accessControl,omitempty"`
+	AccessControl *AccessControl `json:"accessControl,omitempty"`
 }
 
-// AccessControlConfig restricts access to the load balancer by source IP range.
-type AccessControlConfig struct {
+// AccessControl restricts access to the load balancer by source IP range.
+type AccessControl struct {
 	// AllowedSourceRanges is the list of CIDRs permitted to reach the load balancer.
 	// An empty or missing list means no source-IP restriction is applied.
 	// +optional
