@@ -39,13 +39,13 @@ func init() {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&CloudProfileConfig{},
-		&InfrastructureConfig{},
-		&InfrastructureStatus{},
-		&InfrastructureState{},
 		&ControlPlaneConfig{},
-		&WorkerStatus{},
-		&WorkerConfig{},
+		&InfrastructureConfig{},
+		&InfrastructureState{},
+		&InfrastructureStatus{},
 		&SelfHostedShootExposureConfig{},
+		&WorkerConfig{},
+		&WorkerStatus{},
 	)
 	return nil
 }

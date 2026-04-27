@@ -2,11 +2,9 @@ package selfhostedshootexposure
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	reconcilerutils "github.com/gardener/gardener/pkg/controllerutils/reconciler"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,7 +34,7 @@ var _ = Describe("reconcileLoadBalancer", func() {
 				ResourceName: "test-lb",
 				Labels:       map[string]string{"cluster": "shoot--foo--bar"},
 				NetworkID:    "network-123",
-				PlanId:       "p10",
+				PlanID:       "p10",
 				SelfHostedShootExposure: &extensionsv1alpha1.SelfHostedShootExposure{
 					Spec: extensionsv1alpha1.SelfHostedShootExposureSpec{
 						Port: 443,
@@ -53,19 +51,6 @@ var _ = Describe("reconcileLoadBalancer", func() {
 	})
 
 	Context("when no load balancer exists", func() {
-		It("should requeue creation without endpoints", func() {
-			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{}
-
-			err := r.reconcileLoadBalancer(ctx, logger)
-
-			Expect(err).To(HaveOccurred())
-			// Endpoints are populated asynchronously by gardenlet; empty endpoints should trigger a clean requeue,
-			// not a fatal error.
-			var rae *reconcilerutils.RequeueAfterError
-			Expect(errors.As(err, &rae)).To(BeTrue())
-			Expect(rae.Cause.Error()).To(ContainSubstring("waiting for endpoints to be populated"))
-		})
-
 		It("should create a new load balancer", func() {
 			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
 				{
@@ -97,7 +82,7 @@ var _ = Describe("reconcileLoadBalancer", func() {
 					Expect(payload.Listeners).To(HaveLen(1))
 					Expect(*payload.Listeners[0].Port).To(BeEquivalentTo(443))
 					Expect(payload.TargetPools).To(HaveLen(1))
-					Expect(*payload.TargetPools[0].Name).To(Equal("target-pool-control-plane"))
+					Expect(*payload.TargetPools[0].Name).To(Equal("control-plane"))
 					// Targets should be sorted by IP
 					Expect(payload.TargetPools[0].Targets).To(HaveLen(2))
 					Expect(*payload.TargetPools[0].Targets[0].Ip).To(Equal("10.0.1.10"))
@@ -167,12 +152,13 @@ var _ = Describe("reconcileLoadBalancer", func() {
 				},
 			}
 			r.LoadBalancer = &loadbalancer.LoadBalancer{
-				Name:    new("test-lb"),
-				PlanId:  new("p10"),
-				Version: new("v1"),
+				Name:            new("test-lb"),
+				PlanId:          new("p10"),
+				Version:         new("v1"),
+				ExternalAddress: new("203.0.113.1"),
 				TargetPools: []loadbalancer.TargetPool{
 					{
-						Name: new("target-pool-control-plane"),
+						Name: new("control-plane"),
 						Targets: []loadbalancer.Target{
 							{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 						},
@@ -183,47 +169,6 @@ var _ = Describe("reconcileLoadBalancer", func() {
 
 		It("should do nothing if no updates are needed", func() {
 			// No mock expectations — nothing should be called
-			err := r.reconcileLoadBalancer(ctx, logger)
-
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should update target pool only when targets changed", func() {
-			// Spec has a new node
-			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
-				{
-					NodeName: "node-1",
-					Addresses: []corev1.NodeAddress{
-						{Type: corev1.NodeInternalIP, Address: "10.0.1.10"},
-					},
-				},
-				{
-					NodeName: "node-2",
-					Addresses: []corev1.NodeAddress{
-						{Type: corev1.NodeInternalIP, Address: "10.0.1.20"},
-					},
-				},
-			}
-
-			mockLBClient.EXPECT().
-				UpdateLoadBalancerTargetPool(ctx, "test-lb", "target-pool-control-plane", gomock.Any()).
-				DoAndReturn(func(_ context.Context, _, _ string, payload loadbalancer.UpdateTargetPoolPayload) (*loadbalancer.TargetPool, error) {
-					Expect(payload.Targets).To(HaveLen(2))
-					Expect(*payload.Targets[0].Ip).To(Equal("10.0.1.10"))
-					Expect(*payload.Targets[1].Ip).To(Equal("10.0.1.20"))
-					Expect(*payload.TargetPort).To(BeEquivalentTo(443))
-					return &loadbalancer.TargetPool{}, nil
-				})
-
-			// After the target pool write, reconcileLoadBalancer re-GETs the LB so downstream
-			// readiness checks see the post-write status (STACKIT flips the LB to PENDING).
-			mockLBClient.EXPECT().
-				GetLoadBalancer(ctx, "test-lb").
-				Return(&loadbalancer.LoadBalancer{
-					Name:   new("test-lb"),
-					Status: new("STATUS_PENDING"),
-				}, nil)
-
 			err := r.reconcileLoadBalancer(ctx, logger)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -265,7 +210,7 @@ var _ = Describe("reconcileLoadBalancer", func() {
 		})
 
 		It("should update plan via UpdateLoadBalancer when only plan changed", func() {
-			r.PlanId = "p100" // Changed plan
+			r.PlanID = "p100" // Changed plan
 
 			mockLBClient.EXPECT().
 				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
@@ -287,7 +232,7 @@ var _ = Describe("reconcileLoadBalancer", func() {
 		})
 
 		It("should update plan and targets in a single call when both changed", func() {
-			r.PlanId = "p100"
+			r.PlanID = "p100"
 			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
 				{
 					NodeName: "node-3",
@@ -312,28 +257,8 @@ var _ = Describe("reconcileLoadBalancer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should return error when UpdateLoadBalancerTargetPool fails", func() {
-			r.SelfHostedShootExposure.Spec.Endpoints = []extensionsv1alpha1.ControlPlaneEndpoint{
-				{
-					NodeName: "node-new",
-					Addresses: []corev1.NodeAddress{
-						{Type: corev1.NodeInternalIP, Address: "10.0.1.99"},
-					},
-				},
-			}
-
-			mockLBClient.EXPECT().
-				UpdateLoadBalancerTargetPool(ctx, "test-lb", "target-pool-control-plane", gomock.Any()).
-				Return(nil, fmt.Errorf("API error"))
-
-			err := r.reconcileLoadBalancer(ctx, logger)
-
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("error updating load balancer target pool"))
-		})
-
 		It("should return error when UpdateLoadBalancer fails", func() {
-			r.PlanId = "p100"
+			r.PlanID = "p100"
 
 			mockLBClient.EXPECT().
 				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
@@ -343,6 +268,16 @@ var _ = Describe("reconcileLoadBalancer", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("error updating load balancer"))
+		})
+
+		It("should defer the update when the LB has no external address yet", func() {
+			r.PlanID = "p100"
+			r.LoadBalancer.ExternalAddress = nil
+
+			// No mock expectations — the controller must not call UpdateLoadBalancer.
+			err := r.reconcileLoadBalancer(ctx, logger)
+
+			Expect(err).To(MatchError(ContainSubstring("waiting for load balancer external address")))
 		})
 	})
 })
@@ -500,197 +435,67 @@ var _ = Describe("buildTargets", func() {
 	})
 })
 
-var _ = Describe("targetsEqual", func() {
-	It("should return true for equal target lists", func() {
-		a := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeTrue())
-	})
-
-	It("should return false for different IPs", func() {
-		a := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.99"), DisplayName: new("node-1")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeFalse())
-	})
-
-	It("should return false for different display names", func() {
-		a := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-2")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeFalse())
-	})
-
-	It("should return false for different lengths", func() {
-		a := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-			{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeFalse())
-	})
-
-	It("should handle empty target lists", func() {
-		Expect(targetsEqual([]loadbalancer.Target{}, []loadbalancer.Target{})).To(BeTrue())
-	})
-
-	It("should return false when IP is nil", func() {
-		a := []loadbalancer.Target{
-			{Ip: nil, DisplayName: new("node-1")},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeFalse())
-	})
-
-	It("should return false when DisplayName is nil", func() {
-		a := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: nil},
-		}
-		b := []loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		}
-
-		Expect(targetsEqual(a, b)).To(BeFalse())
-	})
-})
-
-var _ = Describe("targetPoolNeedsUpdate", func() {
+var _ = Describe("targetsNeedUpdate", func() {
 	var r *Resources
 
 	BeforeEach(func() {
-		r = &Resources{}
-	})
-
-	It("should return false when no load balancer exists", func() {
-		r.LoadBalancer = nil
-
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{
-			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeFalse())
+		r = &Resources{LoadBalancer: &loadbalancer.LoadBalancer{}}
 	})
 
 	It("should return true when LB has no target pools but spec has targets", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{},
-		}
-
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{
+		Expect(r.targetsNeedUpdate([]loadbalancer.Target{
 			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeTrue())
+		})).To(BeTrue())
 	})
 
 	It("should return false when LB has no target pools and spec has no targets", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{},
-		}
-
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeFalse())
+		Expect(r.targetsNeedUpdate(nil)).To(BeFalse())
 	})
 
-	It("should return error when target pool has unexpected name", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{
-				{Name: new("wrong-name")},
-			},
-		}
-
-		_, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{})
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("unexpected target pool name"))
+	It("should return true when target pool has unexpected name", func() {
+		r.LoadBalancer.TargetPools = []loadbalancer.TargetPool{{Name: new("wrong-name")}}
+		Expect(r.targetsNeedUpdate(nil)).To(BeTrue())
 	})
 
 	It("should return false when targets match", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{
-				{
-					Name: new("target-pool-control-plane"),
-					Targets: []loadbalancer.Target{
-						{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-					},
-				},
+		r.LoadBalancer.TargetPools = []loadbalancer.TargetPool{{
+			Name: new("control-plane"),
+			Targets: []loadbalancer.Target{
+				{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			},
-		}
-
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{
+		}}
+		Expect(r.targetsNeedUpdate([]loadbalancer.Target{
 			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeFalse())
+		})).To(BeFalse())
 	})
 
 	It("should return true when targets differ", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{
-				{
-					Name: new("target-pool-control-plane"),
-					Targets: []loadbalancer.Target{
-						{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-					},
-				},
+		r.LoadBalancer.TargetPools = []loadbalancer.TargetPool{{
+			Name: new("control-plane"),
+			Targets: []loadbalancer.Target{
+				{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			},
-		}
-
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{
+		}}
+		Expect(r.targetsNeedUpdate([]loadbalancer.Target{
 			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeTrue())
+		})).To(BeTrue())
 	})
 
 	It("should compare correctly regardless of LB target order", func() {
-		r.LoadBalancer = &loadbalancer.LoadBalancer{
-			TargetPools: []loadbalancer.TargetPool{
-				{
-					Name: new("target-pool-control-plane"),
-					Targets: []loadbalancer.Target{
-						// LB returns targets in reverse order
-						{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
-						{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
-					},
-				},
+		r.LoadBalancer.TargetPools = []loadbalancer.TargetPool{{
+			Name: new("control-plane"),
+			Targets: []loadbalancer.Target{
+				// LB returns targets in reverse order
+				{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
+				{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			},
-		}
-
+		}}
 		// Spec targets are sorted
-		needsUpdate, err := r.targetPoolNeedsUpdate([]loadbalancer.Target{
+		Expect(r.targetsNeedUpdate([]loadbalancer.Target{
 			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(needsUpdate).To(BeFalse())
+		})).To(BeFalse())
 	})
 })
 

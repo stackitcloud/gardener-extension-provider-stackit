@@ -108,16 +108,16 @@ string
 </table>
 
 
-<h3 id="accesscontrolconfig">AccessControlConfig
+<h3 id="accesscontrol">AccessControl
 </h3>
 
 
 <p>
-(<em>Appears on:</em><a href="#loadbalancerconfig">LoadBalancerConfig</a>)
+(<em>Appears on:</em><a href="#loadbalancer">LoadBalancer</a>)
 </p>
 
 <p>
-AccessControlConfig restricts access to the load balancer by source IP range.
+AccessControl restricts access to the load balancer by source IP range.
 </p>
 
 <table>
@@ -1009,7 +1009,7 @@ string
 </table>
 
 
-<h3 id="loadbalancerconfig">LoadBalancerConfig
+<h3 id="loadbalancer">LoadBalancer
 </h3>
 
 
@@ -1018,7 +1018,7 @@ string
 </p>
 
 <p>
-LoadBalancerConfig contains configuration for the load balancer.
+LoadBalancer contains configuration for the load balancer.
 </p>
 
 <table>
@@ -1032,21 +1032,21 @@ LoadBalancerConfig contains configuration for the load balancer.
 
 <tr>
 <td>
-<code>planId</code></br>
+<code>planID</code></br>
 <em>
 string
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>PlanId specifies the service plan (size) of the load balancer.<br />Currently supported plans are p10, p50, p250, p750 (compare API docs).</p>
+<p>PlanID specifies the service plan (size) of the load balancer.<br />Currently supported plans are p10, p50, p250, p750 (compare API docs).<br />See https://docs.stackit.cloud/products/network/load-balancing-and-content-delivery/network-load-balancer/reference/service-plans/<br />Defaults to "p10".</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>accessControl</code></br>
 <em>
-<a href="#accesscontrolconfig">AccessControlConfig</a>
+<a href="#accesscontrol">AccessControl</a>
 </em>
 </td>
 <td>
@@ -1795,7 +1795,7 @@ SelfHostedShootExposureConfig contains configuration settings for exposing self-
 <td>
 <code>loadBalancer</code></br>
 <em>
-<a href="#loadbalancerconfig">LoadBalancerConfig</a>
+<a href="#loadbalancer">LoadBalancer</a>
 </em>
 </td>
 <td>

@@ -18,8 +18,8 @@ var _ = Describe("SelfHostedShootExposureConfig validation", func() {
 
 	BeforeEach(func() {
 		config = &stackitv1alpha1.SelfHostedShootExposureConfig{
-			LoadBalancer: &stackitv1alpha1.LoadBalancerConfig{
-				AccessControl: &stackitv1alpha1.AccessControlConfig{},
+			LoadBalancer: &stackitv1alpha1.LoadBalancer{
+				AccessControl: &stackitv1alpha1.AccessControl{},
 			},
 		}
 	})

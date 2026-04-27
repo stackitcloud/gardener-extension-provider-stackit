@@ -123,15 +123,15 @@ var _ = Describe("Options", func() {
 			},
 			Region:    "eu01",
 			NetworkID: "network-id",
-			PlanId:    "p10",
+			PlanID:    "p10",
 		}))
 	})
 
-	It("should use PlanId from providerConfig", func() {
+	It("should use PlanID from providerConfig", func() {
 		encoder := serializer.NewCodecFactory(fakeClient.Scheme()).EncoderForVersion(&json.Serializer{}, stackitv1alpha1.SchemeGroupVersion)
 		providerConfig := &stackitv1alpha1.SelfHostedShootExposureConfig{
-			LoadBalancer: &stackitv1alpha1.LoadBalancerConfig{
-				PlanId: new("p250"),
+			LoadBalancer: &stackitv1alpha1.LoadBalancer{
+				PlanID: new("p250"),
 			},
 		}
 		providerConfigBytes, err := runtime.Encode(encoder, providerConfig)
@@ -141,14 +141,14 @@ var _ = Describe("Options", func() {
 		opts, err := a.DetermineOptions(ctx, exposure, cluster, projectID)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(opts.PlanId).To(Equal("p250"))
+		Expect(opts.PlanID).To(Equal("p250"))
 	})
 
 	It("should reject an invalid AllowedSourceRanges CIDR", func() {
 		encoder := serializer.NewCodecFactory(fakeClient.Scheme()).EncoderForVersion(&json.Serializer{}, stackitv1alpha1.SchemeGroupVersion)
 		providerConfig := &stackitv1alpha1.SelfHostedShootExposureConfig{
-			LoadBalancer: &stackitv1alpha1.LoadBalancerConfig{
-				AccessControl: &stackitv1alpha1.AccessControlConfig{
+			LoadBalancer: &stackitv1alpha1.LoadBalancer{
+				AccessControl: &stackitv1alpha1.AccessControl{
 					AllowedSourceRanges: []string{"not-a-cidr"},
 				},
 			},

@@ -57,32 +57,32 @@ func (mr *MockLoadBalancingClientMockRecorder) CreateLoadBalancer(ctx, payload a
 }
 
 // DeleteLoadBalancer mocks base method.
-func (m *MockLoadBalancingClient) DeleteLoadBalancer(ctx context.Context, lbName string) error {
+func (m *MockLoadBalancingClient) DeleteLoadBalancer(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteLoadBalancer", ctx, lbName)
+	ret := m.ctrl.Call(m, "DeleteLoadBalancer", ctx, name)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteLoadBalancer indicates an expected call of DeleteLoadBalancer.
-func (mr *MockLoadBalancingClientMockRecorder) DeleteLoadBalancer(ctx, lbName any) *gomock.Call {
+func (mr *MockLoadBalancingClientMockRecorder) DeleteLoadBalancer(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).DeleteLoadBalancer), ctx, lbName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).DeleteLoadBalancer), ctx, name)
 }
 
 // GetLoadBalancer mocks base method.
-func (m *MockLoadBalancingClient) GetLoadBalancer(ctx context.Context, id string) (*v2api.LoadBalancer, error) {
+func (m *MockLoadBalancingClient) GetLoadBalancer(ctx context.Context, name string) (*v2api.LoadBalancer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLoadBalancer", ctx, id)
+	ret := m.ctrl.Call(m, "GetLoadBalancer", ctx, name)
 	ret0, _ := ret[0].(*v2api.LoadBalancer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLoadBalancer indicates an expected call of GetLoadBalancer.
-func (mr *MockLoadBalancingClientMockRecorder) GetLoadBalancer(ctx, id any) *gomock.Call {
+func (mr *MockLoadBalancingClientMockRecorder) GetLoadBalancer(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).GetLoadBalancer), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).GetLoadBalancer), ctx, name)
 }
 
 // ListLoadBalancers mocks base method.
@@ -115,31 +115,31 @@ func (mr *MockLoadBalancingClientMockRecorder) ProjectID() *gomock.Call {
 }
 
 // UpdateLoadBalancer mocks base method.
-func (m *MockLoadBalancingClient) UpdateLoadBalancer(ctx context.Context, lbName string, payload v2api.UpdateLoadBalancerPayload) (*v2api.LoadBalancer, error) {
+func (m *MockLoadBalancingClient) UpdateLoadBalancer(ctx context.Context, name string, payload v2api.UpdateLoadBalancerPayload) (*v2api.LoadBalancer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateLoadBalancer", ctx, lbName, payload)
+	ret := m.ctrl.Call(m, "UpdateLoadBalancer", ctx, name, payload)
 	ret0, _ := ret[0].(*v2api.LoadBalancer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateLoadBalancer indicates an expected call of UpdateLoadBalancer.
-func (mr *MockLoadBalancingClientMockRecorder) UpdateLoadBalancer(ctx, lbName, payload any) *gomock.Call {
+func (mr *MockLoadBalancingClientMockRecorder) UpdateLoadBalancer(ctx, name, payload any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).UpdateLoadBalancer), ctx, lbName, payload)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLoadBalancer", reflect.TypeOf((*MockLoadBalancingClient)(nil).UpdateLoadBalancer), ctx, name, payload)
 }
 
 // UpdateLoadBalancerTargetPool mocks base method.
-func (m *MockLoadBalancingClient) UpdateLoadBalancerTargetPool(ctx context.Context, lbName, tpName string, payload v2api.UpdateTargetPoolPayload) (*v2api.TargetPool, error) {
+func (m *MockLoadBalancingClient) UpdateLoadBalancerTargetPool(ctx context.Context, name, targetPool string, payload v2api.UpdateTargetPoolPayload) (*v2api.TargetPool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateLoadBalancerTargetPool", ctx, lbName, tpName, payload)
+	ret := m.ctrl.Call(m, "UpdateLoadBalancerTargetPool", ctx, name, targetPool, payload)
 	ret0, _ := ret[0].(*v2api.TargetPool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateLoadBalancerTargetPool indicates an expected call of UpdateLoadBalancerTargetPool.
-func (mr *MockLoadBalancingClientMockRecorder) UpdateLoadBalancerTargetPool(ctx, lbName, tpName, payload any) *gomock.Call {
+func (mr *MockLoadBalancingClientMockRecorder) UpdateLoadBalancerTargetPool(ctx, name, targetPool, payload any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLoadBalancerTargetPool", reflect.TypeOf((*MockLoadBalancingClient)(nil).UpdateLoadBalancerTargetPool), ctx, lbName, tpName, payload)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLoadBalancerTargetPool", reflect.TypeOf((*MockLoadBalancingClient)(nil).UpdateLoadBalancerTargetPool), ctx, name, targetPool, payload)
 }

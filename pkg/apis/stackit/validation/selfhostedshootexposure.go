@@ -19,7 +19,6 @@ func ValidateSelfHostedShootExposureConfig(config *stackitv1alpha1.SelfHostedSho
 	if config.LoadBalancer.AccessControl != nil {
 		allErrs = append(allErrs, validateAllowedSourceRanges(config.LoadBalancer.AccessControl.AllowedSourceRanges, lbPath.Child("accessControl", "allowedSourceRanges"))...)
 	}
-
 	return allErrs
 }
 

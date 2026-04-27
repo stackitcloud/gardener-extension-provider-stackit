@@ -3,12 +3,9 @@ package selfhostedshootexposure
 import (
 	"context"
 	"fmt"
-	"time"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	reconcilerutils "github.com/gardener/gardener/pkg/controllerutils/reconciler"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -39,8 +36,8 @@ type Options struct {
 	Region string
 	// NetworkID is the ID of the network where the control plane nodes reside.
 	NetworkID string
-	// PlanId specifies the service plan (size) of the load balancer.
-	PlanId string
+	// PlanID specifies the service plan (size) of the load balancer.
+	PlanID string
 	// AllowedSourceRanges restricts which source CIDRs may reach the load balancer.
 	// Empty means unrestricted.
 	AllowedSourceRanges []string
@@ -52,7 +49,11 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 		ProjectID:               projectID,
 		ResourceName:            fmt.Sprintf("%s-exposure-%s", cluster.Shoot.Status.TechnicalID, exposure.Name),
 		// STACKIT LB labels do not allow '/' in keys, so we use the flat dot-separated form
-		// matching the convention used for other STACKIT LBs (see controlplane.STACKITLBClusterLabelKey).
+		// matching the convention used for other STACKIT LBs (CCM extraLabels in
+		// controlplane.valuesprovider, infrastructure cleanup in infraflow/delete.go).
+		// TODO: migrate to utils.BuildLabelKey + CustomLabelDomain once the LB API accepts '/'
+		// in label keys; this needs to be coordinated across CCM, controlplane and infraflow so
+		// the infrastructure cleanup keeps finding all LBs by the same key.
 		Labels: map[string]string{
 			controlplane.STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,
 			ExposureLabelKey:                      exposure.Name,
@@ -67,27 +68,22 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 	}
 	opts.NetworkID = infraStatus.Networks.ID
 
-	// Decode providerConfig to extract STACKIT-specific settings
+	// Decode providerConfig (when present) and apply API defaults.
+	providerConfig := &stackitv1alpha1.SelfHostedShootExposureConfig{}
 	if exposure.Spec.ProviderConfig != nil {
-		providerConfig := &stackitv1alpha1.SelfHostedShootExposureConfig{}
 		if _, _, err := a.Decoder.Decode(exposure.Spec.ProviderConfig.Raw, nil, providerConfig); err != nil {
 			return nil, fmt.Errorf("error decoding providerConfig: %w", err)
 		}
-		if errs := validation.ValidateSelfHostedShootExposureConfig(providerConfig, field.NewPath("providerConfig")); len(errs) > 0 {
-			return nil, fmt.Errorf("invalid providerConfig: %w", errs.ToAggregate())
-		}
-		if providerConfig.LoadBalancer != nil {
-			if providerConfig.LoadBalancer.PlanId != nil {
-				opts.PlanId = *providerConfig.LoadBalancer.PlanId
-			}
-			if providerConfig.LoadBalancer.AccessControl != nil {
-				opts.AllowedSourceRanges = providerConfig.LoadBalancer.AccessControl.AllowedSourceRanges
-			}
-		}
 	}
-	// Default plan if not specified
-	if opts.PlanId == "" {
-		opts.PlanId = "p10"
+	a.Client.Scheme().Default(providerConfig)
+
+	if errs := validation.ValidateSelfHostedShootExposureConfig(providerConfig, field.NewPath("spec.providerConfig")); len(errs) > 0 {
+		return nil, fmt.Errorf("invalid providerConfig: %w", errs.ToAggregate())
+	}
+
+	opts.PlanID = *providerConfig.LoadBalancer.PlanID
+	if providerConfig.LoadBalancer.AccessControl != nil {
+		opts.AllowedSourceRanges = providerConfig.LoadBalancer.AccessControl.AllowedSourceRanges
 	}
 
 	return opts, nil
@@ -96,21 +92,7 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 func getInfrastructureStatus(ctx context.Context, c client.Client, cluster *extensionscontroller.Cluster) (*stackitv1alpha1.InfrastructureStatus, error) {
 	infra := &extensionsv1alpha1.Infrastructure{}
 	if err := c.Get(ctx, client.ObjectKey{Namespace: cluster.ObjectMeta.Name, Name: cluster.Shoot.Name}, infra); err != nil {
-		if apierrors.IsNotFound(err) {
-			// Infrastructure is reconciled before SelfHostedShootExposure; absence is a normal transient state on initial creation.
-			return nil, &reconcilerutils.RequeueAfterError{
-				RequeueAfter: 30 * time.Second,
-				Cause:        fmt.Errorf("waiting for Infrastructure resource to be created"),
-			}
-		}
 		return nil, fmt.Errorf("error getting infrastructure: %w", err)
-	}
-	if infra.Status.ProviderStatus == nil {
-		// Infrastructure exists but hasn't been reconciled yet — ProviderStatus (and thus the network ID) is not yet populated.
-		return nil, &reconcilerutils.RequeueAfterError{
-			RequeueAfter: 30 * time.Second,
-			Cause:        fmt.Errorf("waiting for Infrastructure status to be populated"),
-		}
 	}
 	return helper.InfrastructureStatusFromRaw(infra.Status.ProviderStatus)
 }

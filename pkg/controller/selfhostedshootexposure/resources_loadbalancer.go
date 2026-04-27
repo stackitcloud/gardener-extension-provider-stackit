@@ -1,95 +1,72 @@
 package selfhostedshootexposure
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	reconcilerutils "github.com/gardener/gardener/pkg/controllerutils/reconciler"
 	"github.com/go-logr/logr"
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	loadbalancersdk "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer" //nolint:staticcheck // SA1019: see TODO below — v2api lacks the typed enum constants we need.
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
 	loadbalancerwait "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api/wait"
 	corev1 "k8s.io/api/core/v1"
-
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 )
 
+// TODO(jamand): drop the loadbalancersdk import once v2api re-exports the typed enum constants
+// (NetworkRole, ListenerProtocol, LoadBalancerErrorTypes). v2api currently weakened these to
+// *string (known openapi-generator limitation confirmed with the LB team); the authoritative
+// values still live in the deprecated top-level stackit-sdk-go/services/loadbalancer package,
+// scheduled for removal after 2026-09-30. We reference them here as the source of truth and
+// convert to string at the call sites.
 const (
-	// lbNetworkRoleListenersAndTargets is the network role for listeners and targets in the load balancer network.
-	lbNetworkRoleListenersAndTargets = "ROLE_LISTENERS_AND_TARGETS"
-	// protocolTCP is the TCP protocol identifier for the listener.
-	protocolTCP = "PROTOCOL_TCP"
 	// listenerName is the (single) hardcoded listener name for exposing the control plane API server.
-	listenerName = "listener-control-plane"
+	listenerName = "control-plane"
 	// targetPoolName is the (single) hardcoded target pool name for control plane nodes.
-	targetPoolName = "target-pool-control-plane"
-)
-
-// STACKIT LB error types reported in LoadBalancer.Errors[].Type. v2api weakened Type from a
-// generated enum to *string (known openapi-generator limitation confirmed with the LB team);
-// the authoritative set of values still lives as LOADBALANCERERRORTYPE_* constants in the
-// deprecated top-level stackit-sdk-go/services/loadbalancer package.
-const (
-	// lbErrTypeTargetNotActive encodes that target may not be ready (yet).
-	lbErrTypeTargetNotActive = "TYPE_TARGET_NOT_ACTIVE"
+	targetPoolName = "control-plane"
 )
 
 func (r *Resources) reconcileLoadBalancer(ctx context.Context, log logr.Logger) error {
 	targets, err := r.buildTargets()
 	if err != nil {
-		return err
+		return fmt.Errorf("error building targets: %w", err)
 	}
 
 	if r.LoadBalancer == nil {
 		return r.createLoadBalancer(ctx, log, targets)
 	}
 
-	targetPoolNeedsUpdate, err := r.targetPoolNeedsUpdate(targets)
-	if err != nil {
-		return err
-	}
-	fullStateNeedsUpdate := r.planNeedsUpdate() || r.accessControlNeedsUpdate()
-
-	if !targetPoolNeedsUpdate && !fullStateNeedsUpdate {
+	if !r.loadBalancerNeedsUpdate(targets) {
 		return nil
 	}
-
-	// Fast path: only targets changed (e.g. control-plane node added/removed). The sub-resource
-	// endpoint is scoped to the target pool, so we avoid re-sending the full LB state.
-	if targetPoolNeedsUpdate && !fullStateNeedsUpdate {
-		return r.updateTargetPool(ctx, log, targets)
-	}
-
-	// Full-state update: STACKIT's UpdateLoadBalancer (PUT endpoint)
+	// STACKIT's UpdateLoadBalancer is a single PUT covering all managed fields (targets, plan,
+	// ACL). UpdateLoadBalancerTargetPool would also work for target-only changes, but it returns
+	// only the TargetPool — we'd still need a follow-up GET to refresh r.LoadBalancer for the
+	// readiness check, so it costs an extra round-trip without a server-side latency win
+	// (STACKIT transitions the LB to PENDING on either write).
 	return r.updateLoadBalancer(ctx, log, targets)
 }
 
 func (r *Resources) createLoadBalancer(ctx context.Context, log logr.Logger, targets []loadbalancer.Target) error {
-	if len(targets) == 0 {
-		// Endpoints are populated asynchronously by gardenlet from healthy control-plane nodes.
-		// Empty endpoints on first create is a normal transient state.
-		return &reconcilerutils.RequeueAfterError{
-			RequeueAfter: 30 * time.Second,
-			Cause:        fmt.Errorf("waiting for endpoints to be populated in spec"),
-		}
-	}
-
-	log.V(1).Info("Creating load balancer", "loadBalancer", r.ResourceName, "networkID", r.NetworkID, "planID", r.PlanId)
 	createdLB, err := r.LBClient.CreateLoadBalancer(ctx, loadbalancer.CreateLoadBalancerPayload{
 		Name:        &r.ResourceName,
 		Labels:      &r.Labels,
 		Networks:    r.desiredNetworks(),
 		Listeners:   r.desiredListeners(),
 		TargetPools: r.desiredTargetPools(targets),
-		PlanId:      &r.PlanId,
+		PlanId:      &r.PlanID,
 		Options:     r.desiredOptions(),
 	})
 	if err != nil {
-		return wrapLBAPIError("creating load balancer", err)
+		return fmt.Errorf("error creating load balancer: %w", err)
 	}
 
 	r.LoadBalancer = createdLB
@@ -97,37 +74,16 @@ func (r *Resources) createLoadBalancer(ctx context.Context, log logr.Logger, tar
 	return nil
 }
 
-func (r *Resources) updateTargetPool(ctx context.Context, log logr.Logger, targets []loadbalancer.Target) error {
-	log.Info("Target pool needs updating", "loadBalancer", r.ResourceName)
-	_, err := r.LBClient.UpdateLoadBalancerTargetPool(ctx,
-		r.ResourceName,
-		targetPoolName,
-		loadbalancer.UpdateTargetPoolPayload{
-			Name:       new(targetPoolName),
-			TargetPort: &r.SelfHostedShootExposure.Spec.Port,
-			Targets:    targets,
-		})
-	if err != nil {
-		return wrapLBAPIError("updating load balancer target pool", err)
-	}
-	log.Info("Updated load balancer target pool", "loadBalancer", r.ResourceName)
-
-	// Re-read the LB so downstream readiness checks don't see the pre-write status (STACKIT
-	// transitions the LB to STATUS_PENDING on any write). UpdateLoadBalancerTargetPool only
-	// returns the TargetPool, so a full GET is needed.
-	refreshed, err := r.LBClient.GetLoadBalancer(ctx, r.ResourceName)
-	if err != nil {
-		return fmt.Errorf("error refreshing load balancer after target pool update: %w", err)
-	}
-	r.LoadBalancer = refreshed
-	return nil
-}
-
 func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, targets []loadbalancer.Target) error {
-	log.Info("Load balancer needs updating", "loadBalancer", r.ResourceName, "newPlan", r.PlanId)
+	// STACKIT requires ExternalAddress to be set on PUT (and rejects EphemeralAddress=true once
+	// the LB has a floating IP). If the LB hasn't been assigned an external address yet, return
+	// an error so controller-runtime retries with backoff rather than 400ing the API.
+	if r.LoadBalancer.ExternalAddress == nil {
+		return fmt.Errorf("waiting for load balancer external address before updating")
+	}
 
-	// LB Endpoint only available as PUT, requires sending whole resource.
-	payload := loadbalancer.UpdateLoadBalancerPayload{
+	// LB endpoint is PUT-only and requires sending the whole resource.
+	updated, err := r.LBClient.UpdateLoadBalancer(ctx, r.ResourceName, loadbalancer.UpdateLoadBalancerPayload{
 		Name:            &r.ResourceName,
 		Version:         r.LoadBalancer.Version,
 		ExternalAddress: r.LoadBalancer.ExternalAddress,
@@ -135,15 +91,12 @@ func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, tar
 		Networks:        r.desiredNetworks(),
 		Listeners:       r.desiredListeners(),
 		TargetPools:     r.desiredTargetPools(targets),
-		PlanId:          &r.PlanId,
+		PlanId:          &r.PlanID,
 		Options:         r.desiredOptions(),
-	}
-
-	updated, err := r.LBClient.UpdateLoadBalancer(ctx, r.ResourceName, payload)
+	})
 	if err != nil {
-		return wrapLBAPIError("updating load balancer", err)
+		return fmt.Errorf("error updating load balancer: %w", err)
 	}
-	// Capture the post-write LB so readiness is evaluated against actual current status
 	r.LoadBalancer = updated
 	log.Info("Updated load balancer", "loadBalancer", r.ResourceName)
 	return nil
@@ -154,7 +107,7 @@ func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, tar
 func (r *Resources) desiredNetworks() []loadbalancer.Network {
 	return []loadbalancer.Network{{
 		NetworkId: &r.NetworkID,
-		Role:      new(lbNetworkRoleListenersAndTargets),
+		Role:      new(string(loadbalancersdk.NETWORKROLE_LISTENERS_AND_TARGETS)), //nolint:staticcheck // SA1019: see TODO at the top of the file.
 	}}
 }
 
@@ -162,8 +115,8 @@ func (r *Resources) desiredNetworks() []loadbalancer.Network {
 func (r *Resources) desiredListeners() []loadbalancer.Listener {
 	return []loadbalancer.Listener{{
 		DisplayName: new(listenerName),
-		Port:        &r.SelfHostedShootExposure.Spec.Port,
-		Protocol:    new(protocolTCP),
+		Port:        new(r.SelfHostedShootExposure.Spec.Port),
+		Protocol:    new(string(loadbalancersdk.LISTENERPROTOCOL_TCP)), //nolint:staticcheck // SA1019: see TODO at the top of the file.
 		TargetPool:  new(targetPoolName),
 	}}
 }
@@ -172,15 +125,21 @@ func (r *Resources) desiredListeners() []loadbalancer.Listener {
 func (r *Resources) desiredTargetPools(targets []loadbalancer.Target) []loadbalancer.TargetPool {
 	return []loadbalancer.TargetPool{{
 		Name:       new(targetPoolName),
-		TargetPort: &r.SelfHostedShootExposure.Spec.Port,
+		TargetPort: new(r.SelfHostedShootExposure.Spec.Port),
 		Targets:    targets,
 	}}
 }
 
 // desiredOptions returns the LB options.
 //
-// Initial call: ephemeral (provides external IP)
-// Subsequent calls (PUT updates): provide the initially provided IP, do no set ephemeral to true (error!).
+// Initial create: ask STACKIT to assign an ephemeral external IP.
+//
+// Subsequent PUT updates: do NOT set EphemeralAddress — STACKIT rejects PUTs with
+// EphemeralAddress=true once the LB has been assigned a floating IP ("Ephemeral address is
+// not supported for existing floating IPs"). The constraint that one of ExternalAddress,
+// EphemeralAddress=true, or PrivateNetworkOnly=true must be set is satisfied via
+// UpdateLoadBalancerPayload.ExternalAddress, which the caller passes through from the
+// existing LB. updateLoadBalancer guards against the LB not yet having an ExternalAddress.
 func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 	opts := &loadbalancer.LoadBalancerOptions{}
 	if r.LoadBalancer == nil {
@@ -194,51 +153,27 @@ func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 	return opts
 }
 
+// loadBalancerNeedsUpdate reports whether any controller-managed field of the LB (targets,
+// plan, ACL) differs from the desired state. Caller must guarantee r.LoadBalancer is non-nil.
+func (r *Resources) loadBalancerNeedsUpdate(specTargets []loadbalancer.Target) bool {
+	return r.targetsNeedUpdate(specTargets) || r.planNeedsUpdate() || r.accessControlNeedsUpdate()
+}
+
+// planNeedsUpdate checks for an existing LB if its current plan needs to be updated.
 func (r *Resources) planNeedsUpdate() bool {
-	currentPlan := ""
-	if r.LoadBalancer != nil && r.LoadBalancer.PlanId != nil {
-		currentPlan = *r.LoadBalancer.PlanId
-	}
-	return currentPlan != r.PlanId
+	return ptr.Deref(r.LoadBalancer.PlanId, "") != r.PlanID
 }
 
 // accessControlNeedsUpdate reports whether the LB's currently configured source-IP allowlist
-// differs from the desired set. The desired set is order-independent; we compare as sorted lists.
-// An empty desired list means "no restriction" — detected by diff against whatever the LB reports.
+// differs from the desired set. Comparison is order-independent and ignores duplicates: the LB
+// API may or may not de-duplicate, so set semantics avoid spurious update churn. An empty
+// desired list means "no restriction" — detected by diff against whatever the LB reports.
 func (r *Resources) accessControlNeedsUpdate() bool {
 	var current []string
-	if r.LoadBalancer != nil &&
-		r.LoadBalancer.Options != nil &&
-		r.LoadBalancer.Options.AccessControl != nil {
+	if r.LoadBalancer.Options != nil && r.LoadBalancer.Options.AccessControl != nil {
 		current = r.LoadBalancer.Options.AccessControl.AllowedSourceRanges
 	}
-	return !stringSetsEqual(current, r.AllowedSourceRanges)
-}
-
-// stringSetsEqual compares two string slices as unordered sets, ignoring duplicates.
-// The LB API may or may not de-duplicate (causing reconciliation loop), remove duplicates
-// for a clean approach.
-func stringSetsEqual(a, b []string) bool {
-	return slices.Equal(sortedUnique(a), sortedUnique(b))
-}
-
-// sortedUnique returns the input as a sorted slice with consecutive duplicates removed,
-// i.e. the canonical representation of the set.
-func sortedUnique(s []string) []string {
-	return slices.Compact(slices.Sorted(slices.Values(s)))
-}
-
-// wrapLBAPIError classifies STACKIT LB API errors: 409 Conflicts are transient (another caller
-// modified the LB between our GET and our write) and are retried via RequeueAfterError; anything
-// else is returned as a regular error so Gardener can classify + surface it.
-func wrapLBAPIError(op string, err error) error {
-	if stackitclient.IsConflict(err) {
-		return &reconcilerutils.RequeueAfterError{
-			RequeueAfter: 15 * time.Second,
-			Cause:        fmt.Errorf("load balancer is being modified while %s, retrying: %w", op, err),
-		}
-	}
-	return fmt.Errorf("error %s: %w", op, err)
+	return !sets.New(current...).Equal(sets.New(r.AllowedSourceRanges...))
 }
 
 // checkLoadBalancerReady returns nil only if the LB is fully provisioned (STATUS_READY with an
@@ -296,10 +231,7 @@ func lbErrorsAllTransient(errs []loadbalancer.LoadBalancerError) bool {
 		if e.Type == nil {
 			return false
 		}
-		switch *e.Type {
-		case lbErrTypeTargetNotActive:
-			// transient
-		default:
+		if *e.Type != string(loadbalancersdk.LOADBALANCERERRORTYPE_TARGET_NOT_ACTIVE) { //nolint:staticcheck // SA1019: see TODO at the top of the file.
 			return false
 		}
 	}
@@ -352,16 +284,18 @@ func (r *Resources) buildTargets() ([]loadbalancer.Target, error) {
 			Ip:          &ip,
 		}
 	}
-
-	// Sort targets by IP (primary) and DisplayName (secondary) for deterministic ordering
-	sort.Slice(targets, func(i, j int) bool {
-		if *targets[i].Ip != *targets[j].Ip {
-			return *targets[i].Ip < *targets[j].Ip
-		}
-		return *targets[i].DisplayName < *targets[j].DisplayName
-	})
-
+	sortTargets(targets)
 	return targets, nil
+}
+
+// sortTargets sorts the given target slice in-place by IP (primary) and DisplayName (secondary).
+func sortTargets(targets []loadbalancer.Target) {
+	slices.SortFunc(targets, func(a, b loadbalancer.Target) int {
+		return cmp.Or(
+			cmp.Compare(*a.Ip, *b.Ip),
+			cmp.Compare(*a.DisplayName, *b.DisplayName),
+		)
+	})
 }
 
 // extractInternalIP finds and returns the internal IP address from an endpoint's addresses.
@@ -375,66 +309,22 @@ func extractInternalIP(endpoint *extensionsv1alpha1.ControlPlaneEndpoint) (strin
 	return "", fmt.Errorf("endpoint %s has no InternalIP address", endpoint.NodeName)
 }
 
-// targetsEqual compares two target lists for equality.
-// Both lists should be sorted by IP for correct comparison.
-func targetsEqual(spec, lb []loadbalancer.Target) bool {
-	if len(spec) != len(lb) {
-		return false
+// targetsNeedUpdate compares the LB's current first target pool against the desired targets.
+// If no target pool exists or its name doesn't match, signals an update (the full PUT will
+// replace whatever is there with the desired single pool); empty current vs. empty desired is
+// a no-op so we don't churn updates.
+//
+// Target.AdditionalProperties is excluded from the comparison: the SDK populates it from any
+// JSON fields STACKIT echoes back that the SDK doesn't have a typed field for. We never set
+// these on the desired side, so leaving them in would make every reconcile see a diff and PUT.
+func (r *Resources) targetsNeedUpdate(specTargets []loadbalancer.Target) bool {
+	var current []loadbalancer.Target
+	if len(r.LoadBalancer.TargetPools) > 0 {
+		if ptr.Deref(r.LoadBalancer.TargetPools[0].Name, "") != targetPoolName {
+			return true
+		}
+		current = slices.Clone(r.LoadBalancer.TargetPools[0].Targets)
+		sortTargets(current)
 	}
-
-	for i := range spec {
-		if spec[i].Ip == nil || lb[i].Ip == nil {
-			return false
-		}
-		if *spec[i].Ip != *lb[i].Ip {
-			return false
-		}
-		// Also verify the display name matches
-		if spec[i].DisplayName == nil || lb[i].DisplayName == nil {
-			return false
-		}
-		if *spec[i].DisplayName != *lb[i].DisplayName {
-			return false
-		}
-	}
-	return true
-}
-
-// targetPoolNeedsUpdate checks if the target pool in the load balancer needs updating.
-// specTargets should be pre-built to avoid double-building.
-func (r *Resources) targetPoolNeedsUpdate(specTargets []loadbalancer.Target) (bool, error) {
-	// If no load balancer exists yet, no update needed (will be created fresh)
-	if r.LoadBalancer == nil {
-		return false, nil
-	}
-
-	// If LB exists but has no target pools, check if spec has targets
-	if len(r.LoadBalancer.TargetPools) == 0 {
-		return len(specTargets) > 0, nil
-	}
-
-	// Validate that the load balancer has the expected target pool
-	if r.LoadBalancer.TargetPools[0].Name == nil || *r.LoadBalancer.TargetPools[0].Name != targetPoolName {
-		actualName := ""
-		if r.LoadBalancer.TargetPools[0].Name != nil {
-			actualName = *r.LoadBalancer.TargetPools[0].Name
-		}
-		return false, fmt.Errorf("unexpected target pool name: expected %q, got %q",
-			targetPoolName, actualName)
-	}
-
-	// Get targets from the first target pool and copy before sorting
-	lbTargets := make([]loadbalancer.Target, len(r.LoadBalancer.TargetPools[0].Targets))
-	copy(lbTargets, r.LoadBalancer.TargetPools[0].Targets)
-
-	// Sort the LB targets for comparison (same order as spec targets)
-	sort.Slice(lbTargets, func(i, j int) bool {
-		if *lbTargets[i].Ip != *lbTargets[j].Ip {
-			return *lbTargets[i].Ip < *lbTargets[j].Ip
-		}
-		return *lbTargets[i].DisplayName < *lbTargets[j].DisplayName
-	})
-
-	// Compare semantically (order-independent after sorting)
-	return !targetsEqual(specTargets, lbTargets), nil
+	return !gocmp.Equal(specTargets, current, cmpopts.IgnoreFields(loadbalancer.Target{}, "AdditionalProperties"))
 }
