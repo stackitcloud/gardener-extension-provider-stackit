@@ -25,7 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stackitcloud/stackit-sdk-go/core v0.26.0
 	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.15.1
-	github.com/stackitcloud/stackit-sdk-go/services/dns v0.20.1
+	github.com/stackitcloud/stackit-sdk-go/services/dns v0.20.2
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.10.1
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.12.1
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.22.1
