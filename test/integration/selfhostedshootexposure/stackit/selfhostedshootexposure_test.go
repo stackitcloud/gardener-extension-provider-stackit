@@ -21,6 +21,7 @@ import (
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,10 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	schemev1 "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -144,11 +143,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(restConfig).ToNot(BeNil())
 
-	httpClient, err := rest.HTTPClientFor(restConfig)
-	Expect(err).NotTo(HaveOccurred())
-	mapper, err := apiutil.NewDynamicRESTMapper(restConfig, httpClient)
-	Expect(err).NotTo(HaveOccurred())
-
 	scheme := runtime.NewScheme()
 	Expect(schemev1.AddToScheme(scheme)).To(Succeed())
 	Expect(extensionsv1alpha1.AddToScheme(scheme)).To(Succeed())
@@ -162,7 +156,6 @@ var _ = BeforeSuite(func() {
 			BindAddress: "0",
 		},
 		Cache: cache.Options{
-			Mapper: mapper,
 			ByObject: map[client.Object]cache.ByObject{
 				&extensionsv1alpha1.SelfHostedShootExposure{}: {
 					Label: labels.SelectorFromSet(labels.Set{"test-id": testID}),
@@ -214,19 +207,43 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 	})
 
 	AfterEach(func() {
-		// Best-effort cleanup of LB via STACKIT API (in case the controller didn't delete it)
-		if lbName != "" {
-			lb, _ := lbClient.GetLoadBalancer(ctx, lbName)
-			if lb != nil {
-				log.Info("Cleaning up leftover load balancer", "name", lbName)
-				_ = lbClient.DeleteLoadBalancer(ctx, lbName)
-			}
+		// Delete the SelfHostedShootExposure CR first so the controller stops reconciling and
+		// recreating the LB. controller-runtime keeps retrying failed reconciles with exponential
+		// backoff regardless of the operation-annotation predicate — without this CR-level delete,
+		// the LB cleanup below races against the controller's recreate loop.
+		exposure := &extensionsv1alpha1.SelfHostedShootExposure{
+			ObjectMeta: metav1.ObjectMeta{Name: exposureName, Namespace: namespaceName},
 		}
+		Expect(client.IgnoreNotFound(c.Delete(ctx, exposure))).To(Succeed())
+		Eventually(func() bool {
+			return apierrors.IsNotFound(c.Get(ctx, client.ObjectKeyFromObject(exposure), exposure))
+		}).WithTimeout(5*time.Minute).WithPolling(5*time.Second).Should(BeTrue(), "exposure CR was not deleted")
 
-		// Cleanup network
+		// Safety-net: poll until the LB is fully deleted from STACKIT. Normally the controller's
+		// Delete flow above already removed it; this catches orphans from prior runs that crashed
+		// before AfterEach could finish.
+		Eventually(func() error {
+			lb, err := lbClient.GetLoadBalancer(ctx, lbName)
+			if stackitclient.IsNotFound(err) || lb == nil {
+				return nil
+			}
+			if err != nil {
+				return fmt.Errorf("getting load balancer: %w", err)
+			}
+			log.Info("Cleaning up leftover load balancer", "name", lbName)
+			if delErr := lbClient.DeleteLoadBalancer(ctx, lbName); delErr != nil && !stackitclient.IsNotFound(delErr) {
+				return fmt.Errorf("deleting load balancer: %w", delErr)
+			}
+			return fmt.Errorf("load balancer still exists, waiting for deletion")
+		}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+
+		// Network deletion only succeeds once the LB has released the network, so this naturally
+		// chains after the LB-deletion poll above.
 		if networkID != "" {
 			log.Info("Cleaning up network", "id", networkID)
-			_ = iaasClient.DeleteNetwork(ctx, networkID)
+			Eventually(func() error {
+				return iaasClient.DeleteNetwork(ctx, networkID)
+			}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 		}
 	})
 
@@ -345,6 +362,12 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 					Type: "stackit",
 				},
 				Port: 6443,
+				CredentialsRef: &corev1.ObjectReference{
+					APIVersion: "v1",
+					Kind:       "Secret",
+					Name:       "cloudprovider",
+					Namespace:  namespaceName,
+				},
 				Endpoints: []extensionsv1alpha1.ControlPlaneEndpoint{
 					{
 						NodeName: "node-1",
@@ -396,18 +419,18 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			// Listener
 			g.Expect(lb.Listeners).To(HaveLen(1))
 			g.Expect(lb.Listeners[0].DisplayName).NotTo(BeNil())
-			g.Expect(*lb.Listeners[0].DisplayName).To(Equal("listener-control-plane"))
+			g.Expect(*lb.Listeners[0].DisplayName).To(Equal("control-plane"))
 			g.Expect(lb.Listeners[0].Port).NotTo(BeNil())
 			g.Expect(*lb.Listeners[0].Port).To(BeEquivalentTo(6443))
 			g.Expect(lb.Listeners[0].Protocol).NotTo(BeNil())
 			g.Expect(*lb.Listeners[0].Protocol).To(Equal("PROTOCOL_TCP"))
 			g.Expect(lb.Listeners[0].TargetPool).NotTo(BeNil())
-			g.Expect(*lb.Listeners[0].TargetPool).To(Equal("target-pool-control-plane"))
+			g.Expect(*lb.Listeners[0].TargetPool).To(Equal("control-plane"))
 
 			// Target pool
 			g.Expect(lb.TargetPools).To(HaveLen(1))
 			g.Expect(lb.TargetPools[0].Name).NotTo(BeNil())
-			g.Expect(*lb.TargetPools[0].Name).To(Equal("target-pool-control-plane"))
+			g.Expect(*lb.TargetPools[0].Name).To(Equal("control-plane"))
 			g.Expect(lb.TargetPools[0].TargetPort).NotTo(BeNil())
 			g.Expect(*lb.TargetPools[0].TargetPort).To(BeEquivalentTo(6443))
 			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(2))
@@ -451,9 +474,12 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 		By("verify SelfHostedShootExposure CR is being reconciled")
-		Expect(c.Get(ctx, client.ObjectKeyFromObject(exposure), exposure)).To(Succeed())
-		// Finalizer proves Gardener bound the controller to this resource.
-		Expect(exposure.Finalizers).NotTo(BeEmpty())
+		// Finalizer proves Gardener bound the controller to this resource. The cache may take a
+		// brief moment to observe it, so use Eventually instead of a plain Get.
+		Eventually(func(g Gomega) {
+			g.Expect(c.Get(ctx, client.ObjectKeyFromObject(exposure), exposure)).To(Succeed())
+			g.Expect(exposure.Finalizers).NotTo(BeEmpty())
+		}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).Should(Succeed())
 		// Status.Ingress is only populated once the LB reaches READY in the actuator; with
 		// fake targets we never get there, so it stays empty.
 		Expect(exposure.Status.Ingress).To(BeEmpty())
@@ -484,7 +510,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(lb.Version).NotTo(BeNil())
 			g.Expect(*lb.Version).NotTo(Equal(initialVersion))
 
-			// Invariants that must not have shifted during the target-pool fast-path update.
+			// Invariants that must not have shifted during the target-only update.
 			g.Expect(lb.Listeners).To(HaveLen(1))
 			g.Expect(*lb.Listeners[0].Port).To(BeEquivalentTo(6443))
 			g.Expect(lb.Networks).To(HaveLen(1))
@@ -502,7 +528,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(*lbCheck.Version).To(Equal(versionBeforeNoOp))
 		}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
 
-		By("remove an endpoint (fast-path shrink)")
+		By("remove an endpoint")
 		versionBeforeRemove := versionBeforeNoOp
 		patchExposureReconcile(exposure, func() {
 			// Drop node-2 (10.250.0.11), leaving node-1 and node-3.
@@ -529,7 +555,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("change plan only (full PUT update)")
 		versionBeforePlanChange := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p50")})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new("p50")})
 		})
 
 		Eventually(func(g Gomega) {
@@ -551,7 +577,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("change plan and endpoints together (full PUT update)")
 		versionBeforeCombined := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p250")})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new("p250")})
 			// Add node-2 back, so we're changing targets *and* plan in the same reconcile.
 			exposure.Spec.Endpoints = append(exposure.Spec.Endpoints, extensionsv1alpha1.ControlPlaneEndpoint{
 				NodeName:  "node-2",
@@ -577,9 +603,9 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("add AccessControl.AllowedSourceRanges (full PUT update)")
 		versionBeforeACLAdd := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{
-				PlanId: new("p250"),
-				AccessControl: &stackitv1alpha1.AccessControlConfig{
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{
+				PlanID: new("p250"),
+				AccessControl: &stackitv1alpha1.AccessControl{
 					AllowedSourceRanges: []string{"0.0.0.0/0"},
 				},
 			})
@@ -604,9 +630,9 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		By("update AllowedSourceRanges to a different set (order-independent)")
 		versionBeforeACLUpdate := *lb.Version
 		patchExposureReconcile(exposure, func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{
-				PlanId: new("p250"),
-				AccessControl: &stackitv1alpha1.AccessControlConfig{
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{
+				PlanID: new("p250"),
+				AccessControl: &stackitv1alpha1.AccessControl{
 					AllowedSourceRanges: []string{"192.168.0.0/16", "10.0.0.0/8"},
 				},
 			})
@@ -628,7 +654,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		versionBeforeACLRemove := *lb.Version
 		patchExposureReconcile(exposure, func() {
 			// Drop AccessControl entirely from the providerConfig.
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancerConfig{PlanId: new("p250")})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new("p250")})
 		})
 
 		Eventually(func(g Gomega) {
@@ -697,7 +723,7 @@ func targetIPs(lb *loadbalancer.LoadBalancer) []string {
 
 // setExposureLBConfig encodes a SelfHostedShootExposureConfig wrapping lbConfig and sets it
 // as the exposure's ProviderConfig. Fully replaces any previous ProviderConfig.
-func setExposureLBConfig(exposure *extensionsv1alpha1.SelfHostedShootExposure, lbConfig *stackitv1alpha1.LoadBalancerConfig) {
+func setExposureLBConfig(exposure *extensionsv1alpha1.SelfHostedShootExposure, lbConfig *stackitv1alpha1.LoadBalancer) {
 	GinkgoHelper()
 	buf := new(bytes.Buffer)
 	Expect(encoder.Encode(&stackitv1alpha1.SelfHostedShootExposureConfig{

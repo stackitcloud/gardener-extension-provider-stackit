@@ -22,12 +22,12 @@ type Resources struct {
 func (r *Resources) getExistingResources(ctx context.Context, log logr.Logger) error {
 	lb, err := r.LBClient.GetLoadBalancer(ctx, r.ResourceName)
 	if err != nil {
+		if stackitclient.IsNotFound(err) {
+			return nil
+		}
 		return fmt.Errorf("error getting load balancer: %w", err)
 	}
-	if lb != nil {
-		r.LoadBalancer = lb
-		log.V(1).Info("Found existing load balancer", "loadbalancer", r.LoadBalancer.GetName())
-	}
-
+	r.LoadBalancer = lb
+	log.V(1).Info("Found existing load balancer", "loadBalancer", r.LoadBalancer.GetName())
 	return nil
 }
