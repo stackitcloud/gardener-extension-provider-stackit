@@ -138,4 +138,4 @@ images:
 - name: stackit-pod-identity-webhook
   sourceRepository: github.com/stackitcloud/stackit-pod-identity-webhook
   repository: ghcr.io/stackitcloud/stackit-pod-identity-webhook
-  tag: "v0.1.0"
+  tag: "v0.2.0"
