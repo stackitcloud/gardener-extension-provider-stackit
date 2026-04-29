@@ -17,7 +17,6 @@ type LoadBalancingClient interface {
 	GetLoadBalancer(ctx context.Context, name string) (*loadbalancer.LoadBalancer, error)
 	ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error)
 	UpdateLoadBalancer(ctx context.Context, name string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error)
-	UpdateLoadBalancerTargetPool(ctx context.Context, name, targetPool string, payload loadbalancer.UpdateTargetPoolPayload) (*loadbalancer.TargetPool, error)
 	DeleteLoadBalancer(ctx context.Context, name string) error
 }
 
@@ -67,10 +66,6 @@ func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalan
 
 func (l loadBalancingClient) UpdateLoadBalancer(ctx context.Context, name string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
 	return l.Client.UpdateLoadBalancer(ctx, l.projectID, l.region, name).UpdateLoadBalancerPayload(payload).Execute()
-}
-
-func (l loadBalancingClient) UpdateLoadBalancerTargetPool(ctx context.Context, name, targetPool string, payload loadbalancer.UpdateTargetPoolPayload) (*loadbalancer.TargetPool, error) {
-	return l.Client.UpdateTargetPool(ctx, l.projectID, l.region, name, targetPool).UpdateTargetPoolPayload(payload).Execute()
 }
 
 func (l loadBalancingClient) DeleteLoadBalancer(ctx context.Context, name string) error {
