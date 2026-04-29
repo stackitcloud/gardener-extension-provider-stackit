@@ -77,7 +77,7 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 	}
 	a.Client.Scheme().Default(providerConfig)
 
-	if errs := validation.ValidateSelfHostedShootExposureConfig(providerConfig, field.NewPath("spec.providerConfig")); len(errs) > 0 {
+	if errs := validation.ValidateSelfHostedShootExposureConfig(providerConfig, field.NewPath("spec", "providerConfig")); len(errs) > 0 {
 		return nil, fmt.Errorf("invalid providerConfig: %w", errs.ToAggregate())
 	}
 

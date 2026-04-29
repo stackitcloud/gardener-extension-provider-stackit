@@ -47,11 +47,10 @@ func (r *Resources) reconcileLoadBalancer(ctx context.Context, log logr.Logger) 
 	if !r.loadBalancerNeedsUpdate(targets) {
 		return nil
 	}
-	// STACKIT's UpdateLoadBalancer is a single PUT covering all managed fields (targets, plan,
-	// ACL). UpdateLoadBalancerTargetPool would also work for target-only changes, but it returns
-	// only the TargetPool — we'd still need a follow-up GET to refresh r.LoadBalancer for the
-	// readiness check, so it costs an extra round-trip without a server-side latency win
-	// (STACKIT transitions the LB to PENDING on either write).
+	// STACKIT also exposes a partial target-pool update endpoint, but it returns only the
+	// TargetPool — we'd still need a follow-up GET to refresh r.LoadBalancer for the readiness
+	// check, so it costs an extra round-trip without a server-side latency win (STACKIT
+	// transitions the LB to PENDING on either write). Use the full PUT instead.
 	return r.updateLoadBalancer(ctx, log, targets)
 }
 
