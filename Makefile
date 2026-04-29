@@ -20,8 +20,6 @@ LEADER_ELECTION             := false
 REGION             := eu01
 FLOATING_POOL_NAME := floating-net
 
-INFRA_TEST_FLAGS   := --region='$(REGION)'
-
 SHELL=/usr/bin/env bash -o pipefail
 
 #########################################
@@ -164,6 +162,16 @@ verify: check check-format test ## Run check, format and test
 .PHONY: verify-extended
 verify-extended: check-generate check check-format test ## Run check-generate, check, format and test
 
+.PHONY: test-integration
+test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run all integration tests
+	@GINKGO=$(GINKGO) ./hack/test-integration.sh \
+		-v --show-node-events \
+		--procs 2 --timeout 20m \
+		--grace-period 3m \
+		./test/integration/... \
+		-- \
+		--region='$(REGION)'
+
 .PHONY: test-integration-infra
 test-integration-infra: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run infrastructure integration tests
 	@GINKGO=$(GINKGO) ./hack/test-integration.sh \
@@ -172,7 +180,7 @@ test-integration-infra: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run in
 		--grace-period 3m \
 		./test/integration/infrastructure/stackit \
 		-- \
-		$(INFRA_TEST_FLAGS)
+		--region='$(REGION)'
 
 .PHONY: test-integration-exposure
 test-integration-exposure: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run selfhostedshootexposure integration tests
@@ -182,7 +190,7 @@ test-integration-exposure: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run
 		--grace-period 3m \
 		./test/integration/selfhostedshootexposure/stackit \
 		-- \
-		$(EXPOSURE_TEST_FLAGS)
+		--region='$(REGION)'
 
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
