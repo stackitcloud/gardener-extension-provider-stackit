@@ -199,11 +199,17 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			infraCtrlOpts.Completed().Apply(&infrastructure.DefaultAddOptions.Controller)
 			workerCtrlOpts.Completed().Apply(&stackitworker.DefaultAddOptions.Controller)
 
-			reconcileOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.IgnoreOperationAnnotation, &stackitbastion.DefaultAddOptions.ExtensionClasses)
-			reconcileOpts.Completed().Apply(&stackitcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation, &stackitcontrolplane.DefaultAddOptions.ExtensionClasses)
-			reconcileOpts.Completed().Apply(&stackitdnsrecord.DefaultAddOptions.IgnoreOperationAnnotation, &stackitdnsrecord.DefaultAddOptions.ExtensionClasses)
-			reconcileOpts.Completed().Apply(&infrastructure.DefaultAddOptions.IgnoreOperationAnnotation, &infrastructure.DefaultAddOptions.ExtensionClasses)
-			reconcileOpts.Completed().Apply(&stackitworker.DefaultAddOptions.IgnoreOperationAnnotation, &stackitworker.DefaultAddOptions.ExtensionClasses)
+			reconcileOpts.Completed().Apply(&stackitbastion.DefaultAddOptions.IgnoreOperationAnnotation)
+			reconcileOpts.Completed().Apply(&stackitcontrolplane.DefaultAddOptions.IgnoreOperationAnnotation)
+			reconcileOpts.Completed().Apply(&stackitdnsrecord.DefaultAddOptions.IgnoreOperationAnnotation)
+			reconcileOpts.Completed().Apply(&infrastructure.DefaultAddOptions.IgnoreOperationAnnotation)
+			reconcileOpts.Completed().Apply(&stackitworker.DefaultAddOptions.IgnoreOperationAnnotation)
+
+			stackitbastion.DefaultAddOptions.ExtensionClasses = generalOpts.Completed().ExtensionClasses
+			stackitcontrolplane.DefaultAddOptions.ExtensionClasses = generalOpts.Completed().ExtensionClasses
+			stackitdnsrecord.DefaultAddOptions.ExtensionClasses = generalOpts.Completed().ExtensionClasses
+			infrastructure.DefaultAddOptions.ExtensionClasses = generalOpts.Completed().ExtensionClasses
+			stackitworker.DefaultAddOptions.ExtensionClasses = generalOpts.Completed().ExtensionClasses
 
 			stackitworker.DefaultAddOptions.GardenCluster = gardenCluster
 			stackitworker.DefaultAddOptions.SelfHostedShootCluster = generalOpts.Completed().SelfHostedShootCluster
