@@ -17,7 +17,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/nodemanagement/machinecontrollermanager"
-	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -153,15 +152,9 @@ func (e *ensurer) EnsureKubeControllerManagerDeployment(_ context.Context, _ gco
 	return nil
 }
 
-func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, k8sVersion *semver.Version) {
+func ensureKubeAPIServerCommandLineArgs(c *corev1.Container, _ *semver.Version) {
 	c.Command = extensionswebhook.EnsureNoStringWithPrefix(c.Command, "--cloud-provider=")
 	c.Command = extensionswebhook.EnsureNoStringWithPrefix(c.Command, "--cloud-config=")
-	if versionutils.ConstraintK8sLess131.Check(k8sVersion) {
-		c.Command = extensionswebhook.EnsureNoStringWithPrefixContains(c.Command, "--enable-admission-plugins=",
-			"PersistentVolumeLabel", ",")
-		c.Command = extensionswebhook.EnsureStringWithPrefixContains(c.Command, "--disable-admission-plugins=",
-			"PersistentVolumeLabel", ",")
-	}
 }
 
 func ensureKubeControllerManagerCommandLineArgs(c *corev1.Container) {
