@@ -8,8 +8,20 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// DefaultLoadBalancerPlanID is the default LB service plan for SelfHostedShootExposure.
+const DefaultLoadBalancerPlanID = "p10"
+
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+func SetDefaults_SelfHostedShootExposureConfig(obj *SelfHostedShootExposureConfig) {
+	if obj.LoadBalancer == nil {
+		obj.LoadBalancer = &LoadBalancer{}
+	}
+	if obj.LoadBalancer.PlanID == nil {
+		obj.LoadBalancer.PlanID = new(DefaultLoadBalancerPlanID)
+	}
 }
 
 func SetDefaults_ControlPlaneConfig(obj *ControlPlaneConfig) {

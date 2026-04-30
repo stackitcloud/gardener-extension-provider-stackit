@@ -16,9 +16,16 @@ import (
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
 	scheme.AddTypeDefaultingFunc(&ControlPlaneConfig{}, func(obj interface{}) { SetObjectDefaults_ControlPlaneConfig(obj.(*ControlPlaneConfig)) })
+	scheme.AddTypeDefaultingFunc(&SelfHostedShootExposureConfig{}, func(obj interface{}) {
+		SetObjectDefaults_SelfHostedShootExposureConfig(obj.(*SelfHostedShootExposureConfig))
+	})
 	return nil
 }
 
 func SetObjectDefaults_ControlPlaneConfig(in *ControlPlaneConfig) {
 	SetDefaults_ControlPlaneConfig(in)
+}
+
+func SetObjectDefaults_SelfHostedShootExposureConfig(in *SelfHostedShootExposureConfig) {
+	SetDefaults_SelfHostedShootExposureConfig(in)
 }
