@@ -8,11 +8,10 @@ import (
 	configv1alpha1 "github.com/gardener/gardener-extension-os-coreos/pkg/controller/config/v1alpha1"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	testutils "github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	mockmanager "github.com/gardener/gardener/third_party/mock/controller-runtime/manager"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -31,22 +30,18 @@ var _ = Describe("Shoot mutator", func() {
 			oldShoot     *gardencorev1beta1.Shoot
 			ctx          = context.TODO()
 			now          = metav1.Now()
-			ctrl         *gomock.Controller
-			mgr          *mockmanager.MockManager
+			mgr          *testutils.FakeManager
 
 			// Define the expected ProviderConfig RawExtension for PTP disabled
 			expectedPTPDisabledProviderConfig *runtime.RawExtension
 		)
 
 		BeforeEach(func() {
-			ctrl = gomock.NewController(GinkgoT())
-
 			scheme := runtime.NewScheme()
 			Expect(gardencorev1beta1.AddToScheme(scheme)).To(Succeed())
 			Expect(configv1alpha1.AddToScheme(scheme)).To(Succeed())
 
-			mgr = mockmanager.NewMockManager(ctrl)
-			mgr.EXPECT().GetScheme().Return(scheme).AnyTimes()
+			mgr = &testutils.FakeManager{Scheme: scheme}
 
 			shootMutator = NewShootMutator(mgr)
 
@@ -107,10 +102,6 @@ var _ = Describe("Shoot mutator", func() {
 
 			// oldShoot should typically mirror initial shoot state for updates
 			oldShoot = shoot.DeepCopy()
-		})
-
-		AfterEach(func() {
-			ctrl.Finish()
 		})
 
 		Context("General Shoot Mutator Conditions", func() {

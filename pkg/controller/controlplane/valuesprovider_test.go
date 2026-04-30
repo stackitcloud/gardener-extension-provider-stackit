@@ -21,7 +21,6 @@ import (
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
 	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
-	mockmanager "github.com/gardener/gardener/third_party/mock/controller-runtime/manager"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -144,7 +143,7 @@ var _ = Describe("ValuesProvider", func() {
 
 		vp  genericactuator.ValuesProvider
 		c   *mockclient.MockClient
-		mgr *mockmanager.MockManager
+		mgr *testutils.FakeManager
 
 		cp = defaultControlPlane()
 
@@ -312,9 +311,8 @@ var _ = Describe("ValuesProvider", func() {
 		fakeClient = fakeclient.NewClientBuilder().Build()
 		fakeSecretsManager = fakesecretsmanager.New(fakeClient, namespace)
 
-		mgr = mockmanager.NewMockManager(ctrl)
-		mgr.EXPECT().GetClient().Return(c)
-		mgr.EXPECT().GetScheme().Return(scheme)
+		mgr = &testutils.FakeManager{Scheme: scheme, Client: c}
+
 		vp = NewValuesProvider(mgr, true, "kubernetes.io")
 	})
 
@@ -662,9 +660,6 @@ var _ = Describe("ValuesProvider", func() {
 
 				testCluster.CloudProfile = cloudProfile
 
-				mgr.EXPECT().GetClient().Return(c)
-				mgr.EXPECT().GetScheme().Return(scheme)
-
 				if expectedControllers == nil {
 					stackitCCMDeletion(ctx, c)
 				}
@@ -780,9 +775,6 @@ var _ = Describe("ValuesProvider", func() {
 					*cloudProfile = *cluster.CloudProfile
 				}
 				testCluster.CloudProfile = cloudProfile
-
-				mgr.EXPECT().GetClient().Return(c)
-				mgr.EXPECT().GetScheme().Return(scheme)
 
 				vpCustomDomain := NewValuesProvider(mgr, true, customDomain)
 				values, err := vpCustomDomain.GetControlPlaneChartValues(ctx, cp, &testCluster, fakeSecretsManager, checksums, false)
