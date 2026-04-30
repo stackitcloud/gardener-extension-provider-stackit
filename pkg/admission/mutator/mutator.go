@@ -26,9 +26,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
-		Provider: stackit.Type,
-		Name:     Name,
-		Path:     "/webhooks/mutate",
+		Name: Name,
+		Path: "/webhooks/mutate",
 		Mutators: map[extensionswebhook.Mutator][]extensionswebhook.Type{
 			NewShootMutator(mgr):                  {{Obj: &gardencorev1beta1.Shoot{}}},
 			NewNamespacedCloudProfileMutator(mgr): {{Obj: &gardencorev1beta1.NamespacedCloudProfile{}, Subresource: new("status")}},
