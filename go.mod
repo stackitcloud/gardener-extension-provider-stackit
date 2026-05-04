@@ -3,7 +3,7 @@ module github.com/stackitcloud/gardener-extension-provider-stackit/v2
 go 1.26.1
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.36.3
 	github.com/gardener/gardener v1.141.1
