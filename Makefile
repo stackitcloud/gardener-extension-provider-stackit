@@ -188,7 +188,7 @@ test-integration-exposure: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) $(GINKGO) ## Run
 		-v --show-node-events \
 		--timeout 20m \
 		--grace-period 3m \
-		./test/integration/selfhostedshootexposure/stackit \
+		./test/integration/selfhostedshootexposure \
 		-- \
 		--region='$(REGION)'
 
