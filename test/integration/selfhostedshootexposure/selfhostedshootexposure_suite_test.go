@@ -1,4 +1,4 @@
-package stackit
+package selfhostedshootexposure
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSelfHostedShootExposure(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "STACKIT SelfHostedShootExposure Controller Suite")
+	RunSpecs(t, "SelfHostedShootExposure Controller Suite")
 }

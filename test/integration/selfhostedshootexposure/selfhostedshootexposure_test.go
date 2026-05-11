@@ -1,4 +1,4 @@
-package stackit
+package selfhostedshootexposure
 
 import (
 	"bytes"
