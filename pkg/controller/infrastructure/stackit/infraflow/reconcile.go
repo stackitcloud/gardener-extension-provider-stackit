@@ -267,11 +267,17 @@ func (fctx *FlowContext) ensureSecGroup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	emptyRules := []iaas.SecurityGroupRule{}
 	// Delete default egress rules
-	err = fctx.iaasClient.ReconcileSecurityGroupRules(ctx, log, created, []iaas.SecurityGroupRule{})
+	err = fctx.iaasClient.ReconcileSecurityGroupRules(ctx, log, created, emptyRules)
 	if err != nil {
 		return err
 	}
+
+	// clear rules on struct before saving in state
+	created.SetRules(emptyRules)
+
 	fctx.state.Set(IdentifierSecGroup, created.GetId())
 	fctx.state.Set(NameSecGroup, created.GetName())
 	fctx.state.SetObject(ObjectSecGroup, created)
