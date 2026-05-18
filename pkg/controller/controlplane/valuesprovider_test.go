@@ -555,6 +555,7 @@ var _ = Describe("ValuesProvider", func() {
 					"replicas": 1,
 					"podAnnotations": map[string]any{
 						"checksum/secret-" + openstack.CloudProviderCSIDiskConfigName: checksums[openstack.CloudProviderCSIDiskConfigName],
+						"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
 					},
 					"projectID":         string(cpSecret.Data[stackit.ProjectID]),
 					"region":            "eu01",
