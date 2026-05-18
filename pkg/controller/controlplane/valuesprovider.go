@@ -477,8 +477,7 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 	checksums[openstack.CloudProviderCSIDiskConfigName] = gardenerutils.ComputeChecksum(cpDiskConfigSecret.Data)
 	credentials, _ := vp.getCredentials(ctx, cp) // ignore missing credentials
 
-	// TODO: The comment says ignore, but is this actually ignored?! If the secret can't be retrieved??? Same as above.
-	stackitCredentials, err := vp.getSTACKITCredentials(ctx, cp) // ignore missing credentials
+	stackitCredentials, err := vp.getSTACKITCredentials(ctx, cp)
 	if err != nil {
 		return nil, fmt.Errorf("getting STACKIT credentials: %w", err)
 	}
