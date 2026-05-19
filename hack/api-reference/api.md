@@ -108,6 +108,44 @@ string
 </table>
 
 
+<h3 id="accesscontrol">AccessControl
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#loadbalancer">LoadBalancer</a>)
+</p>
+
+<p>
+AccessControl restricts access to the load balancer by source IP range.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>allowedSourceRanges</code></br>
+<em>
+string array
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>AllowedSourceRanges is the list of CIDRs permitted to reach the load balancer.<br />An empty or missing list means no source-IP restriction is applied.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
 <h3 id="applicationloadbalancerconfig">ApplicationLoadBalancerConfig
 </h3>
 
@@ -971,6 +1009,56 @@ string
 </table>
 
 
+<h3 id="loadbalancer">LoadBalancer
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#selfhostedshootexposureconfig">SelfHostedShootExposureConfig</a>)
+</p>
+
+<p>
+LoadBalancer contains configuration for the load balancer.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>planID</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>PlanID specifies the service plan (size) of the load balancer.<br />Currently supported plans are p10, p50, p250, p750 (compare API docs).<br />See https://docs.stackit.cloud/products/network/load-balancing-and-content-delivery/network-load-balancer/reference/service-plans/<br />Defaults to "p10".</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>accessControl</code></br>
+<em>
+<a href="#accesscontrol">AccessControl</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>AccessControl restricts which source IP ranges may reach the load balancer.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
 <h3 id="machineimage">MachineImage
 </h3>
 
@@ -1679,6 +1767,40 @@ string
 </td>
 <td>
 <p>Name is the security group name.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="selfhostedshootexposureconfig">SelfHostedShootExposureConfig
+</h3>
+
+
+<p>
+SelfHostedShootExposureConfig contains configuration settings for exposing self-hosted shoots.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>loadBalancer</code></br>
+<em>
+<a href="#loadbalancer">LoadBalancer</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>LoadBalancer contains configuration for the load balancer.</p>
 </td>
 </tr>
 
