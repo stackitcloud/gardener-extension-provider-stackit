@@ -2,10 +2,12 @@ package selfhostedshootexposure_test
 
 import (
 	"context"
+	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,7 +118,7 @@ var _ = Describe("Options", func() {
 		Expect(opts).To(Equal(&Options{
 			SelfHostedShootExposure: exposure,
 			ProjectID:               projectID,
-			ResourceName:            "shoot--garden--hops-exposure-test-exposure",
+			ResourceName:            "shoot--garden--hops-exp-test-exposure",
 			Labels: map[string]string{
 				"cluster.stackit.cloud":  "shoot--garden--hops",
 				"exposure.stackit.cloud": "test-exposure",
@@ -168,6 +170,37 @@ var _ = Describe("Options", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(opts.Region).To(Equal("eu01"))
+	})
+
+	It("should keep ResourceName ≤ 63 chars and append a hash when truncation is needed", func() {
+		// Worst-case shoot technicalID (project+shoot combined ≤ 21 chars per the STACKIT shoot
+		// validator) + a long exposure name forces the truncation+hash branch.
+		shoot.Status.TechnicalID = "shoot--p123456789--s1234567890" // 30 chars (project=10, shoot=11)
+		exposure.Name = "very-long-exposure-name-that-pushes-us-over-the-dns-label-limit"
+
+		opts, err := a.DetermineOptions(ctx, exposure, cluster, projectID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(opts.ResourceName)).To(BeNumerically("<=", 63))
+		Expect(opts.ResourceName).To(HavePrefix("shoot--p123456789--s1234567890-exp-"))
+		// First 8 hex chars of SHA-256(exposure.Name) — kept stable across reconciles.
+		Expect(opts.ResourceName).To(HaveSuffix("-" + gardenerutils.ComputeSHA256Hex([]byte(exposure.Name))[:8]))
+	})
+
+	It("should not produce a trailing hyphen when truncating mid-hyphen", func() {
+		// The cut position may change when component lengths change (e.g. tighter project/shoot
+		// name rules, or a different infix), so pinning a single magic exposure.Name would
+		// silently stop exercising the trim-trailing-hyphen path. Instead, sweep hyphen positions
+		// across the whole exposure name so at least one input lands on the cut boundary.
+		shoot.Status.TechnicalID = "shoot--p123456789--s1234567890"
+		for i := 1; i < 50; i++ {
+			exposure.Name = strings.Repeat("x", i) + "-" + strings.Repeat("y", 60)
+
+			opts, err := a.DetermineOptions(ctx, exposure, cluster, projectID)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(opts.ResourceName)).To(BeNumerically("<=", 63), opts.ResourceName)
+			// No run of two hyphens introduced by trimming a truncated hyphen.
+			Expect(opts.ResourceName).NotTo(MatchRegexp(`-exp-.*--`), opts.ResourceName)
+		}
 	})
 
 	It("should set flat STACKIT LB label keys (no '/' — rejected by STACKIT LB API)", func() {

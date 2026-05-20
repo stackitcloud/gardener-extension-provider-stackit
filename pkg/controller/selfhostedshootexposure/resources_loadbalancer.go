@@ -153,14 +153,27 @@ func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 }
 
 // loadBalancerNeedsUpdate reports whether any controller-managed field of the LB (targets,
-// plan, ACL) differs from the desired state. Caller must guarantee r.LoadBalancer is non-nil.
+// plan, port, ACL) differs from the desired state. Caller must guarantee r.LoadBalancer is non-nil.
 func (r *Resources) loadBalancerNeedsUpdate(specTargets []loadbalancer.Target) bool {
-	return r.targetsNeedUpdate(specTargets) || r.planNeedsUpdate() || r.accessControlNeedsUpdate()
+	return r.targetsNeedUpdate(specTargets) || r.planNeedsUpdate() || r.portNeedsUpdate() || r.accessControlNeedsUpdate()
 }
 
 // planNeedsUpdate checks for an existing LB if its current plan needs to be updated.
 func (r *Resources) planNeedsUpdate() bool {
 	return ptr.Deref(r.LoadBalancer.PlanId, "") != r.PlanID
+}
+
+// portNeedsUpdate reports whether the desired Spec.Port differs from either the LB's first
+// listener port or its first target pool's TargetPort.
+func (r *Resources) portNeedsUpdate() bool {
+	desired := r.SelfHostedShootExposure.Spec.Port
+	if len(r.LoadBalancer.Listeners) == 0 || ptr.Deref(r.LoadBalancer.Listeners[0].Port, 0) != desired {
+		return true
+	}
+	if len(r.LoadBalancer.TargetPools) == 0 || ptr.Deref(r.LoadBalancer.TargetPools[0].TargetPort, 0) != desired {
+		return true
+	}
+	return false
 }
 
 // accessControlNeedsUpdate reports whether the LB's currently configured source-IP allowlist

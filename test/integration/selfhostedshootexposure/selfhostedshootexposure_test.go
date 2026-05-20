@@ -50,7 +50,8 @@ const (
 	workerCIDR = "10.250.0.0/16"
 
 	// exposureName is the name of the SelfHostedShootExposure resource.
-	// The resulting LB name will be: "<technicalID>-exposure-<exposureName>"
+	// The resulting LB name will be: "<technicalID>-exp-<exposureName>"
+	// or "<technicalID>-exp-<exposureName-short>-<exposureName-hash> if the name is too long."
 	exposureName = "apiserver"
 )
 
@@ -115,7 +116,7 @@ var _ = BeforeSuite(func() {
 	lbClient, err = stackitclient.NewLoadBalancingClient(ctx, *region, endpoints, credentials)
 	Expect(err).NotTo(HaveOccurred())
 
-	repoRoot := filepath.Join("..", "..", "..", "..")
+	repoRoot := filepath.Join("..", "..", "..")
 
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName("selfhostedshootexposure-test")
@@ -202,8 +203,8 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 		suffix, err := gardenerutils.GenerateRandomStringFromCharset(5, "0123456789abcdefghijklmnopqrstuvwxyz")
 		Expect(err).NotTo(HaveOccurred())
 		namespaceName = "stackit--exp-it--" + suffix
-		// ResourceName = "<technicalID>-exposure-<exposureName>"
-		lbName = namespaceName + "-exposure-" + exposureName
+		// ResourceName = "<technicalID>-exp-<exposureName>"
+		lbName = namespaceName + "-exp-" + exposureName
 	})
 
 	AfterEach(func() {
@@ -527,6 +528,29 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(lbCheck.Version).NotTo(BeNil())
 			g.Expect(*lbCheck.Version).To(Equal(versionBeforeNoOp))
 		}).WithTimeout(30 * time.Second).WithPolling(5 * time.Second).Should(Succeed())
+
+		By("change port (mutable per SHSE contract — affects both listener and target pool)")
+		versionBeforePortChange := *lb.Version
+		patchExposureReconcile(exposure, func() {
+			exposure.Spec.Port = 8443
+		})
+
+		Eventually(func(g Gomega) {
+			var err error
+			lb, err = lbClient.GetLoadBalancer(ctx, lbName)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(lb.Listeners).To(HaveLen(1))
+			g.Expect(*lb.Listeners[0].Port).To(BeEquivalentTo(8443))
+			g.Expect(lb.TargetPools).To(HaveLen(1))
+			g.Expect(*lb.TargetPools[0].TargetPort).To(BeEquivalentTo(8443))
+
+			g.Expect(lb.Version).NotTo(BeNil())
+			g.Expect(*lb.Version).NotTo(Equal(versionBeforePortChange))
+
+			// Targets + plan untouched by a port-only change.
+			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
+			g.Expect(*lb.PlanId).To(Equal("p10"))
+		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
 		By("remove an endpoint")
 		versionBeforeRemove := versionBeforeNoOp

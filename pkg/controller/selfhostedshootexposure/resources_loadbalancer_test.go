@@ -156,9 +156,13 @@ var _ = Describe("reconcileLoadBalancer", func() {
 				PlanId:          new("p10"),
 				Version:         new("v1"),
 				ExternalAddress: new("203.0.113.1"),
+				Listeners: []loadbalancer.Listener{
+					{Port: new(int32(443))},
+				},
 				TargetPools: []loadbalancer.TargetPool{
 					{
-						Name: new("control-plane"),
+						Name:       new("control-plane"),
+						TargetPort: new(int32(443)),
 						Targets: []loadbalancer.Target{
 							{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 						},
@@ -202,6 +206,23 @@ var _ = Describe("reconcileLoadBalancer", func() {
 					Expect(payload.Options).NotTo(BeNil())
 					Expect(payload.Options.AccessControl).NotTo(BeNil())
 					Expect(payload.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("10.0.0.0/8", "172.16.0.0/12"))
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should update via UpdateLoadBalancer when only the port changed", func() {
+			r.SelfHostedShootExposure.Spec.Port = 8443
+
+			mockLBClient.EXPECT().
+				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					Expect(payload.Listeners).To(HaveLen(1))
+					Expect(*payload.Listeners[0].Port).To(BeEquivalentTo(8443))
+					Expect(payload.TargetPools).To(HaveLen(1))
+					Expect(*payload.TargetPools[0].TargetPort).To(BeEquivalentTo(8443))
 					return &loadbalancer.LoadBalancer{}, nil
 				})
 
@@ -496,6 +517,48 @@ var _ = Describe("targetsNeedUpdate", func() {
 			{Ip: new("10.0.1.10"), DisplayName: new("node-1")},
 			{Ip: new("10.0.1.20"), DisplayName: new("node-2")},
 		})).To(BeFalse())
+	})
+})
+
+var _ = Describe("portNeedsUpdate", func() {
+	var r *Resources
+
+	BeforeEach(func() {
+		r = &Resources{
+			Options: Options{
+				SelfHostedShootExposure: &extensionsv1alpha1.SelfHostedShootExposure{
+					Spec: extensionsv1alpha1.SelfHostedShootExposureSpec{Port: 443},
+				},
+			},
+			LoadBalancer: &loadbalancer.LoadBalancer{
+				Listeners:   []loadbalancer.Listener{{Port: new(int32(443))}},
+				TargetPools: []loadbalancer.TargetPool{{TargetPort: new(int32(443))}},
+			},
+		}
+	})
+
+	It("should return false when both listener port and target pool port match the spec", func() {
+		Expect(r.portNeedsUpdate()).To(BeFalse())
+	})
+
+	It("should return true when listener port differs from spec", func() {
+		r.LoadBalancer.Listeners[0].Port = new(int32(8443))
+		Expect(r.portNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when target pool TargetPort differs from spec", func() {
+		r.LoadBalancer.TargetPools[0].TargetPort = new(int32(8443))
+		Expect(r.portNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when LB has no listeners", func() {
+		r.LoadBalancer.Listeners = nil
+		Expect(r.portNeedsUpdate()).To(BeTrue())
+	})
+
+	It("should return true when LB has no target pools", func() {
+		r.LoadBalancer.TargetPools = nil
+		Expect(r.portNeedsUpdate()).To(BeTrue())
 	})
 })
 
