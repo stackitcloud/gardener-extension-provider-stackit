@@ -36,15 +36,17 @@ import (
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
-		logger:    logger.WithName("openstack-controlplane-ensurer"),
-		regCaches: regCaches,
+		logger: logger.WithName("openstack-controlplane-ensurer"),
+		regCacheEnsurer: &RegistryCacheMirrorEnsurer{
+			Caches: regCaches,
+		},
 	}
 }
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
-	logger    logr.Logger
-	regCaches []config.RegistryCacheConfiguration
+	logger          logr.Logger
+	regCacheEnsurer *RegistryCacheMirrorEnsurer
 }
 
 // ImageVector is exposed for testing.
@@ -286,12 +288,12 @@ ExecStart=/opt/bin/update-resolv-conf.sh
 }
 
 func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *[]extensionsv1alpha1.File) error {
-	return e.ensureAdditionalFilesForRegCaches(newObj)
+	return e.regCacheEnsurer.EnsureCaches(newObj)
 }
 
 // EnsureAdditionalFiles ensures that additional required system files are added.
 func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *[]extensionsv1alpha1.File) error {
-	if err := e.ensureAdditionalFilesForRegCaches(newObj); err != nil {
+	if err := e.regCacheEnsurer.EnsureCaches(newObj); err != nil {
 		return err
 	}
 	cloudProfileConfig, err := getCloudProfileConfig(ctx, gctx)

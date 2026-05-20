@@ -13,9 +13,13 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
 
-// ensureAdditionalFilesForRegCaches for the hosts config and optionally a custom CA.
-func (e *ensurer) ensureAdditionalFilesForRegCaches(files *[]extensionsv1alpha1.File) error {
-	for _, reg := range e.regCaches {
+type RegistryCacheMirrorEnsurer struct {
+	Caches []config.RegistryCacheConfiguration
+}
+
+// EnsureCaches ensures the containerd hosts config and optionally a custom CA .
+func (e *RegistryCacheMirrorEnsurer) EnsureCaches(files *[]extensionsv1alpha1.File) error {
+	for _, reg := range e.Caches {
 		if err := ensureHostsConfig(reg, files); err != nil {
 			return err
 		}
