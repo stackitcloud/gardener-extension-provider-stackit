@@ -1,4 +1,4 @@
-package controlplane
+package registrycache
 
 import (
 	"fmt"
@@ -13,12 +13,12 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
 
-type RegistryCacheMirrorEnsurer struct {
+type Ensurer struct {
 	Caches []config.RegistryCacheConfiguration
 }
 
 // EnsureCaches ensures the containerd hosts config and optionally a custom CA .
-func (e *RegistryCacheMirrorEnsurer) EnsureCaches(files *[]extensionsv1alpha1.File) error {
+func (e *Ensurer) EnsureCaches(files *[]extensionsv1alpha1.File) error {
 	for _, reg := range e.Caches {
 		if err := ensureHostsConfig(reg, files); err != nil {
 			return err

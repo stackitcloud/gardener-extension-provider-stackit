@@ -31,13 +31,14 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane/registrycache"
 )
 
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		logger: logger.WithName("openstack-controlplane-ensurer"),
-		regCacheEnsurer: &RegistryCacheMirrorEnsurer{
+		regCacheEnsurer: &registrycache.Ensurer{
 			Caches: regCaches,
 		},
 	}
@@ -46,7 +47,7 @@ func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logge
 type ensurer struct {
 	genericmutator.NoopEnsurer
 	logger          logr.Logger
-	regCacheEnsurer *RegistryCacheMirrorEnsurer
+	regCacheEnsurer *registrycache.Ensurer
 }
 
 // ImageVector is exposed for testing.
