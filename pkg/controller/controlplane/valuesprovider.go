@@ -851,6 +851,13 @@ func getSTACKITCCMChartValues(
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
 
+	var caBundle string
+	if cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster); err == nil {
+		if cloudProfileConfig.CABundle != nil {
+			caBundle = ptr.Deref(cloudProfileConfig.CABundle, "")
+		}
+	}
+
 	ccmConfig := map[string]any{
 		"stackitNetworkID": infra.Networks.ID,
 		"stackitRegion":    stackitRegion,
@@ -863,6 +870,11 @@ func getSTACKITCCMChartValues(
 			// utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
 		},
 		"customLabelDomain": customLabelDomain,
+	}
+
+	// Add extra CA to the pod's filesystem
+	if caBundle != "" {
+		ccmConfig["caCert"] = caBundle
 	}
 
 	if credentials.LoadBalancerAPIEmergencyToken != "" {

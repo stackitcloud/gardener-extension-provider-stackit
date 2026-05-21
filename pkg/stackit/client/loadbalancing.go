@@ -26,7 +26,7 @@ type loadBalancingClient struct {
 	region    string
 }
 
-func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (LoadBalancingClient, error) {
+func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (LoadBalancingClient, error) {
 	options := clientOptions(endpoints, credentials)
 
 	if endpoints.LoadBalancer != nil {
@@ -36,6 +36,12 @@ func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv
 	apiClient, err := loadbalancer.NewAPIClient(options...)
 	if err != nil {
 		return nil, err
+	}
+	if caBundle != "" {
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &loadBalancingClient{
 		Client:    apiClient.DefaultAPI,

@@ -13,7 +13,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
-func NewDNSClient(_ context.Context, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (DNSClient, error) {
+func NewDNSClient(_ context.Context, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (DNSClient, error) {
 	options := clientOptions(endpoints, credentials)
 
 	if endpoints.DNS != nil {
@@ -23,6 +23,12 @@ func NewDNSClient(_ context.Context, endpoints stackitv1alpha1.APIEndpoints, cre
 	apiClient, err := dns.NewAPIClient(options...)
 	if err != nil {
 		return nil, err
+	}
+	if caBundle != "" {
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &dnsClient{
 		api:       apiClient.DefaultAPI,

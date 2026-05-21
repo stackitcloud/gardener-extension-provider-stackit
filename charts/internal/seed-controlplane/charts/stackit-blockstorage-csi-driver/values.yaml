@@ -22,6 +22,7 @@ userAgentHeaders: []
 stackitEndpoints:
   tokenUrl: ""
   iaasUrl: ""
+  caCert: ""
 
 csiSnapshotController:
   replicas: 1

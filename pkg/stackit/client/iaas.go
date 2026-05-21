@@ -126,7 +126,7 @@ func (c iaasClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.N
 	return filteredNetworks, nil
 }
 
-func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (IaaSClient, error) {
+func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (IaaSClient, error) {
 	options := clientOptions(endpoints, credentials)
 
 	if endpoints.IaaS != nil {
@@ -140,6 +140,12 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 	apiClient, err := iaas.NewAPIClient(options...)
 	if err != nil {
 		return nil, err
+	}
+	if caBundle != "" {
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &iaasClient{
 		Client:    apiClient.DefaultAPI,
