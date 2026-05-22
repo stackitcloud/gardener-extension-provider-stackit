@@ -27,13 +27,13 @@ stringData:
 
 The service account needs the following permissions:
 
-| Permission                     | Purpose                                          |
-| ------------------------------ | ------------------------------------------------ |
-| `nlb.admin`                    | CCM service-controller and network load balancer |
-| `blockstorage.admin`           | CSI driver                                       |
-| `compute.admin`                | CCM node-controller and MCM                      |
-| `iaas.network.admin`           | bastion and infrastructure controller            |
-| `iaas.isoplated-network.admin` | infrastructure controller                        |
+| Permission                     | Purpose                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `nlb.admin`                    | CCM service-controller, network load balancer and self-hosted shoot exposure controller |
+| `blockstorage.admin`           | CSI driver                                                                              |
+| `compute.admin`                | CCM node-controller and MCM                                                             |
+| `iaas.network.admin`           | bastion and infrastructure controller                                                   |
+| `iaas.isolated-network.admin`  | infrastructure controller                                                               |
 
 ## CloudProfileConfig Fields
 
