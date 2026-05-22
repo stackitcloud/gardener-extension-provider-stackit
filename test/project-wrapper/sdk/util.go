@@ -8,6 +8,7 @@ import (
 var ServiceAccountRoles = []string{
 	"iaas.isolated-network.admin", // required by the infra controller
 	"iaas.network.admin",          // required by the infra controller
+	"nlb.admin",                   // required by the SelfHostedShootExposure controller
 }
 
 func GetMembersForRoles(subject string, roles set.Set[string]) []authorization.Member {
