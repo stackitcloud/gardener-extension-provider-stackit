@@ -13,20 +13,12 @@ import (
 	"github.com/go-logr/logr"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	loadbalancersdk "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer" //nolint:staticcheck // SA1019: see TODO below — v2api lacks the typed enum constants we need.
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
-	loadbalancerwait "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api/wait"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 )
 
-// TODO(jamand): drop the loadbalancersdk import once v2api re-exports the typed enum constants
-// (NetworkRole, ListenerProtocol, LoadBalancerErrorTypes). v2api currently weakened these to
-// *string (known openapi-generator limitation confirmed with the LB team); the authoritative
-// values still live in the deprecated top-level stackit-sdk-go/services/loadbalancer package,
-// scheduled for removal after 2026-09-30. We reference them here as the source of truth and
-// convert to string at the call sites.
 const (
 	// listenerName is the (single) hardcoded listener name for exposing the control plane API server.
 	listenerName = "control-plane"
@@ -106,7 +98,7 @@ func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, tar
 func (r *Resources) desiredNetworks() []loadbalancer.Network {
 	return []loadbalancer.Network{{
 		NetworkId: &r.NetworkID,
-		Role:      new(string(loadbalancersdk.NETWORKROLE_LISTENERS_AND_TARGETS)), //nolint:staticcheck // SA1019: see TODO at the top of the file.
+		Role:      new(loadbalancer.NETWORKROLE_ROLE_LISTENERS_AND_TARGETS),
 	}}
 }
 
@@ -115,7 +107,7 @@ func (r *Resources) desiredListeners() []loadbalancer.Listener {
 	return []loadbalancer.Listener{{
 		DisplayName: new(listenerName),
 		Port:        new(r.SelfHostedShootExposure.Spec.Port),
-		Protocol:    new(string(loadbalancersdk.LISTENERPROTOCOL_TCP)), //nolint:staticcheck // SA1019: see TODO at the top of the file.
+		Protocol:    new(loadbalancer.LISTENERPROTOCOL_PROTOCOL_TCP),
 		TargetPool:  new(targetPoolName),
 	}}
 }
@@ -202,7 +194,7 @@ func (r *Resources) checkLoadBalancerReady(log logr.Logger) error {
 	}
 
 	switch *r.LoadBalancer.Status {
-	case loadbalancerwait.LOADBALANCERSTATUS_READY:
+	case loadbalancer.LOADBALANCERSTATUS_STATUS_READY:
 		if r.LoadBalancer.ExternalAddress == nil {
 			return &reconcilerutils.RequeueAfterError{
 				RequeueAfter: 15 * time.Second,
@@ -210,12 +202,12 @@ func (r *Resources) checkLoadBalancerReady(log logr.Logger) error {
 			}
 		}
 		return nil
-	case loadbalancerwait.LOADBALANCERSTATUS_PENDING, loadbalancerwait.LOADBALANCERSTATUS_UNSPECIFIED:
+	case loadbalancer.LOADBALANCERSTATUS_STATUS_PENDING, loadbalancer.LOADBALANCERSTATUS_STATUS_UNSPECIFIED:
 		return &reconcilerutils.RequeueAfterError{
 			RequeueAfter: 15 * time.Second,
 			Cause:        fmt.Errorf("waiting for load balancer to become ready (status=%s)", *r.LoadBalancer.Status),
 		}
-	case loadbalancerwait.LOADBALANCERSTATUS_ERROR:
+	case loadbalancer.LOADBALANCERSTATUS_STATUS_ERROR:
 		if lbErrorsAllTransient(r.LoadBalancer.Errors) {
 			log.Info("Load balancer reports STATUS_ERROR with only transient errors, requeuing",
 				"loadBalancer", r.ResourceName, "errors", formatLBErrors(r.LoadBalancer.Errors))
@@ -225,7 +217,7 @@ func (r *Resources) checkLoadBalancerReady(log logr.Logger) error {
 			}
 		}
 		return fmt.Errorf("load balancer is in unrecoverable state %s: %s", *r.LoadBalancer.Status, formatLBErrors(r.LoadBalancer.Errors))
-	case loadbalancerwait.LOADBALANCERSTATUS_TERMINATING:
+	case loadbalancer.LOADBALANCERSTATUS_STATUS_TERMINATING:
 		return fmt.Errorf("load balancer is in unrecoverable state %s: %s", *r.LoadBalancer.Status, formatLBErrors(r.LoadBalancer.Errors))
 	default:
 		return fmt.Errorf("load balancer has unexpected status %s: %s", *r.LoadBalancer.Status, formatLBErrors(r.LoadBalancer.Errors))
@@ -243,7 +235,7 @@ func lbErrorsAllTransient(errs []loadbalancer.LoadBalancerError) bool {
 		if e.Type == nil {
 			return false
 		}
-		if *e.Type != string(loadbalancersdk.LOADBALANCERERRORTYPE_TARGET_NOT_ACTIVE) { //nolint:staticcheck // SA1019: see TODO at the top of the file.
+		if *e.Type != loadbalancer.LOADBALANCERERRORTYPE_TYPE_TARGET_NOT_ACTIVE {
 			return false
 		}
 	}
@@ -259,7 +251,7 @@ func formatLBErrors(errs []loadbalancer.LoadBalancerError) string {
 	for _, e := range errs {
 		t, d := "", ""
 		if e.Type != nil {
-			t = *e.Type
+			t = string(*e.Type)
 		}
 		if e.Description != nil {
 			d = *e.Description

@@ -415,7 +415,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(lb.Networks[0].NetworkId).NotTo(BeNil())
 			g.Expect(*lb.Networks[0].NetworkId).To(Equal(networkID))
 			g.Expect(lb.Networks[0].Role).NotTo(BeNil())
-			g.Expect(*lb.Networks[0].Role).To(Equal("ROLE_LISTENERS_AND_TARGETS"))
+			g.Expect(*lb.Networks[0].Role).To(Equal(loadbalancer.NETWORKROLE_ROLE_LISTENERS_AND_TARGETS))
 
 			// Listener
 			g.Expect(lb.Listeners).To(HaveLen(1))
@@ -424,7 +424,7 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(lb.Listeners[0].Port).NotTo(BeNil())
 			g.Expect(*lb.Listeners[0].Port).To(BeEquivalentTo(6443))
 			g.Expect(lb.Listeners[0].Protocol).NotTo(BeNil())
-			g.Expect(*lb.Listeners[0].Protocol).To(Equal("PROTOCOL_TCP"))
+			g.Expect(*lb.Listeners[0].Protocol).To(Equal(loadbalancer.LISTENERPROTOCOL_PROTOCOL_TCP))
 			g.Expect(lb.Listeners[0].TargetPool).NotTo(BeNil())
 			g.Expect(*lb.Listeners[0].TargetPool).To(Equal("control-plane"))
 
@@ -460,16 +460,16 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 
 			// Status — we don't require READY, but TERMINATING would be wrong
 			g.Expect(lb.Status).NotTo(BeNil())
-			g.Expect(*lb.Status).NotTo(Equal("STATUS_TERMINATING"))
+			g.Expect(*lb.Status).NotTo(Equal(loadbalancer.LOADBALANCERSTATUS_STATUS_TERMINATING))
 
 			// If STACKIT reports STATUS_ERROR, the only expected cause given fake target IPs is
 			// TYPE_TARGET_NOT_ACTIVE. Any other error type would mean the extension produced an
 			// unexpected LB spec (and is a test failure worth investigating).
-			if *lb.Status == "STATUS_ERROR" {
+			if *lb.Status == loadbalancer.LOADBALANCERSTATUS_STATUS_ERROR {
 				g.Expect(lb.Errors).NotTo(BeEmpty())
 				for _, e := range lb.Errors {
 					g.Expect(e.Type).NotTo(BeNil())
-					g.Expect(*e.Type).To(Equal("TYPE_TARGET_NOT_ACTIVE"))
+					g.Expect(*e.Type).To(Equal(loadbalancer.LOADBALANCERERRORTYPE_TYPE_TARGET_NOT_ACTIVE))
 				}
 			}
 		}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
