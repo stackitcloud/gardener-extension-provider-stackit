@@ -90,7 +90,6 @@
       matchPackageNames: [
         'europe-docker.pkg.dev/gardener-project/releases/gardener/machine-controller-manager-provider-openstack',
       ],
-      ignoreUnstable: false,
     },
     {
       groupName: 'Internal',
