@@ -71,7 +71,12 @@ func (c *dnsClient) ListZones(ctx context.Context) ([]DNSZone, error) {
 func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	zoneID, name, recordType string, wantedRecords []string, ttl int64,
 ) error {
-	recordSet, err := c.findRecordSet(ctx, zoneID, name, recordType)
+	recordSetType, err := dns.NewRecordSetTypeFromValue(recordType)
+	if err != nil || recordSetType == nil {
+		return fmt.Errorf("invalid DNS record type %q: %w", recordType, err)
+	}
+
+	recordSet, err := c.findRecordSet(ctx, zoneID, name, *recordSetType)
 	if err != nil {
 		return fmt.Errorf("failed to find record set: %w", err)
 	}
@@ -88,11 +93,16 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 		return err
 	}
 
+	payloadType, err := dns.NewCreateRecordSetPayloadTypeFromValue(recordType)
+	if err != nil || payloadType == nil {
+		return fmt.Errorf("invalid DNS record type %q for create payload: %w", recordType, err)
+	}
+
 	if recordSet == nil {
 		_, err := c.api.CreateRecordSet(ctx, c.projectID, zoneID).CreateRecordSetPayload(dns.CreateRecordSetPayload{
 			Name:    name,
 			Records: wantedRecordsPayload,
-			Type:    recordType,
+			Type:    *payloadType,
 			Ttl:     new(cacheTTL),
 		}).Execute()
 		if err != nil {
@@ -102,7 +112,6 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	}
 
 	if recordSet.GetTtl() == cacheTTL && areRecordsEqual(recordSet.GetRecords(), wantedRecords) {
-		// If TTL and records are the same, no update is necessary
 		return nil
 	}
 
@@ -119,7 +128,12 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 }
 
 func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordType string) error {
-	recordSet, err := c.findRecordSet(ctx, zoneID, name, recordType)
+	recordSetType, err := dns.NewRecordSetTypeFromValue(recordType)
+	if err != nil || recordSetType == nil {
+		return fmt.Errorf("invalid DNS record type %q: %w", recordType, err)
+	}
+
+	recordSet, err := c.findRecordSet(ctx, zoneID, name, *recordSetType)
 	if err != nil {
 		return fmt.Errorf("failed to find record set: %w", err)
 	}
@@ -134,7 +148,7 @@ func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordTyp
 	return nil
 }
 
-func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name, recordType string) (*dns.RecordSet, error) {
+func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name string, recordType dns.RecordSetType) (*dns.RecordSet, error) {
 	resp, err := c.api.ListRecordSets(ctx, c.projectID, zoneID).Execute()
 	if err != nil {
 		return nil, err
