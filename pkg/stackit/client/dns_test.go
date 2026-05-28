@@ -175,21 +175,21 @@ var _ = Describe("DNSClient", func() {
 		})
 
 		It("should return the correct A recordSet", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_A)
+			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_A.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).ToNot(BeNil())
 			Expect(recordSet.GetId()).To(Equal("active-a-uuid"))
 		})
 
 		It("should return the correct TXT recordSet", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_TXT)
+			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_TXT.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).ToNot(BeNil())
 			Expect(recordSet.GetId()).To(Equal("active-txt-uuid"))
 		})
 
 		It("should return nil if nothing matches", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "non-existant.example.com.", dns.RECORDSETTYPE_A)
+			recordSet, err := client.findRecordSet(ctx, "zone1", "non-existant.example.com.", dns.RECORDSETTYPE_A.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).To(BeNil())
 		})

@@ -76,7 +76,7 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 		return fmt.Errorf("invalid DNS record type %q: %w", recordType, err)
 	}
 
-	recordSet, err := c.findRecordSet(ctx, zoneID, name, *recordSetType)
+	recordSet, err := c.findRecordSet(ctx, zoneID, name, recordSetType)
 	if err != nil {
 		return fmt.Errorf("failed to find record set: %w", err)
 	}
@@ -133,7 +133,7 @@ func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordTyp
 		return fmt.Errorf("invalid DNS record type %q: %w", recordType, err)
 	}
 
-	recordSet, err := c.findRecordSet(ctx, zoneID, name, *recordSetType)
+	recordSet, err := c.findRecordSet(ctx, zoneID, name, recordSetType)
 	if err != nil {
 		return fmt.Errorf("failed to find record set: %w", err)
 	}
@@ -148,7 +148,7 @@ func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordTyp
 	return nil
 }
 
-func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name string, recordType dns.RecordSetType) (*dns.RecordSet, error) {
+func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name string, recordType *dns.RecordSetType) (*dns.RecordSet, error) {
 	resp, err := c.api.ListRecordSets(ctx, c.projectID, zoneID).Execute()
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name string, reco
 		if strings.TrimSuffix(recordSet.GetName(), ".") != name {
 			continue
 		}
-		if recordSet.GetType() != recordType {
+		if recordType == nil || recordSet.GetType() != *recordType {
 			continue
 		}
 		return &recordSet, nil
