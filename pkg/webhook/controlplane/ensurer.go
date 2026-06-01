@@ -98,6 +98,11 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 		}
 	}
 
+	sidecarContainer.Command = extensionswebhook.EnsureStringWithPrefix(
+		sidecarContainer.Command,
+		"--resource-exhausted-retry=", "20m",
+	)
+
 	newObj.Spec.Template.Spec.Containers = extensionswebhook.EnsureContainerWithName(
 		newObj.Spec.Template.Spec.Containers,
 		sidecarContainer,
