@@ -44,15 +44,10 @@ type Options struct {
 }
 
 func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1alpha1.Bastion, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
-	bastionName := fmt.Sprintf("%s-bastion-%s", cluster.Shoot.Status.TechnicalID, bastion.Name)
-	if len(bastionName) > 63 {
-		bastionName = stackitclient.BuildResourceName(cluster.Shoot.Status.TechnicalID, "-bastion-", bastion.Name)
-	}
-
 	opts := &Options{
 		Bastion:      bastion,
 		ProjectID:    projectID,
-		ResourceName: bastionName,
+		ResourceName: stackitclient.BuildResourceName(cluster.Shoot.Status.TechnicalID, "-bastion-", bastion.Name),
 		Labels: map[string]string{
 			utils.ClusterLabelKey(a.CustomLabelDomain):          cluster.Shoot.Status.TechnicalID,
 			utils.BuildLabelKey(a.CustomLabelDomain, "bastion"): bastion.Name,
