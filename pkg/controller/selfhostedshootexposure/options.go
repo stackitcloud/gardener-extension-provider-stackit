@@ -6,7 +6,6 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/controlplane"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 const (

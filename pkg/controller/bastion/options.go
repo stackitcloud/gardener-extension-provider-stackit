@@ -10,12 +10,12 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
@@ -44,7 +44,6 @@ type Options struct {
 }
 
 func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1alpha1.Bastion, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
-
 	bastionName := fmt.Sprintf("%s-bastion-%s", cluster.Shoot.Status.TechnicalID, bastion.Name)
 	if len(bastionName) > 63 {
 		bastionName = stackitclient.BuildResourceName(cluster.Shoot.Status.TechnicalID, "-bastion-", bastion.Name)
