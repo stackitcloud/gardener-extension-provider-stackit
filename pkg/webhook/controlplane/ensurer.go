@@ -98,8 +98,8 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 		}
 	}
 
-	sidecarContainer.Command = extensionswebhook.EnsureStringWithPrefix(
-		sidecarContainer.Command,
+	sidecarContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+		sidecarContainer.Args,
 		"--resource-exhausted-retry=", "20m",
 	)
 
