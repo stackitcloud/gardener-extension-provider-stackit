@@ -9,6 +9,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -239,6 +240,25 @@ var _ = Describe("Options", func() {
 			ResourceName: "shoot--garden--hops-bastion-foo",
 			Labels: map[string]string{
 				"kubernetes.io/cluster": "shoot--garden--hops",
+				"kubernetes.io/bastion": "foo",
+			},
+			Region:                "eu01",
+			AvailabilityZone:      "eu01-1",
+			MachineType:           "c1i.2",
+			ImageID:               "eu01-flatcar-1.1.0",
+			NetworkID:             "network-id",
+			WorkerSecurityGroupID: "security-group-id-nodes",
+		}))
+	})
+	It("should correctly generate a valid bastion name", func() {
+		shoot.Status.TechnicalID = "something-very-very-very-very-very-very-very-very-long"
+		bastionName := stackitclient.BuildResourceName(shoot.Status.TechnicalID, "-bastion-", bastion.Name)
+		Expect(a.DetermineOptions(ctx, bastion, cluster, projectID)).To(Equal(&Options{
+			Bastion:      bastion,
+			ProjectID:    projectID,
+			ResourceName: bastionName,
+			Labels: map[string]string{
+				"kubernetes.io/cluster": "something-very-very-very-very-very-very-very-very-long",
 				"kubernetes.io/bastion": "foo",
 			},
 			Region:                "eu01",

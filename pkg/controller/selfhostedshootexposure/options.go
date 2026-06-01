@@ -3,12 +3,10 @@ package selfhostedshootexposure
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	gardenerutils "github.com/gardener/gardener/pkg/utils"
-	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,10 +22,6 @@ const (
 
 	// resourceNameInfix separates the technical ID from the exposure name in the LB resource name.
 	resourceNameInfix = "-exp-"
-	// resourceNameHashLength is the number of hex chars from SHA-256(exposure.Name) appended when
-	// the unabridged name would exceed validation.DNS1123LabelMaxLength. 8 hex chars = 32 bits,
-	// plenty of collision resistance for "names sharing a prefix on the same shoot".
-	resourceNameHashLength = 8
 )
 
 // Options contains all input required for creating a STACKIT LB for a self-hosted shoot on STACKIT.
@@ -57,7 +51,7 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 	opts := &Options{
 		SelfHostedShootExposure: exposure,
 		ProjectID:               projectID,
-		ResourceName:            buildResourceName(cluster.Shoot.Status.TechnicalID, exposure.Name),
+		ResourceName:            stackitclient.BuildResourceName(cluster.Shoot.Status.TechnicalID, resourceNameInfix, exposure.Name),
 		// STACKIT LB labels do not allow '/' in keys, so we use the flat dot-separated form
 		// matching the convention used for other STACKIT LBs (CCM extraLabels in
 		// controlplane.valuesprovider, infrastructure cleanup in infraflow/delete.go).
@@ -98,22 +92,6 @@ func (a *Actuator) DetermineOptions(ctx context.Context, exposure *extensionsv1a
 	}
 
 	return opts, nil
-}
-
-// buildResourceName returns "<technicalID>-exp-<exposureName>" if it fits within
-// apivalidation.DNS1123LabelMaxLength, otherwise truncates the exposure name and appends an
-// 8-char SHA-256 suffix of the original exposure name to keep the result unique and DNS-compliant.
-func buildResourceName(technicalID, exposureName string) string {
-	full := technicalID + resourceNameInfix + exposureName
-	if len(full) <= utilvalidation.DNS1123LabelMaxLength {
-		return full
-	}
-
-	hash := gardenerutils.ComputeSHA256Hex([]byte(exposureName))[:resourceNameHashLength]
-	budget := max(0, utilvalidation.DNS1123LabelMaxLength-len(technicalID)-len(resourceNameInfix)-resourceNameHashLength-1)
-	// strings.TrimRight strips trailing hyphens after truncation to keep the result DNS-1123 compliant.
-	truncated := strings.TrimRight(exposureName[:budget], "-")
-	return technicalID + resourceNameInfix + truncated + "-" + hash
 }
 
 func getInfrastructureStatus(ctx context.Context, c client.Client, cluster *extensionscontroller.Cluster) (*stackitv1alpha1.InfrastructureStatus, error) {
