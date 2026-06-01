@@ -52,46 +52,52 @@ var _ = Describe("DNSClient", func() {
 	})
 
 	Describe("CreateOrUpdate Record", func() {
-		BeforeEach(func() {
-			mockAPI.EXPECT().ListRecordSets(ctx, client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
-			mockAPI.EXPECT().ListRecordSetsExecute(gomock.Any()).Return(&dns.ListRecordSetsResponse{
-				RrSets: []dns.RecordSet{
-					{
-						Name:    "test.example.com.",
-						Active:  new(true),
-						Type:    "A",
-						Records: []dns.Record{{Content: "1.1.1.1"}},
-						Id:      "some-uuid",
-						Ttl:     300,
+		Context("with a supported record type", func() {
+			BeforeEach(func() {
+				mockAPI.EXPECT().ListRecordSets(ctx, client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().ListRecordSetsExecute(gomock.Any()).Return(&dns.ListRecordSetsResponse{
+					RrSets: []dns.RecordSet{
+						{
+							Name:    "test.example.com.",
+							Active:  new(true),
+							Type:    dns.RECORDSETTYPE_A,
+							Records: []dns.Record{{Content: "1.1.1.1"}},
+							Id:      "some-uuid",
+							Ttl:     300,
+						},
+						{
+							Name:    "test.example.com.",
+							Active:  new(false),
+							Type:    dns.RECORDSETTYPE_A,
+							Records: []dns.Record{{Content: "4.4.4.4"}},
+							Id:      "some-uuid2",
+							Ttl:     300,
+						},
 					},
-					{
-						Name:    "test.example.com.",
-						Active:  new(false),
-						Type:    "A",
-						Records: []dns.Record{{Content: "4.4.4.4"}},
-						Id:      "some-uuid2",
-						Ttl:     300,
-					},
-				},
-			}, nil)
+				}, nil)
+			})
+
+			It("should create a new record set if it does not exist", func() {
+				mockAPI.EXPECT().CreateRecordSet(ctx, client.projectID, "zone1").Return(dns.ApiCreateRecordSetRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().CreateRecordSetExecute(gomock.Any()).Return(nil, nil)
+
+				Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "new.example.com.", string(dns.RECORDSETTYPE_A), []string{"1.1.1.1"}, 300)).To(Succeed())
+			})
+
+			It("should update the existing record set if it exists and records are different", func() {
+				mockAPI.EXPECT().PartialUpdateRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiPartialUpdateRecordSetRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().PartialUpdateRecordSetExecute(gomock.Any()).Return(nil, nil)
+
+				Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", string(dns.RECORDSETTYPE_A), []string{"4.4.4.4"}, 300)).To(Succeed())
+			})
+
+			It("should do nothing if the existing record set has the same records and TTL", func() {
+				Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", string(dns.RECORDSETTYPE_A), []string{"1.1.1.1"}, 300)).To(Succeed())
+			})
 		})
 
-		It("should create a new record set if it does not exist", func() {
-			mockAPI.EXPECT().CreateRecordSet(ctx, client.projectID, "zone1").Return(dns.ApiCreateRecordSetRequest{ApiService: mockAPI})
-			mockAPI.EXPECT().CreateRecordSetExecute(gomock.Any()).Return(nil, nil)
-
-			Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "new.example.com.", "A", []string{"1.1.1.1"}, 300)).To(Succeed())
-		})
-
-		It("should update the existing record set if it exists and records are different", func() {
-			mockAPI.EXPECT().PartialUpdateRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiPartialUpdateRecordSetRequest{ApiService: mockAPI})
-			mockAPI.EXPECT().PartialUpdateRecordSetExecute(gomock.Any()).Return(nil, nil)
-
-			Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", "A", []string{"4.4.4.4"}, 300)).To(Succeed())
-		})
-
-		It("should do nothing if the existing record set has the same records and TTL", func() {
-			Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", "A", []string{"1.1.1.1"}, 300)).To(Succeed())
+		It("should reject unsupported record types before calling the API", func() {
+			Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", "UNSUPPORTED", []string{"1.1.1.1"}, 300)).To(MatchError(ContainSubstring("invalid DNS record type \"UNSUPPORTED\"")))
 		})
 	})
 
@@ -102,28 +108,28 @@ var _ = Describe("DNSClient", func() {
 				RrSets: []dns.RecordSet{{
 					Name:   "test.example.com.",
 					Active: new(true),
-					Type:   "A",
+					Type:   dns.RECORDSETTYPE_A,
 					Id:     "some-uuid",
 				}},
 			}, nil)
 		})
 
 		It("should do nothing if the record set does not exist", func() {
-			Expect(client.DeleteRecordSet(ctx, "zone1", "nonexistent.example.com.", "A")).To(Succeed())
+			Expect(client.DeleteRecordSet(ctx, "zone1", "nonexistent.example.com.", string(dns.RECORDSETTYPE_A))).To(Succeed())
 		})
 
 		It("should delete the record set if it exists", func() {
 			mockAPI.EXPECT().DeleteRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().DeleteRecordSetExecute(gomock.Any()).Return(nil, nil)
 
-			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com.", "A")).To(Succeed())
+			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com.", string(dns.RECORDSETTYPE_A))).To(Succeed())
 		})
 
 		It("should delete the record even if a non-FQDN is specified", func() {
 			mockAPI.EXPECT().DeleteRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().DeleteRecordSetExecute(gomock.Any()).Return(nil, nil)
 
-			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com", "A")).To(Succeed())
+			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com", string(dns.RECORDSETTYPE_A))).To(Succeed())
 		})
 	})
 
@@ -133,28 +139,28 @@ var _ = Describe("DNSClient", func() {
 				{
 					Name:    "active.example.com.",
 					Active:  new(true),
-					Type:    "A",
+					Type:    dns.RECORDSETTYPE_A,
 					Records: []dns.Record{{Content: "1.1.1.1"}},
 					Id:      "active-a-uuid",
 				},
 				{
 					Name:    "active2.example.com.",
 					Active:  new(true),
-					Type:    "A",
+					Type:    dns.RECORDSETTYPE_A,
 					Records: []dns.Record{{Content: "1.1.1.1"}},
 					Id:      "active2-a-uuid",
 				},
 				{
 					Name:    "active.example.com.",
 					Active:  new(true),
-					Type:    "TXT",
+					Type:    dns.RECORDSETTYPE_TXT,
 					Records: []dns.Record{{Content: "hello-world"}},
 					Id:      "active-txt-uuid",
 				},
 				{
 					Name:    "inactive.example.com.",
 					Active:  new(false),
-					Type:    "A",
+					Type:    dns.RECORDSETTYPE_A,
 					Records: []dns.Record{{Content: "2.2.2.2"}},
 					Id:      "inactive-a-uuid",
 				},
@@ -169,21 +175,21 @@ var _ = Describe("DNSClient", func() {
 		})
 
 		It("should return the correct A recordSet", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", "A")
+			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_A.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).ToNot(BeNil())
 			Expect(recordSet.GetId()).To(Equal("active-a-uuid"))
 		})
 
 		It("should return the correct TXT recordSet", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", "TXT")
+			recordSet, err := client.findRecordSet(ctx, "zone1", "active.example.com.", dns.RECORDSETTYPE_TXT.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).ToNot(BeNil())
 			Expect(recordSet.GetId()).To(Equal("active-txt-uuid"))
 		})
 
 		It("should return nil if nothing matches", func() {
-			recordSet, err := client.findRecordSet(ctx, "zone1", "non-existant.example.com.", "A")
+			recordSet, err := client.findRecordSet(ctx, "zone1", "non-existant.example.com.", dns.RECORDSETTYPE_A.Ptr())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(recordSet).To(BeNil())
 		})
