@@ -112,6 +112,7 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	}
 
 	if recordSet.GetTtl() == cacheTTL && areRecordsEqual(recordSet.GetRecords(), wantedRecords) {
+		// If TTL and records are the same, no update is necessary
 		return nil
 	}
 
