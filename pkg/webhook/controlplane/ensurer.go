@@ -101,7 +101,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 	if !feature.UseStackitMachineControllerManager(cluster) {
 		sidecarContainer.Args = extensionswebhook.EnsureStringWithPrefix(
 			sidecarContainer.Args,
-			"--resource-exhausted-retry=", "20m",
+			"--resource-exhausted-retry=", "30m",
 		)
 	}
 

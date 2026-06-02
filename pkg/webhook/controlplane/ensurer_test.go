@@ -533,7 +533,7 @@ WantedBy=multi-user.target
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-openstack", "foo:bar")
 			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
-				expectedContainer.Args, "--resource-exhausted-retry=", "20m",
+				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
 			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
