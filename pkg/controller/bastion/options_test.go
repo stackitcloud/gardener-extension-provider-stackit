@@ -249,6 +249,28 @@ var _ = Describe("Options", func() {
 			WorkerSecurityGroupID: "security-group-id-nodes",
 		}))
 	})
+	It("should correctly generate a valid bastion name if length is more than 63", func() {
+		shoot.Status.TechnicalID = "shoot--982656e3f6--e2e-6oy241v"
+		bastion.Name = "e2e-6oy241v-private-cluster"
+		result, err := a.DetermineOptions(ctx, bastion, cluster, projectID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal(&Options{
+			Bastion:      bastion,
+			ProjectID:    projectID,
+			ResourceName: "shoot--982656e3f6--e2e-6oy241v-bastion-e2e-6oy241v-pri-861f41cc",
+			Labels: map[string]string{
+				"kubernetes.io/cluster": "shoot--982656e3f6--e2e-6oy241v",
+				"kubernetes.io/bastion": "e2e-6oy241v-private-cluster",
+			},
+			Region:                "eu01",
+			AvailabilityZone:      "eu01-1",
+			MachineType:           "c1i.2",
+			ImageID:               "eu01-flatcar-1.1.0",
+			NetworkID:             "network-id",
+			WorkerSecurityGroupID: "security-group-id-nodes",
+		}))
+		Expect(result.ResourceName).To(HaveLen(63))
+	})
 
 	DescribeTable("customLabelDomain for bastion labels",
 		func(customDomain string, expectedClusterLabelKey string, expectedBastionLabelKey string) {

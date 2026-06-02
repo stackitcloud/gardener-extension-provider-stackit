@@ -15,6 +15,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
@@ -46,7 +47,7 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 	opts := &Options{
 		Bastion:      bastion,
 		ProjectID:    projectID,
-		ResourceName: fmt.Sprintf("%s-bastion-%s", cluster.Shoot.Status.TechnicalID, bastion.Name),
+		ResourceName: stackitclient.BuildResourceName(cluster.Shoot.Status.TechnicalID, "-bastion-", bastion.Name),
 		Labels: map[string]string{
 			utils.ClusterLabelKey(a.CustomLabelDomain):          cluster.Shoot.Status.TechnicalID,
 			utils.BuildLabelKey(a.CustomLabelDomain, "bastion"): bastion.Name,
