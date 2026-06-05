@@ -90,7 +90,7 @@ spec:
         - mountPath: /etc/serviceaccount
           name: sa-secret
         - mountPath: /etc/ssl/certs/stackit-ca.crt
-          name: cloud-config-ca
+          name: stackit-ca
           subPath: stackit-ca.crt
           readOnly: true
         securityContext:
@@ -111,9 +111,9 @@ spec:
           items:
             - key: "serviceaccount.json"
               path: "serviceaccount.json"
-      - name: cloud-config-ca
+      - name: stackit-ca
         secret:
-          secretName: cloud-config-extra-ca
+          secretName: stackit-ca-bundle
           optional: true
       - name: kubeconfig
         projected:
