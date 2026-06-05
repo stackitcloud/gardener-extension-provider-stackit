@@ -681,6 +681,13 @@ func getConfigChartValues(
 		}
 	}
 
+	if feature.UseStackitMachineControllerManager(cluster) {
+		if cloudProfileConfig.CABundle != nil {
+			caBundle := ptr.Deref(cloudProfileConfig.CABundle, "")
+			values["stackitCaCert"] = caBundle
+		}
+	}
+
 	return values, nil
 }
 

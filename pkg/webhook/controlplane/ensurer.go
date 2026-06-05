@@ -54,7 +54,9 @@ type ensurer struct {
 var ImageVector = imagevector.ImageVector()
 
 // EnsureMachineControllerManagerDeployment ensures that the machine-controller-manager deployment conforms to the provider requirements.
-func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *appsv1.Deployment) error {
+func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, gctx gcontext.GardenContext, newObj, machineDeployment *appsv1.Deployment) error {
+	var caBundle string
+
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed reading Cluster: %w", err)
@@ -81,7 +83,28 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 			return err
 		}
 
+		if cloudProfileConfig.CABundle != nil {
+			caBundle = ptr.Deref(cloudProfileConfig.CABundle, "")
+		}
+
 		apiEndpoints := ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
+
+		if caBundle != "" {
+			machineDeployment.Spec.Template.Spec.Volumes = append(machineDeployment.Spec.Template.Spec.Volumes, corev1.Volume{
+				Name: "stackit-ca-bundle",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "stackit-ca-bundle",
+					},
+				},
+			})
+			sidecarContainer.VolumeMounts = append(sidecarContainer.VolumeMounts, corev1.VolumeMount{
+				Name:      "stackit-ca-bundle",
+				MountPath: "/etc/ssl/certs/stackit-ca.crt",
+				SubPath:   "stackit-ca.crt",
+				ReadOnly:  true,
+			})
+		}
 
 		sidecarContainer.Env = []corev1.EnvVar{}
 		if apiEndpoints.IaaS != nil {

@@ -1,0 +1,12 @@
+{{- if .Values.stackitCaCert }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: stackit-ca-bundle
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+data:
+  {{- if .Values.stackitCaCert }}
+  stackit-ca.crt: {{ .Values.stackitCaCert | b64enc }}
+  {{- end }}
+{{- end }}
