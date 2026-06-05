@@ -91,7 +91,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 
 		if caBundle != "" {
 			machineDeployment.Spec.Template.Spec.Volumes = append(machineDeployment.Spec.Template.Spec.Volumes, corev1.Volume{
-				Name: "stackit-ca-bundle",
+				Name: "stackit-ca",
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: "stackit-ca-bundle",
@@ -99,7 +99,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 				},
 			})
 			sidecarContainer.VolumeMounts = append(sidecarContainer.VolumeMounts, corev1.VolumeMount{
-				Name:      "stackit-ca-bundle",
+				Name:      "stackit-ca",
 				MountPath: "/etc/ssl/certs/stackit-ca.crt",
 				SubPath:   "stackit-ca.crt",
 				ReadOnly:  true,
