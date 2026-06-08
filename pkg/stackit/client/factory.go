@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -86,44 +87,25 @@ func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.Secr
 }
 
 // InjectCAIntoHTTPClient injects a CABundle into an existing http.Client
-func InjectCAIntoHTTPClient(client *http.Client, caBundle []byte) error {
+func InjectCAIntoHTTPClient(caBundle []byte) (*http.Client, error) {
 	caCertPool, err := x509.SystemCertPool()
 	if err != nil {
 		// we could also fall back here and use an empty pool via  x509.NewCertPool()
-		return err
+		return nil, err
 	}
 	if ok := caCertPool.AppendCertsFromPEM(caBundle); !ok {
-		return fmt.Errorf("failed to append CA bundle to cert pool")
-	}
-	var transport *http.Transport
-	if client.Transport != nil {
-		var ok bool
-		transport, ok = client.Transport.(*http.Transport)
-		if !ok {
-			return fmt.Errorf("client.Transport is not an *http.Transport")
-		}
-		// Clone it to avoid race conditions if the transport is shared
-		transport = transport.Clone()
-	} else {
-		// Explicitly clone the default transport
-		// The client should already have transport. Should never happen
-		transport = http.DefaultTransport.(*http.Transport).Clone()
+		return nil, fmt.Errorf("failed to append CA bundle to cert pool")
 	}
 
-	// Inject the custom TLS configuration
-	if transport.TLSClientConfig == nil {
-		transport.TLSClientConfig = &tls.Config{}
-	} else {
-		transport.TLSClientConfig = transport.TLSClientConfig.Clone()
+	httpClient := http.Client{}
+	httpClient.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: caCertPool,
+		},
 	}
-
-	transport.TLSClientConfig.RootCAs = caCertPool
-
-	// Re-assign the modified transport back to the client
-	client.Transport = transport
-	return nil
+	return &httpClient, nil
 }
-func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) []sdkconfig.ConfigurationOption {
+func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) ([]sdkconfig.ConfigurationOption, error) {
 	result := []sdkconfig.ConfigurationOption{
 		sdkconfig.WithUserAgent(UserAgent),
 		sdkconfig.WithServiceAccountKey(credentials.SaKeyJSON),
@@ -133,5 +115,18 @@ func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.
 		result = append(result, sdkconfig.WithTokenEndpoint(*endpoints.TokenEndpoint))
 	}
 
-	return result
+	if caBundle != "" {
+		var ca []byte
+		ca, err := utils.DecodeCloudProfileCABundle(caBundle)
+		if err != nil {
+			return nil, err
+		}
+		customHttpClient, err := InjectCAIntoHTTPClient(ca)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, sdkconfig.WithHTTPClient(customHttpClient))
+	}
+
+	return result, nil
 }

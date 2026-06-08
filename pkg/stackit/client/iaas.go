@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 
@@ -128,8 +127,10 @@ func (c iaasClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.N
 }
 
 func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (IaaSClient, error) {
-	options := clientOptions(endpoints, credentials)
-
+	options, err := clientOptions(endpoints, credentials, caBundle)
+	if err != nil {
+		return nil, err
+	}
 	if endpoints.IaaS != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.IaaS))
 	}
@@ -142,16 +143,7 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 	if err != nil {
 		return nil, err
 	}
-	if caBundle != "" {
-		var ca []byte
-		if ca, err = utils.DecodeCloudProfileCABundle(caBundle); err != nil {
-			return nil, err
-		}
-		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, ca)
-		if err != nil {
-			return nil, err
-		}
-	}
+
 	return &iaasClient{
 		Client:    apiClient.DefaultAPI,
 		projectID: credentials.ProjectID,
