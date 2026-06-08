@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -17,6 +16,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -90,20 +90,18 @@ func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.Secr
 func InjectCAIntoHTTPClient(caBundle []byte) (*http.Client, error) {
 	caCertPool, err := x509.SystemCertPool()
 	if err != nil {
-		// we could also fall back here and use an empty pool via  x509.NewCertPool()
+		// we could also fall back here and use an empty pool via x509.NewCertPool()
 		return nil, err
 	}
 	if ok := caCertPool.AppendCertsFromPEM(caBundle); !ok {
 		return nil, fmt.Errorf("failed to append CA bundle to cert pool")
 	}
 
-	httpClient := http.Client{}
-	httpClient.Transport = &http.Transport{
+	return &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			RootCAs: caCertPool,
 		},
-	}
-	return &httpClient, nil
+	}}, nil
 }
 func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) ([]sdkconfig.ConfigurationOption, error) {
 	result := []sdkconfig.ConfigurationOption{
