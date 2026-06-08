@@ -130,10 +130,6 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/{{ include "name" . }}/config
-        - name: custom-certs
-          mountPath: /etc/ssl/certs/customca.crt
-          readOnly: true
-          subPath: customca.crt
         {{- if .Values.imageVectorOverwrite }}
         - name: imagevector-overwrite
           mountPath: /charts_overwrite/
