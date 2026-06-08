@@ -681,10 +681,13 @@ func getConfigChartValues(
 		}
 	}
 
-	if feature.UseStackitMachineControllerManager(cluster) {
+	// Deploy the stackit-ca-bundle when at least one of stackit-mcm, stackit-csi or stackit-ccm is deployed
+	if feature.UseStackitMachineControllerManager(cluster) ||
+		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
+		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {
 		if cloudProfileConfig.CABundle != nil {
 			caBundle := ptr.Deref(cloudProfileConfig.CABundle, "")
-			values["stackitCaCert"] = caBundle
+			values["cloudProfileCABundle"] = caBundle
 		}
 	}
 

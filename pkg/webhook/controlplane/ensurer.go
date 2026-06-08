@@ -34,6 +34,11 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane/registrycache"
 )
 
+const (
+	//nolint:gosec // These are not a credentials. Just the name of the kubernetes Secret
+	CASecretName = "stackit-ca-bundle"
+)
+
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
@@ -94,7 +99,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 				Name: "stackit-ca",
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: "stackit-ca-bundle",
+						SecretName: CASecretName,
 					},
 				},
 			})

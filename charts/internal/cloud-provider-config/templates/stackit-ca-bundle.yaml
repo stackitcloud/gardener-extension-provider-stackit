@@ -1,4 +1,4 @@
-{{- if .Values.stackitCaCert }}
+{{- if .Values.cloudProfileCABundle }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: Opaque
 data:
-  {{- if .Values.stackitCaCert }}
-  stackit-ca.crt: {{ .Values.stackitCaCert | b64enc }}
+  {{- if .Values.cloudProfileCABundle }}
+  stackit-ca.crt: {{ .Values.cloudProfileCABundle | b64enc }}
   {{- end }}
 {{- end }}
