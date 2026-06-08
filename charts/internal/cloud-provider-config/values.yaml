@@ -1,5 +1,5 @@
 stackitOnly: false
-cloudProfileCABundle: ""
+cloudProfileCABundleB64: ""
 # [Global]
 authUrl: fooURL
 domainName: fooDomain

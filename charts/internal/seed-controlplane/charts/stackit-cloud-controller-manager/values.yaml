@@ -8,7 +8,6 @@ config:
   loadBalancerApiUrl: ""
   iaasApiUrl: ""
   tokenUrl: ""
-  caCert: ""
   loadBalancerEmergencyToken: ""
   port: 10258
   metricsPort: 9090

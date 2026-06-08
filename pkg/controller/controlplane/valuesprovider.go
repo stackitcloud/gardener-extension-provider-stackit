@@ -54,6 +54,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -686,8 +687,13 @@ func getConfigChartValues(
 		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
 		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {
 		if cloudProfileConfig.CABundle != nil {
+			// caBundle is already in base64 format
 			caBundle := ptr.Deref(cloudProfileConfig.CABundle, "")
-			values["cloudProfileCABundle"] = caBundle
+			if !utils.IsBase64(caBundle) {
+				return nil, fmt.Errorf("CA bundle is not base64 encoded." +
+					" Please ensure that caBundle in the CloudProfile is base64 encoded")
+			}
+			values["cloudProfileCABundleB64"] = caBundle
 		}
 	}
 
@@ -861,13 +867,6 @@ func getSTACKITCCMChartValues(
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
 
-	var caBundle string
-	if cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster); err == nil {
-		if cloudProfileConfig.CABundle != nil {
-			caBundle = ptr.Deref(cloudProfileConfig.CABundle, "")
-		}
-	}
-
 	ccmConfig := map[string]any{
 		"stackitNetworkID": infra.Networks.ID,
 		"stackitRegion":    stackitRegion,
@@ -880,11 +879,6 @@ func getSTACKITCCMChartValues(
 			// utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
 		},
 		"customLabelDomain": customLabelDomain,
-	}
-
-	// Add extra CA to the pod's filesystem
-	if caBundle != "" {
-		ccmConfig["caCert"] = caBundle
 	}
 
 	if credentials.LoadBalancerAPIEmergencyToken != "" {

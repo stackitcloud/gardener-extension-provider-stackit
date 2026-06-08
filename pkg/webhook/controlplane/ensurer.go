@@ -60,8 +60,6 @@ var ImageVector = imagevector.ImageVector()
 
 // EnsureMachineControllerManagerDeployment ensures that the machine-controller-manager deployment conforms to the provider requirements.
 func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, gctx gcontext.GardenContext, newObj, machineDeployment *appsv1.Deployment) error {
-	var caBundle string
-
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed reading Cluster: %w", err)
@@ -88,13 +86,9 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 			return err
 		}
 
-		if cloudProfileConfig.CABundle != nil {
-			caBundle = ptr.Deref(cloudProfileConfig.CABundle, "")
-		}
-
 		apiEndpoints := ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
 
-		if caBundle != "" {
+		if cloudProfileConfig.CABundle != nil {
 			machineDeployment.Spec.Template.Spec.Volumes = append(machineDeployment.Spec.Template.Spec.Volumes, corev1.Volume{
 				Name: "stackit-ca",
 				VolumeSource: corev1.VolumeSource{

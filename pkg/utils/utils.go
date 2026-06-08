@@ -5,6 +5,7 @@
 package utils
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -69,6 +70,18 @@ func ComputeEgressCIDRs(ips []string) []string {
 		}
 	}
 	return result
+}
+
+func IsBase64(s string) bool {
+	// Support padded encoding
+	if _, err := base64.StdEncoding.DecodeString(s); err == nil {
+		return true
+	}
+	// Support unpadded encodings
+	if _, err := base64.RawStdEncoding.DecodeString(s); err == nil {
+		return true
+	}
+	return false
 }
 
 // BuildLabelKey constructs a label key from a custom domain and suffix.

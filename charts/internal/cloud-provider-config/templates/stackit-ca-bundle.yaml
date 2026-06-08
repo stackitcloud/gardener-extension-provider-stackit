@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: Opaque
 data:
-  {{- if .Values.cloudProfileCABundle }}
-  stackit-ca.crt: {{ .Values.cloudProfileCABundle | b64enc }}
+  {{- if .Values.cloudProfileCABundleB64 }}
+  stackit-ca.crt: {{ .Values.cloudProfileCABundleB64 }}
   {{- end }}
 {{- end }}
