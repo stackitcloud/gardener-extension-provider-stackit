@@ -86,8 +86,8 @@ func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.Secr
 	return NewDNSClient(ctx, f.StackitAPIEndpoints, credentials, f.CABundleB64)
 }
 
-// InjectCAIntoHTTPClient injects a CABundle into an existing http.Client
-func InjectCAIntoHTTPClient(caBundle []byte) (*http.Client, error) {
+// newHTTPClientWithCustomCA creates an http.Client with a custom CA
+func newHTTPClientWithCustomCA(caBundle []byte) (*http.Client, error) {
 	caCertPool, err := x509.SystemCertPool()
 	if err != nil {
 		// we could also fall back here and use an empty pool via x509.NewCertPool()
@@ -103,6 +103,7 @@ func InjectCAIntoHTTPClient(caBundle []byte) (*http.Client, error) {
 		},
 	}}, nil
 }
+
 func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) ([]sdkconfig.ConfigurationOption, error) {
 	result := []sdkconfig.ConfigurationOption{
 		sdkconfig.WithUserAgent(UserAgent),
@@ -119,7 +120,7 @@ func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.
 		if err != nil {
 			return nil, err
 		}
-		customHttpClient, err := InjectCAIntoHTTPClient(ca)
+		customHttpClient, err := newHTTPClientWithCustomCA(ca)
 		if err != nil {
 			return nil, err
 		}
