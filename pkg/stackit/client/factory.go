@@ -37,7 +37,7 @@ type Factory interface {
 type factory struct {
 	StackitRegion       string
 	StackitAPIEndpoints stackitv1alpha1.APIEndpoints
-	CABundle            string
+	CABundleB64         string
 }
 
 func New(region string, cluster *extensionscontroller.Cluster) Factory {
@@ -54,7 +54,7 @@ func New(region string, cluster *extensionscontroller.Cluster) Factory {
 	return &factory{
 		StackitRegion:       region,
 		StackitAPIEndpoints: apiEndpoints,
-		CABundle:            caBundle,
+		CABundleB64:         caBundle,
 	}
 }
 
@@ -64,7 +64,7 @@ func (f factory) LoadBalancing(ctx context.Context, c client.Client, secretRef c
 		return nil, err
 	}
 
-	return NewLoadBalancingClient(ctx, f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundle)
+	return NewLoadBalancingClient(ctx, f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundleB64)
 }
 
 func (f factory) IaaS(ctx context.Context, c client.Client, secretRef corev1.SecretReference) (IaaSClient, error) {
@@ -73,7 +73,7 @@ func (f factory) IaaS(ctx context.Context, c client.Client, secretRef corev1.Sec
 		return nil, err
 	}
 
-	return NewIaaSClient(f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundle)
+	return NewIaaSClient(f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundleB64)
 }
 
 func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.SecretReference) (DNSClient, error) {
@@ -82,17 +82,17 @@ func (f factory) DNS(ctx context.Context, c client.Client, secretRef corev1.Secr
 		return nil, err
 	}
 
-	return NewDNSClient(ctx, f.StackitAPIEndpoints, credentials, f.CABundle)
+	return NewDNSClient(ctx, f.StackitAPIEndpoints, credentials, f.CABundleB64)
 }
 
 // InjectCAIntoHTTPClient injects a CABundle into an existing http.Client
-func InjectCAIntoHTTPClient(client *http.Client, caBundle string) error {
+func InjectCAIntoHTTPClient(client *http.Client, caBundle []byte) error {
 	caCertPool, err := x509.SystemCertPool()
 	if err != nil {
 		// we could also fall back here and use an empty pool via  x509.NewCertPool()
 		return err
 	}
-	if ok := caCertPool.AppendCertsFromPEM([]byte(caBundle)); !ok {
+	if ok := caCertPool.AppendCertsFromPEM(caBundle); !ok {
 		return fmt.Errorf("failed to append CA bundle to cert pool")
 	}
 	var transport *http.Transport

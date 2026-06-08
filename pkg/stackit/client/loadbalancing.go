@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	loadbalancer "github.com/stackitcloud/stackit-sdk-go/services/loadbalancer/v2api"
 
@@ -38,7 +39,11 @@ func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv
 		return nil, err
 	}
 	if caBundle != "" {
-		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		var ca []byte
+		if ca, err = utils.DecodeCloudProfileCABundle(caBundle); err != nil {
+			return nil, err
+		}
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, ca)
 		if err != nil {
 			return nil, err
 		}

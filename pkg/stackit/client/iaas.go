@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 
@@ -142,7 +143,11 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 		return nil, err
 	}
 	if caBundle != "" {
-		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		var ca []byte
+		if ca, err = utils.DecodeCloudProfileCABundle(caBundle); err != nil {
+			return nil, err
+		}
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, ca)
 		if err != nil {
 			return nil, err
 		}

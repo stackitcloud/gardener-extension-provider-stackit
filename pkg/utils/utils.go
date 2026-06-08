@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	utilsnet "k8s.io/utils/net"
 )
 
@@ -82,6 +83,20 @@ func IsBase64(s string) bool {
 		return true
 	}
 	return false
+}
+
+// DecodeCloudProfileCABundle returns the decoded data from gardener CloudProfile.caBundle
+func DecodeCloudProfileCABundle(data string) ([]byte, error) {
+	if !IsBase64(data) {
+		return nil, fmt.Errorf("caBundle must be base64 encoded")
+	}
+
+	cert, err := gardenerutils.DecodeBase64(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
 }
 
 // BuildLabelKey constructs a label key from a custom domain and suffix.

@@ -42,7 +42,7 @@ var _ = Describe("InjectCAIntoHTTPClient", func() {
 			}
 			serverCertPEM := pem.EncodeToMemory(pemBlock)
 
-			err := InjectCAIntoHTTPClient(httpClient, string(serverCertPEM))
+			err := InjectCAIntoHTTPClient(httpClient, serverCertPEM)
 			Expect(err).NotTo(HaveOccurred(), "InjectCAIntoHTTPClient should not return an error")
 
 			resp, err := httpClient.Get(testServer.URL)

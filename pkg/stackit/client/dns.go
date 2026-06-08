@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	dns "github.com/stackitcloud/stackit-sdk-go/services/dns/v1api"
 	"k8s.io/utils/set"
@@ -25,7 +26,11 @@ func NewDNSClient(_ context.Context, endpoints stackitv1alpha1.APIEndpoints, cre
 		return nil, err
 	}
 	if caBundle != "" {
-		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, caBundle)
+		var ca []byte
+		if ca, err = utils.DecodeCloudProfileCABundle(caBundle); err != nil {
+			return nil, err
+		}
+		err = InjectCAIntoHTTPClient(apiClient.GetConfig().HTTPClient, ca)
 		if err != nil {
 			return nil, err
 		}
