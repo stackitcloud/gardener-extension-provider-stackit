@@ -693,7 +693,7 @@ func getConfigChartValues(
 				return nil, fmt.Errorf("CA bundle is not base64 encoded." +
 					" Please ensure that caBundle in the CloudProfile is base64 encoded")
 			}
-			values["cloudProfileCABundleB64"] = caBundle
+			values["CABundleBase64"] = caBundle
 		}
 	}
 
