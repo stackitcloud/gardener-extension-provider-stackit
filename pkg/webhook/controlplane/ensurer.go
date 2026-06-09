@@ -37,6 +37,7 @@ import (
 const (
 	//nolint:gosec // These are not a credentials. Just the name of the kubernetes Secret
 	CASecretName = "stackit-ca-bundle"
+	CAVolumeName = "stackit-ca"
 )
 
 // NewEnsurer creates a new controlplane ensurer.
@@ -90,7 +91,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 
 		if cloudProfileConfig.CABundle != nil {
 			newObj.Spec.Template.Spec.Volumes = append(newObj.Spec.Template.Spec.Volumes, corev1.Volume{
-				Name: "stackit-ca",
+				Name: CAVolumeName,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: CASecretName,
@@ -98,7 +99,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 				},
 			})
 			sidecarContainer.VolumeMounts = append(sidecarContainer.VolumeMounts, corev1.VolumeMount{
-				Name:      "stackit-ca",
+				Name:      CAVolumeName,
 				MountPath: "/etc/ssl/certs/stackit-ca.crt",
 				SubPath:   "stackit-ca.crt",
 				ReadOnly:  true,

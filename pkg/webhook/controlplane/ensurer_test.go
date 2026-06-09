@@ -619,14 +619,14 @@ WantedBy=multi-user.target
 				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
 			)
 			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
-				Name:      "stackit-ca",
+				Name:      CAVolumeName,
 				MountPath: "/etc/ssl/certs/stackit-ca.crt",
 				SubPath:   "stackit-ca.crt",
 				ReadOnly:  true,
 			})
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 			Expect(deployment.Spec.Template.Spec.Volumes).To(ConsistOf(corev1.Volume{
-				Name: "stackit-ca",
+				Name: CAVolumeName,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName: CASecretName,
