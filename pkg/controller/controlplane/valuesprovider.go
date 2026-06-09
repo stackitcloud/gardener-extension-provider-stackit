@@ -686,7 +686,6 @@ func getConfigChartValues(
 		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
 		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {
 		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
-			// caBundle is already in base64 format
 			caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
 			values["CABundle"] = caBundle
 		}
