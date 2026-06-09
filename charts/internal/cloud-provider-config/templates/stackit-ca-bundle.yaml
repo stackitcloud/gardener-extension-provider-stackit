@@ -1,4 +1,4 @@
-{{- if .Values.CABundleBase64 }}
+{{- if .Values.CABundle }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: Opaque
 data:
-  {{- if .Values.CABundleBase64 }}
-  stackit-ca.crt: {{ .Values.CABundleBase64 }}
+  {{- if .Values.CABundle }}
+  stackit-ca.crt: {{ .Values.CABundle }}
   {{- end }}
 {{- end }}

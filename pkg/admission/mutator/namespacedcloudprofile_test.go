@@ -96,25 +96,6 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 				Expect(mergedConfig.APIEndpoints.LoadBalancer).To(PointTo(Equal("https://custom-lb.example.com")))
 			})
 
-			It("should correctly merge caBundle from spec", func() {
-				namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
-"kind":"CloudProfileConfig",
-"machineImages":[
-  {"name":"image-1","versions":[{"version":"1.0","image":"image-name-1"}]}
-]}`)}
-				namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
-"kind":"CloudProfileConfig",
-"caBundle":"-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----"}`)}
-
-				Expect(namespacedCloudProfileMutator.Mutate(ctx, namespacedCloudProfile, nil)).To(Succeed())
-
-				mergedConfig, err := helper.CloudProfileConfigFromRawExtension(namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(mergedConfig.CABundle).To(PointTo(Equal("-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----")))
-			})
-
 			It("should correctly merge extended machineImages", func() {
 				namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
 "apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",

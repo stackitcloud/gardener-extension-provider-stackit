@@ -16,7 +16,6 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -47,9 +46,10 @@ func New(region string, cluster *extensionscontroller.Cluster) Factory {
 
 	if cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster); err == nil {
 		apiEndpoints = ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
-		if cloudProfileConfig.CABundle != nil {
-			caBundle = ptr.Deref(cloudProfileConfig.CABundle, "")
-		}
+	}
+
+	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+		caBundle = ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
 	}
 
 	return &factory{
@@ -115,12 +115,7 @@ func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.
 	}
 
 	if caBundle != "" {
-		var ca []byte
-		ca, err := utils.DecodeCloudProfileCABundle(caBundle)
-		if err != nil {
-			return nil, err
-		}
-		customHttpClient, err := newHTTPClientWithCustomCA(ca)
+		customHttpClient, err := newHTTPClientWithCustomCA([]byte(caBundle))
 		if err != nil {
 			return nil, err
 		}

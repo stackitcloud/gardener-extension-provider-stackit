@@ -89,7 +89,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 
 		apiEndpoints := ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
 
-		if cloudProfileConfig.CABundle != nil {
+		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
 			newObj.Spec.Template.Spec.Volumes = append(newObj.Spec.Template.Spec.Volumes, corev1.Volume{
 				Name: CAVolumeName,
 				VolumeSource: corev1.VolumeSource{

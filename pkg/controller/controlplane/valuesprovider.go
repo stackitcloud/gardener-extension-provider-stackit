@@ -54,7 +54,6 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -686,14 +685,10 @@ func getConfigChartValues(
 	if feature.UseStackitMachineControllerManager(cluster) ||
 		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
 		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {
-		if cloudProfileConfig.CABundle != nil {
+		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
 			// caBundle is already in base64 format
-			caBundle := ptr.Deref(cloudProfileConfig.CABundle, "")
-			if !utils.IsBase64(caBundle) {
-				return nil, fmt.Errorf("CA bundle is not base64 encoded." +
-					" Please ensure that caBundle in the CloudProfile is base64 encoded")
-			}
-			values["CABundleBase64"] = caBundle
+			caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+			values["CABundle"] = caBundle
 		}
 	}
 

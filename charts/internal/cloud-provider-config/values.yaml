@@ -1,5 +1,5 @@
 stackitOnly: false
-CABundleBase64: ""
+CABundle: ""
 # [Global]
 authUrl: fooURL
 domainName: fooDomain

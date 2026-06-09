@@ -10,7 +10,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"math/big"
@@ -126,11 +125,7 @@ var _ = Describe("Ensurer", func() {
 			&extensionscontroller.Cluster{
 				CloudProfile: &gardencorev1beta1.CloudProfile{
 					Spec: gardencorev1beta1.CloudProfileSpec{
-						ProviderConfig: &runtime.RawExtension{
-							Raw: encode(&stackitv1alpha1.CloudProfileConfig{
-								CABundle: new(generateRootCA()),
-							}),
-						},
+						CABundle: new(generateRootCA()),
 					},
 				},
 				Shoot: &gardencorev1beta1.Shoot{
@@ -775,5 +770,5 @@ func generateRootCA() string {
 		Bytes: certBytes,
 	})
 
-	return base64.StdEncoding.EncodeToString(pemBlock)
+	return string(pemBlock)
 }

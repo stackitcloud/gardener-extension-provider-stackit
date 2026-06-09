@@ -12,14 +12,6 @@ import (
 )
 
 var _ = Describe("Utils", func() {
-	Describe("DecodeCloudProfileCABundle", func() {
-		It("should successfully decode base64", func() {
-			val := "Zm9vYmFy"
-			decoded, err := utils.DecodeCloudProfileCABundle(val)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(decoded).To(Equal([]byte("foobar")))
-		})
-	})
 	DescribeTable("#SimpleMatch", func(pattern, text string, expected bool, expectedSocre int) {
 		match, score := utils.SimpleMatch(pattern, text)
 		Expect(match).To(Equal(expected))

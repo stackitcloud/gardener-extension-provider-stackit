@@ -64,11 +64,6 @@ func (p *namespacedCloudProfile) Mutate(_ context.Context, newObj, _ client.Obje
 		statusConfig.APIEndpoints = specConfig.APIEndpoints
 	}
 
-	// Overwrite CA bundle from spec
-	if specConfig.CABundle != nil {
-		statusConfig.CABundle = specConfig.CABundle
-	}
-
 	modifiedStatusConfig, err := json.Marshal(statusConfig)
 	if err != nil {
 		return err
