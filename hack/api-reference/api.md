@@ -252,6 +252,17 @@ string
 <p></p>
 </td>
 </tr>
+<tr>
+<td>
+<code>compatibilityMode</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p></p>
+</td>
+</tr>
 
 </tbody>
 </table>

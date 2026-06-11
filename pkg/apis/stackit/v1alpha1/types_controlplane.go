@@ -58,7 +58,8 @@ type Storage struct {
 }
 
 type CSI struct {
-	Name string `json:"name"`
+	Name              string `json:"name"`
+	CompatibilityMode string `json:"compatibilityMode,omitempty"`
 }
 
 // CSIManila contains configuration for CSI Manila driver (support for NFS volumes)
