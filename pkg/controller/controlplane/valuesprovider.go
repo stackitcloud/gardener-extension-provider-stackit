@@ -1240,6 +1240,10 @@ func getCSIDriver(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.
 	return stackitv1alpha1.ControllerName(cpConfig.Storage.CSI.Name)
 }
 
+func getCSICompatibilityMode(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.CSICompatibilityMode {
+	return stackitv1alpha1.CSICompatibilityMode(cpConfig.Storage.CSI.CompatibilityMode)
+}
+
 func getCCMController(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.ControllerName {
 	return stackitv1alpha1.ControllerName(cpConfig.CloudControllerManager.Name)
 }

@@ -17,3 +17,11 @@ const (
 	STACKIT   ControllerName = "stackit"
 	OPENSTACK ControllerName = "openstack"
 )
+
+type CSICompatibilityMode string
+
+const (
+	DEFAULT     CSICompatibilityMode = "default"
+	COMPAT      CSICompatibilityMode = "compat"
+	COMPATBLOCK CSICompatibilityMode = "compatblock"
+)
