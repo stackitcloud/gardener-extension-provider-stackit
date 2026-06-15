@@ -12,7 +12,6 @@ images:
   csi-resizer: image-repository:image-tag
   csi-liveness-probe: image-repository:image-tag
   csi-snapshot-controller: image-repository:image-tag
-  csi-snapshot-validation-webhook: image-repository:image-tag
 
 socketPath: /var/lib/csi/sockets/pluginproxy
 region: ""

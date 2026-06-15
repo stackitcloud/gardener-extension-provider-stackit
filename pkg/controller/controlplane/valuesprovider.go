@@ -775,6 +775,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		controlPlaneValues[openstack.CSIControllerName] = map[string]any{
 			"enabled": false,
 		}
+		// TODO: make it nice
 		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
 			err := vp.deploySeedCSICompatibilityMode(ctx, cp.GetNamespace(), controlPlaneValues)
 			if err != nil {
@@ -1219,17 +1220,48 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 
 	chartName := "stackit-blockstorage-csi-driver"
 
-	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]interface{})
-	csiStackitValues["prefix"] = "stackit-compat"
+	foo := map[string]interface{}{}
+	foo = maps.Clone(values)
+	// Get the chart Values
+	csiStackitValues := foo[openstack.CSISTACKITControllerName].(map[string]interface{})
+	// Merge csiStackitValues to topLevel. Basically removes the openstack.CSISTACKITControllerName key
+	chartValues := gardenerutils.MergeMaps(foo, csiStackitValues)
+	// Override chart values
+	chartValues["prefix"] = "stackit-compat"
+
+	//TODO: Use gardener tools for this? If possible
+	imagesToFind := []string{
+		"csi-driver-stackit",
+		"csi-provisioner",
+		"csi-attacher",
+		"csi-snapshotter",
+		"csi-resizer",
+		"csi-liveness-probe",
+		"csi-snapshot-controller"}
+	images := imagevector.ImageVector()
+	imageMap := make(map[string]interface{})
+
+	for _, image := range imagesToFind {
+		foundImage, err := images.FindImage(image)
+		if err != nil {
+			return err
+		}
+		imageMap[image] = foundImage.String()
+	}
+	chartValues["images"] = imageMap
 
 	renderedChart, err := renderer.RenderEmbeddedFS(
-		charts.InternalChart, filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"), chartName, namespace, values,
+		charts.InternalChart,
+		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
+		chartName,
+		namespace,
+		chartValues,
 	)
 	if err != nil {
 		return err
 	}
 
-	data := map[string][]byte{chartName: renderedChart.Manifest()}
+	data := renderedChart.AsSecretData()
 	return managedresources.Create(
 		ctx, vp.client, namespace, "stackit-csi-compat-chart", map[string]string{},
 		false, "seed", data, new(false), nil, new(false),
