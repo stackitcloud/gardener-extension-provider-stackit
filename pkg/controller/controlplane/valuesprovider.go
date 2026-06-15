@@ -752,6 +752,15 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		return nil, err
 	}
 
+	maps.Copy(controlPlaneValues, map[string]any{
+		"global": map[string]any{
+			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
+		},
+		openstack.CloudControllerManagerName:        ccm,
+		openstack.STACKITCloudControllerManagerName: stackitccm,
+		stackit.PodIdentityWebhookName:              podIdentityWebhook,
+	})
+
 	storageCSIDriver := getCSIDriver(cpConfig)
 	switch storageCSIDriver {
 	case stackitv1alpha1.OPENSTACK:
@@ -767,7 +776,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 			"enabled": false,
 		}
 		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
-			err := vp.deploySeedCSICompatibilityMode(ctx, cluster.Shoot.GetNamespace(), csiSTACKIT)
+			err := vp.deploySeedCSICompatibilityMode(ctx, cluster.Shoot.GetNamespace(), controlPlaneValues)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
 			}
@@ -775,15 +784,6 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 	default:
 		return nil, fmt.Errorf("unsupported storage CSI Driver: %s", storageCSIDriver)
 	}
-
-	maps.Copy(controlPlaneValues, map[string]any{
-		"global": map[string]any{
-			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
-		},
-		openstack.CloudControllerManagerName:        ccm,
-		openstack.STACKITCloudControllerManagerName: stackitccm,
-		stackit.PodIdentityWebhookName:              podIdentityWebhook,
-	})
 
 	if vp.deployALBIngressController {
 		fmt.Println("deploying ALB Ingress Controller")
