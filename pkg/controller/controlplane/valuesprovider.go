@@ -1231,7 +1231,7 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 
 	data := map[string][]byte{chartName: renderedChart.Manifest()}
 	return managedresources.Create(
-		ctx, vp.client, namespace, chartName, map[string]string{},
+		ctx, vp.client, namespace, "stackit-csi-compat-chart", map[string]string{},
 		false, "seed", data, new(false), nil, new(false),
 	)
 }
