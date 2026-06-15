@@ -776,7 +776,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 			"enabled": false,
 		}
 		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
-			err := vp.deploySeedCSICompatibilityMode(ctx, cluster.Shoot.GetNamespace(), controlPlaneValues)
+			err := vp.deploySeedCSICompatibilityMode(ctx, cp.GetNamespace(), controlPlaneValues)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
 			}
