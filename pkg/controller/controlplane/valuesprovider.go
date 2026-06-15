@@ -1223,7 +1223,7 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 	values["prefix"] = "stackit-compat"
 
 	renderedChart, err := renderer.RenderEmbeddedFS(
-		charts.InternalChart, "shoot-system-components/stackit-blockstorage-csi-driver", releaseName, v1beta1constants.GardenNamespace, values,
+		charts.InternalChart, "seed-controlplane/stackit-blockstorage-csi-driver", releaseName, v1beta1constants.GardenNamespace, values,
 	)
 	if err != nil {
 		return err
