@@ -108,13 +108,13 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 
 		sidecarContainer.Env = []corev1.EnvVar{}
 		if apiEndpoints.IaaS != nil {
-			sidecarContainer.Env = append(sidecarContainer.Env, corev1.EnvVar{
+			sidecarContainer.Env = extensionswebhook.EnsureEnvVarWithName(sidecarContainer.Env, corev1.EnvVar{
 				Name:  "STACKIT_IAAS_ENDPOINT",
 				Value: *apiEndpoints.IaaS,
 			})
 		}
 		if apiEndpoints.TokenEndpoint != nil {
-			sidecarContainer.Env = append(sidecarContainer.Env, corev1.EnvVar{
+			sidecarContainer.Env = extensionswebhook.EnsureEnvVarWithName(sidecarContainer.Env, corev1.EnvVar{
 				Name:  "STACKIT_TOKEN_BASEURL",
 				Value: *apiEndpoints.TokenEndpoint,
 			})
