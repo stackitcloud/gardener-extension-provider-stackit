@@ -90,7 +90,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 		apiEndpoints := ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
 
 		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
-			newObj.Spec.Template.Spec.Volumes = append(newObj.Spec.Template.Spec.Volumes, corev1.Volume{
+			newObj.Spec.Template.Spec.Volumes = extensionswebhook.EnsureVolumeWithName(newObj.Spec.Template.Spec.Volumes, corev1.Volume{
 				Name: CAVolumeName,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
@@ -98,7 +98,7 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 					},
 				},
 			})
-			sidecarContainer.VolumeMounts = append(sidecarContainer.VolumeMounts, corev1.VolumeMount{
+			sidecarContainer.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(sidecarContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
 				MountPath: "/etc/ssl/certs/stackit-ca.crt",
 				SubPath:   "stackit-ca.crt",
