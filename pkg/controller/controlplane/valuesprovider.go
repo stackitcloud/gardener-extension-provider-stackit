@@ -21,10 +21,12 @@ import (
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/chartrenderer"
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -43,6 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -360,6 +363,7 @@ var (
 func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string) genericactuator.ValuesProvider {
 	return &valuesProvider{
 		client:                     mgr.GetClient(),
+		config:                     mgr.GetConfig(),
 		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
 		deployALBIngressController: deployALBIngressController,
 		customLabelDomain:          customLabelDomain,
@@ -370,6 +374,7 @@ func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, cus
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	client                     k8sclient.Client
+	config                     *rest.Config
 	decoder                    runtime.Decoder
 	deployALBIngressController bool
 	customLabelDomain          string
@@ -760,6 +765,12 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		controlPlaneValues[openstack.CSISTACKITControllerName] = csiSTACKIT
 		controlPlaneValues[openstack.CSIControllerName] = map[string]any{
 			"enabled": false,
+		}
+		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
+			err := vp.deploySeedCSICompatibilityMode(ctx, cluster.Shoot.GetNamespace(), csiSTACKIT)
+			if err != nil {
+				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("unsupported storage CSI Driver: %s", storageCSIDriver)
@@ -1198,6 +1209,31 @@ func (vp *valuesProvider) checkEmergencyLoadBalancerAccess(ctx context.Context, 
 	}
 
 	return apiURL, apiToken, nil
+}
+
+func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
+	renderer, err := chartrenderer.NewForConfig(vp.config)
+	if err != nil {
+		return nil
+	}
+
+	releaseName := "csi-compatibility-mode"
+	chartName := "stackit-blockstorage-csi-driver"
+
+	values["prefix"] = "stackit-compat"
+
+	renderedChart, err := renderer.RenderEmbeddedFS(
+		charts.InternalChart, "shoot-system-components/stackit-blockstorage-csi-driver", releaseName, v1beta1constants.GardenNamespace, values,
+	)
+	if err != nil {
+		return err
+	}
+
+	data := map[string][]byte{chartName: renderedChart.Manifest()}
+	return managedresources.Create(
+		ctx, vp.client, namespace, chartName, map[string]string{},
+		false, "seed", data, new(false), nil, new(false),
+	)
 }
 
 // decodeLoadBalancerAPIEmergencySecret decodes a [corev1.Secret] for emergency loadbalancer access and
