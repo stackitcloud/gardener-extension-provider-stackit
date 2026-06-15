@@ -1219,7 +1219,7 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 
 	chartName := "stackit-blockstorage-csi-driver"
 
-	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]string)
+	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]interface{})
 	csiStackitValues["prefix"] = "stackit-compat"
 
 	renderedChart, err := renderer.RenderEmbeddedFS(
