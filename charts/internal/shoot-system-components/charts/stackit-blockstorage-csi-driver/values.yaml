@@ -3,10 +3,6 @@ driverName: block-storage.csi.stackit.cloud
 
 rescanBlockStorageOnResize: "true"
 
-csiDriverCompatibility:
-  enabled: false
-  legacyVolumeCreation: true
-
 images:
   csi-driver-stackit: image-repository:image-tag
   csi-node-driver-registrar: image-repository:image-tag
