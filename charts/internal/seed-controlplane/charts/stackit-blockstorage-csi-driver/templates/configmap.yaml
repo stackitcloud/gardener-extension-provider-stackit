@@ -11,5 +11,6 @@ data:
         iaasApi: {{ .Values.stackitEndpoints.iaasUrl }}
       {{- end }}
       projectId: "{{ .Values.projectID }}"
+      region: "{{ .Values.region }}"
     blockStorage:
       rescanOnResize: true
