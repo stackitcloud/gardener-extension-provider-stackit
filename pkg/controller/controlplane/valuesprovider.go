@@ -1112,6 +1112,11 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 	case stackitv1alpha1.OPENSTACK:
 		values[openstack.CSINodeName] = csiNodeDriverValues
 		values[openstack.CSISTACKITNodeName] = map[string]any{"enabled": false}
+		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
+			if err := vp.deployShootCSICompatibilityMode(ctx, cp.Namespace, values); err != nil {
+				return nil, fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
+			}
+		}
 	default:
 		return nil, fmt.Errorf("unsupported CSI driver type: %s", csiDriverInUse)
 	}
@@ -1218,14 +1223,13 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 		return nil
 	}
 
+	// TODO: constant
 	chartName := "stackit-blockstorage-csi-driver"
 
-	foo := map[string]interface{}{}
-	foo = maps.Clone(values)
 	// Get the chart Values
-	csiStackitValues := foo[openstack.CSISTACKITControllerName].(map[string]interface{})
+	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]any)
 	// Merge csiStackitValues to topLevel. Basically removes the openstack.CSISTACKITControllerName key
-	chartValues := gardenerutils.MergeMaps(foo, csiStackitValues)
+	chartValues := gardenerutils.MergeMaps(values, csiStackitValues)
 	// Override chart values
 	chartValues["prefix"] = "stackit-compat"
 
@@ -1237,9 +1241,10 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 		"csi-snapshotter",
 		"csi-resizer",
 		"csi-liveness-probe",
-		"csi-snapshot-controller"}
+		"csi-snapshot-controller",
+	}
 	images := imagevector.ImageVector()
-	imageMap := make(map[string]interface{})
+	imageMap := make(map[string]any)
 
 	for _, image := range imagesToFind {
 		foundImage, err := images.FindImage(image)
@@ -1265,6 +1270,62 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 	return managedresources.Create(
 		ctx, vp.client, namespace, "stackit-csi-compat-chart", map[string]string{},
 		false, "seed", data, new(false), nil, new(false),
+	)
+}
+
+func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
+	renderer, err := chartrenderer.NewForConfig(vp.config)
+	if err != nil {
+		return err
+	}
+
+	// TODO: constant
+	chartName := "stackit-blockstorage-csi-driver"
+
+	// Get the chart Values
+	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]any)
+	// Merge csiStackitValues to topLevel. Basically removes the openstack.CSISTACKITControllerName key
+	chartValues := gardenerutils.MergeMaps(values, csiStackitValues)
+	// Override chart values
+	chartValues["prefix"] = "stackit-compat"
+
+	//TODO: Use gardener tools for this? If possible
+	imagesToFind := []string{
+		"csi-driver-stackit",
+		"csi-provisioner",
+		"csi-attacher",
+		"csi-snapshotter",
+		"csi-resizer",
+		"csi-liveness-probe",
+		"csi-snapshot-controller",
+	}
+	images := imagevector.ImageVector()
+	imageMap := make(map[string]any)
+
+	for _, image := range imagesToFind {
+		foundImage, err := images.FindImage(image)
+		if err != nil {
+			return err
+		}
+		imageMap[image] = foundImage.String()
+	}
+	chartValues["images"] = imageMap
+
+	renderedChart, err := renderer.RenderEmbeddedFS(
+		charts.InternalChart,
+		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
+		chartName,
+		namespace,
+		chartValues,
+	)
+	if err != nil {
+		return err
+	}
+
+	data := renderedChart.AsSecretData()
+	return managedresources.Create(
+		ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", map[string]string{},
+		false, "shoot", data, new(false), nil, new(false),
 	)
 }
 
