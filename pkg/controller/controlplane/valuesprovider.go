@@ -1292,12 +1292,8 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 	//TODO: Use gardener tools for this? If possible
 	imagesToFind := []string{
 		"csi-driver-stackit",
-		"csi-provisioner",
-		"csi-attacher",
-		"csi-snapshotter",
-		"csi-resizer",
+		"csi-node-driver-registrar",
 		"csi-liveness-probe",
-		"csi-snapshot-controller",
 	}
 	images := imagevector.ImageVector()
 	imageMap := make(map[string]any)
