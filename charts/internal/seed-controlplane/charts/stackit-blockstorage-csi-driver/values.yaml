@@ -1,4 +1,6 @@
 replicas: 1
+config:
+  metricsPort: 9090
 podAnnotations: {}
 kubernetesVersion: 1.30.0
 prefix: stackit-blockstorage
