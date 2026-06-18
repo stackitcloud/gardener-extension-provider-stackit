@@ -776,14 +776,14 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 			"enabled": false,
 		}
 		// TODO: make it nice
+		namespace := cp.Namespace
 		if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
-			// TODO: handle COMPATBLOCK
-			err := vp.deploySeedCSICompatibilityMode(ctx, cp.GetNamespace(), controlPlaneValues)
+			err := vp.deploySeedCSICompatibilityMode(ctx, namespace, controlPlaneValues)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
 			}
 		} else {
-			err := vp.deleteSeedCSICompatibilityMode(ctx, cp.GetNamespace())
+			err := vp.deleteSeedCSICompatibilityMode(ctx, namespace)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
 			}
@@ -1119,13 +1119,14 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
 		values[openstack.CSINodeName] = map[string]any{"enabled": false}
 		compatibilityMode := getCSICompatibilityMode(cpConfig)
+		namespace := cp.Namespace
 		if compatibilityMode != stackitv1alpha1.DEFAULT {
-			blockLegacyCreation := (compatibilityMode == stackitv1alpha1.COMPATBLOCK)
-			if err := vp.deployShootCSICompatibilityMode(ctx, cp.Namespace, values, blockLegacyCreation); err != nil {
+			blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
+			if err := vp.deployShootCSICompatibilityMode(ctx, namespace, values, blockLegacyCreation); err != nil {
 				return nil, fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
 			}
 		} else {
-			if err := vp.deleteShootCSICompatibilityMode(ctx, cp.Namespace); err != nil {
+			if err := vp.deleteShootCSICompatibilityMode(ctx, namespace); err != nil {
 				return nil, fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
 			}
 		}
@@ -1271,7 +1272,7 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
 		chartName,
-		namespace,
+		"kube-system",
 		chartValues,
 	)
 	if err != nil {
@@ -1332,7 +1333,7 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
 		chartName,
-		namespace,
+		"kube-system",
 		chartValues,
 	)
 	if err != nil {
@@ -1340,7 +1341,7 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 	}
 
 	data := renderedChart.AsSecretData()
-	return managedresources.CreateForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", "gardener", false, data)
+	return managedresources.CreateForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", "gardener-extension-provider-stackit", false, data)
 }
 
 func (vp *valuesProvider) deleteShootCSICompatibilityMode(ctx context.Context, namespace string) error {
