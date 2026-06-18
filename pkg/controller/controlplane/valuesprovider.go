@@ -776,8 +776,14 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 			"enabled": false,
 		}
 		// TODO: make it nice
-		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
+		if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
+			// TODO: handle COMPATBLOCK
 			err := vp.deploySeedCSICompatibilityMode(ctx, cp.GetNamespace(), controlPlaneValues)
+			if err != nil {
+				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
+			}
+		} else {
+			err := vp.deleteSeedCSICompatibilityMode(ctx, cp.GetNamespace())
 			if err != nil {
 				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
 			}
@@ -1106,15 +1112,20 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 
 	csiDriverInUse := getCSIDriver(cpConfig)
 	switch csiDriverInUse {
-	case stackitv1alpha1.STACKIT:
-		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
-		values[openstack.CSINodeName] = map[string]any{"enabled": false}
 	case stackitv1alpha1.OPENSTACK:
 		values[openstack.CSINodeName] = csiNodeDriverValues
 		values[openstack.CSISTACKITNodeName] = map[string]any{"enabled": false}
-		if getCSICompatibilityMode(cpConfig) == stackitv1alpha1.COMPAT {
+	case stackitv1alpha1.STACKIT:
+		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
+		values[openstack.CSINodeName] = map[string]any{"enabled": false}
+		if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
+			// TODO: handle COMPATBLOCk
 			if err := vp.deployShootCSICompatibilityMode(ctx, cp.Namespace, values); err != nil {
 				return nil, fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
+			}
+		} else {
+			if err := vp.deleteShootCSICompatibilityMode(ctx, cp.Namespace); err != nil {
+				return nil, fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
 			}
 		}
 	default:
@@ -1273,6 +1284,10 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 	)
 }
 
+func (vp *valuesProvider) deleteSeedCSICompatibilityMode(ctx context.Context, namespace string) error {
+	return managedresources.Delete(ctx, vp.client, namespace, "stackit-csi-compat-chart", false)
+}
+
 func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
 	renderer, err := chartrenderer.NewForConfig(vp.config)
 	if err != nil {
@@ -1323,6 +1338,10 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 		ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", map[string]string{},
 		false, "shoot", data, new(false), nil, new(false),
 	)
+}
+
+func (vp *valuesProvider) deleteShootCSICompatibilityMode(ctx context.Context, namespace string) error {
+	return managedresources.Delete(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", false)
 }
 
 // decodeLoadBalancerAPIEmergencySecret decodes a [corev1.Secret] for emergency loadbalancer access and
