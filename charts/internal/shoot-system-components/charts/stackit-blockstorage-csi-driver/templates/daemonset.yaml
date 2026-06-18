@@ -48,6 +48,12 @@ spec:
         {{- end }}
         - --v=2
         - --provide-controller-service=false
+        {{- if .Values.csi.enableCompatibilityMode }}
+        - --legacy-storage-mode=true
+        {{- end }}
+        {{- if .Values.csi.blockLegacyCreation }}
+        - --legacy-volume-creation=false
+        {{- end }}
         env:
         - name: CSI_ENDPOINT
           value: unix://{{ .Values.socketPath }}
@@ -62,7 +68,7 @@ spec:
           allowPrivilegeEscalation: true
         ports:
         - name: healthz
-          containerPort: 9908
+          containerPort: {{ .Values.healthzPort }}
           protocol: TCP
         livenessProbe:
           httpGet:
@@ -112,7 +118,7 @@ spec:
         args:
         - --probe-timeout=3m
         - --csi-address={{ .Values.socketPath }}
-        - --health-port=9908
+        - --health-port={{ .Values.healthzPort }}
 {{- if .Values.resources.livenessProbe }}
         resources:
 {{ toYaml .Values.resources.livenessProbe | indent 10 }}

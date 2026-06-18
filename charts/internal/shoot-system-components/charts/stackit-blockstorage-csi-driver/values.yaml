@@ -3,6 +3,12 @@ driverName: block-storage.csi.stackit.cloud
 
 rescanBlockStorageOnResize: "true"
 
+healthzPort: 9908
+
+csi:
+  enableCompatibilityMode: false
+  blockLegacyCreation: false
+
 images:
   csi-driver-stackit: image-repository:image-tag
   csi-node-driver-registrar: image-repository:image-tag

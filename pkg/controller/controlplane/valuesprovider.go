@@ -1118,9 +1118,10 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 	case stackitv1alpha1.STACKIT:
 		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
 		values[openstack.CSINodeName] = map[string]any{"enabled": false}
-		if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
-			// TODO: handle COMPATBLOCk
-			if err := vp.deployShootCSICompatibilityMode(ctx, cp.Namespace, values); err != nil {
+		compatibilityMode := getCSICompatibilityMode(cpConfig)
+		if compatibilityMode != stackitv1alpha1.DEFAULT {
+			blockLegacyCreation := (compatibilityMode == stackitv1alpha1.COMPATBLOCK)
+			if err := vp.deployShootCSICompatibilityMode(ctx, cp.Namespace, values, blockLegacyCreation); err != nil {
 				return nil, fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
 			}
 		} else {
@@ -1278,17 +1279,14 @@ func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, na
 	}
 
 	data := renderedChart.AsSecretData()
-	return managedresources.Create(
-		ctx, vp.client, namespace, "stackit-csi-compat-chart", map[string]string{},
-		false, "seed", data, new(false), nil, new(false),
-	)
+	return managedresources.CreateForSeed(ctx, vp.client, namespace, "stackit-csi-compat-chart", false, data)
 }
 
 func (vp *valuesProvider) deleteSeedCSICompatibilityMode(ctx context.Context, namespace string) error {
-	return managedresources.Delete(ctx, vp.client, namespace, "stackit-csi-compat-chart", false)
+	return managedresources.DeleteForSeed(ctx, vp.client, namespace, "stackit-csi-compat-chart")
 }
 
-func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
+func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any, blockLegacyCreation bool) error {
 	renderer, err := chartrenderer.NewForConfig(vp.config)
 	if err != nil {
 		return err
@@ -1321,6 +1319,14 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 		imageMap[image] = foundImage.String()
 	}
 	chartValues["images"] = imageMap
+	chartValues["healthzPort"] = 9909
+	csiValues := map[string]any{
+		"enableCompatibilityMode": true,
+	}
+	if blockLegacyCreation {
+		csiValues["blockLegacyCreation"] = true
+	}
+	chartValues["csi"] = csiValues
 
 	renderedChart, err := renderer.RenderEmbeddedFS(
 		charts.InternalChart,
@@ -1334,14 +1340,11 @@ func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, n
 	}
 
 	data := renderedChart.AsSecretData()
-	return managedresources.Create(
-		ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", map[string]string{},
-		false, "shoot", data, new(false), nil, new(false),
-	)
+	return managedresources.CreateForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", "gardener", false, data)
 }
 
 func (vp *valuesProvider) deleteShootCSICompatibilityMode(ctx context.Context, namespace string) error {
-	return managedresources.Delete(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", false)
+	return managedresources.DeleteForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart")
 }
 
 // decodeLoadBalancerAPIEmergencySecret decodes a [corev1.Secret] for emergency loadbalancer access and
