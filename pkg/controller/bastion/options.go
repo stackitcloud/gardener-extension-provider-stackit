@@ -37,6 +37,8 @@ type Options struct {
 	Region string
 	// AvailabilityZone for the Bastion server, first non-metro zone in CloudProfile.
 	AvailabilityZone string
+	// RootDiskSize for the bastion server
+	RootDiskSize int64
 	// Machine type and image for the Bastion, determined from CloudProfile (spec.bastion and spec.providerConfig.machineImages).
 	MachineType, ImageID string
 	// Network and security group used by shoot workers, determined from Infrastructure.status.providerStatus.
@@ -70,6 +72,19 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 	opts.ImageID, err = determineImageID(bastionSpec, cluster)
 	if err != nil {
 		return nil, err
+	}
+
+	// Fetch provider-specific options from stackitv1alpha1.CloudProfileConfig
+	cloudProfile, err := helper.CloudProfileConfigFromCluster(cluster)
+	if err != nil {
+		return nil, err
+	}
+	cpBastionConfig := cloudProfile.Bastion
+	if cpBastionConfig != nil && cpBastionConfig.RootDiskSize != nil {
+		opts.RootDiskSize = *cpBastionConfig.RootDiskSize
+	} else {
+		// 13GiB should be the new default for coreos.
+		opts.RootDiskSize = int64(13)
 	}
 
 	infraStatus, err := getInfrastructureStatus(ctx, a.Client, cluster)

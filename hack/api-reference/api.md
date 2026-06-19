@@ -183,6 +183,43 @@ boolean
 </table>
 
 
+<h3 id="bastion">Bastion
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#cloudprofileconfig">CloudProfileConfig</a>)
+</p>
+
+<p>
+Bastion contains options for configuring the bastion server
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>rootDiskSize</code></br>
+<em>
+integer
+</em>
+</td>
+<td>
+<p></p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
 <h3 id="csi">CSI
 </h3>
 
@@ -394,6 +431,18 @@ string
 <td>
 <em>(Optional)</em>
 <p>CABundle is the CA certificate bundle for API endpoints.<br />This field is currently ignored and reserved for future use.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>bastion</code></br>
+<em>
+<a href="#bastion">Bastion</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Bastion are the bastion options for configuring the bastion server<br />This field for example allows use to adjust the root disk size of<br />the bastion server.</p>
 </td>
 </tr>
 <tr>
