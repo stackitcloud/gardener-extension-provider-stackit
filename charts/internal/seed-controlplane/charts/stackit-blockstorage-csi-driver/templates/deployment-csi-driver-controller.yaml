@@ -61,11 +61,6 @@ spec:
         - name: STACKIT_TOKEN_BASEURL
           value: {{ .Values.stackitEndpoints.tokenUrl }}
         {{- end }}
-        {{- if .Values.region }}
-        # TODO: later remove this
-        - name: STACKIT_REGION
-          value: {{ .Values.region }}
-        {{- end }}
 {{- if .Values.resources.driver }}
         resources:
 {{ toYaml .Values.resources.driver | indent 10 }}
