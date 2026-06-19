@@ -35,7 +35,9 @@ var _ = Describe("Bastion Resources", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockIaaS = mock.NewMockIaaSClient(mockCtrl)
 		resources = &Resources{
-			Options:       Options{},
+			Options: Options{
+				RootDiskSize: int64(13),
+			},
 			IaaS:          mockIaaS,
 			SecurityGroup: nil,
 			Server:        nil,
@@ -232,7 +234,7 @@ var _ = Describe("Bastion Resources", func() {
 				BootVolume: &iaas.BootVolume{
 					DeleteOnTermination: new(true),
 					Source:              iaas.NewBootVolumeSource("test-image", "image"),
-					Size:                new(int64(10)),
+					Size:                new(resources.RootDiskSize),
 				},
 				SecurityGroups: []string{"test-security-group"},
 				Networking: iaas.CreateServerNetworkingAsCreateServerPayloadAllOfNetworking(&iaas.CreateServerNetworking{

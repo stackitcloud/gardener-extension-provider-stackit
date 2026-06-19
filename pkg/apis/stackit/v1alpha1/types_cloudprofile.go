@@ -36,7 +36,7 @@ type CloudProfileConfig struct {
 	// +optional
 	CABundle *string `json:"caBundle,omitempty"`
 	// Bastion are the bastion options for configuring the bastion server
-	// This field for example allows use to adjust the root disk size of
+	// This field for example allows the user to adjust the root disk size of
 	// the bastion server.
 	// +optional
 	Bastion *Bastion `json:"bastion,omitempty"`
