@@ -45,6 +45,11 @@ type Options struct {
 	NetworkID, WorkerSecurityGroupID string
 }
 
+const (
+	// RootDiskSize is the default root disk size for the bastion server
+	RootDiskSize = int64(25)
+)
+
 func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1alpha1.Bastion, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
 	opts := &Options{
 		Bastion:      bastion,
@@ -83,8 +88,8 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 	if cpBastionConfig != nil && cpBastionConfig.RootDiskSize != nil {
 		opts.RootDiskSize = *cpBastionConfig.RootDiskSize
 	} else {
-		// 13GiB should be the new default for coreos.
-		opts.RootDiskSize = int64(13)
+		// Set a default in case a custom bastion root disk size is not configured
+		opts.RootDiskSize = RootDiskSize
 	}
 
 	infraStatus, err := getInfrastructureStatus(ctx, a.Client, cluster)

@@ -236,7 +236,7 @@ var _ = Describe("Options", func() {
 	It("should correctly determine the options", func() {
 		// Override the default 13Gib of the bastion root disk
 		cloudProfileConfig.Bastion = &stackitv1alpha1.Bastion{
-			RootDiskSize: new(int64(25)),
+			RootDiskSize: new(int64(125)),
 		}
 		cloudProfileConfigBytes, err := runtime.Encode(encoder, cloudProfileConfig)
 		Expect(err).NotTo(HaveOccurred())
@@ -252,7 +252,7 @@ var _ = Describe("Options", func() {
 			},
 			Region:                "eu01",
 			AvailabilityZone:      "eu01-1",
-			RootDiskSize:          int64(25),
+			RootDiskSize:          int64(125),
 			MachineType:           "c1i.2",
 			ImageID:               "eu01-flatcar-1.1.0",
 			NetworkID:             "network-id",
@@ -275,7 +275,7 @@ var _ = Describe("Options", func() {
 			Region:                "eu01",
 			AvailabilityZone:      "eu01-1",
 			MachineType:           "c1i.2",
-			RootDiskSize:          int64(13),
+			RootDiskSize:          RootDiskSize,
 			ImageID:               "eu01-flatcar-1.1.0",
 			NetworkID:             "network-id",
 			WorkerSecurityGroupID: "security-group-id-nodes",
