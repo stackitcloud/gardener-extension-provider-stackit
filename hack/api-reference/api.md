@@ -268,6 +268,16 @@ string
 </table>
 
 
+<h3 id="csicompatibilitymode">CSICompatibilityMode
+</h3>
+<p><em>Underlying type: string</em></p>
+
+
+<p>
+
+</p>
+
+
 <h3 id="csimanila">CSIManila
 </h3>
 
