@@ -442,7 +442,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>Bastion are the bastion options for configuring the bastion server<br />This field for example allows use to adjust the root disk size of<br />the bastion server.</p>
+<p>Bastion are the bastion options for configuring the bastion server<br />This field for example allows the user to adjust the root disk size of<br />the bastion server.</p>
 </td>
 </tr>
 <tr>
