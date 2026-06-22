@@ -101,7 +101,7 @@ func (ch *CompatCSICompatibilityHandler) deleteSeedCSICompatibilityMode(ctx cont
 	return managedresources.DeleteForSeed(ctx, ch.client, namespace, "stackit-csi-compat-chart")
 }
 
-func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
+func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	if compatibilityMode != stackitv1alpha1.DEFAULT {
 		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK

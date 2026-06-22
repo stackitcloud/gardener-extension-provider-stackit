@@ -1001,6 +1001,6 @@ type noopCSICompatibilityHandler struct{}
 func (*noopCSICompatibilityHandler) HandleSeedCSICompatibility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
 	return nil
 }
-func (*noopCSICompatibilityHandler) HandleShootCSICompatility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
+func (*noopCSICompatibilityHandler) HandleShootCSICompatibility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
 	return nil
 }
