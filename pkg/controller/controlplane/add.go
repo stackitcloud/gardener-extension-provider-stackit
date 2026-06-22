@@ -46,7 +46,8 @@ func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddO
 	genericActuator, err := genericactuator.NewActuator(mgr, stackit.Name,
 		secretConfigsFunc, shootAccessSecretsFunc,
 		configChart, controlPlaneChart, controlPlaneShootChart, controlPlaneShootCRDsChart, storageClassChart,
-		NewValuesProvider(mgr, DeployALBIngressController, opts.CustomLabelDomain), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
+		NewValuesProvider(mgr, DeployALBIngressController, opts.CustomLabelDomain, NewCompatCSICompatibilityHandler(mgr.GetClient(), mgr.GetConfig())),
+		extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 		imagevector.ImageVector(), "", nil, opts.WebhookServerNamespace)
 	if err != nil {
 		return err

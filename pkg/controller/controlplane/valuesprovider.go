@@ -21,12 +21,10 @@ import (
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/chartrenderer"
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/chart"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
-	"github.com/gardener/gardener/pkg/utils/managedresources"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -359,14 +357,19 @@ var (
 	}
 )
 
+type CSICompatibilityHandler interface {
+	HandleSeedCSICompatibility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+	HandleShootCSICompatility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+}
+
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string) genericactuator.ValuesProvider {
+func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string, csiCompatibilityHandler CSICompatibilityHandler) genericactuator.ValuesProvider {
 	return &valuesProvider{
 		client:                     mgr.GetClient(),
-		config:                     mgr.GetConfig(),
 		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
 		deployALBIngressController: deployALBIngressController,
 		customLabelDomain:          customLabelDomain,
+		csiCompatibilityHandler:    csiCompatibilityHandler,
 	}
 }
 
@@ -378,6 +381,7 @@ type valuesProvider struct {
 	decoder                    runtime.Decoder
 	deployALBIngressController bool
 	customLabelDomain          string
+	csiCompatibilityHandler    CSICompatibilityHandler
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -775,18 +779,9 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		controlPlaneValues[openstack.CSIControllerName] = map[string]any{
 			"enabled": false,
 		}
-		// TODO: make it nice
-		namespace := cp.Namespace
-		if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
-			err := vp.deploySeedCSICompatibilityMode(ctx, namespace, controlPlaneValues)
-			if err != nil {
-				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
-			}
-		} else {
-			err := vp.deleteSeedCSICompatibilityMode(ctx, namespace)
-			if err != nil {
-				return nil, fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
-			}
+		err := vp.csiCompatibilityHandler.HandleSeedCSICompatibility(ctx, cp.Namespace, cpConfig, controlPlaneValues)
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return nil, fmt.Errorf("unsupported storage CSI Driver: %s", storageCSIDriver)
@@ -1118,17 +1113,9 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 	case stackitv1alpha1.STACKIT:
 		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
 		values[openstack.CSINodeName] = map[string]any{"enabled": false}
-		compatibilityMode := getCSICompatibilityMode(cpConfig)
-		namespace := cp.Namespace
-		if compatibilityMode != stackitv1alpha1.DEFAULT {
-			blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
-			if err := vp.deployShootCSICompatibilityMode(ctx, namespace, values, blockLegacyCreation); err != nil {
-				return nil, fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
-			}
-		} else {
-			if err := vp.deleteShootCSICompatibilityMode(ctx, namespace); err != nil {
-				return nil, fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
-			}
+		err := vp.csiCompatibilityHandler.HandleShootCSICompatility(ctx, cp.Namespace, cpConfig, values)
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return nil, fmt.Errorf("unsupported CSI driver type: %s", csiDriverInUse)
@@ -1228,124 +1215,6 @@ func (vp *valuesProvider) checkEmergencyLoadBalancerAccess(ctx context.Context, 
 	}
 
 	return apiURL, apiToken, nil
-}
-
-func (vp *valuesProvider) deploySeedCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
-	renderer, err := chartrenderer.NewForConfig(vp.config)
-	if err != nil {
-		return nil
-	}
-
-	// TODO: constant
-	chartName := "stackit-blockstorage-csi-driver"
-
-	// Get the chart Values
-	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]any)
-	// Merge csiStackitValues to topLevel. Basically removes the openstack.CSISTACKITControllerName key
-	chartValues := gardenerutils.MergeMaps(values, csiStackitValues)
-	// Override chart values
-	chartValues["prefix"] = "stackit-compat"
-
-	//TODO: Use gardener tools for this? If possible
-	imagesToFind := []string{
-		"csi-driver-stackit",
-		"csi-provisioner",
-		"csi-attacher",
-		"csi-snapshotter",
-		"csi-resizer",
-		"csi-liveness-probe",
-		"csi-snapshot-controller",
-	}
-	images := imagevector.ImageVector()
-	imageMap := make(map[string]any)
-
-	for _, image := range imagesToFind {
-		foundImage, err := images.FindImage(image)
-		if err != nil {
-			return err
-		}
-		imageMap[image] = foundImage.String()
-	}
-	chartValues["images"] = imageMap
-
-	renderedChart, err := renderer.RenderEmbeddedFS(
-		charts.InternalChart,
-		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
-		chartName,
-		"kube-system",
-		chartValues,
-	)
-	if err != nil {
-		return err
-	}
-
-	data := renderedChart.AsSecretData()
-	return managedresources.CreateForSeed(ctx, vp.client, namespace, "stackit-csi-compat-chart", false, data)
-}
-
-func (vp *valuesProvider) deleteSeedCSICompatibilityMode(ctx context.Context, namespace string) error {
-	return managedresources.DeleteForSeed(ctx, vp.client, namespace, "stackit-csi-compat-chart")
-}
-
-func (vp *valuesProvider) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any, blockLegacyCreation bool) error {
-	renderer, err := chartrenderer.NewForConfig(vp.config)
-	if err != nil {
-		return err
-	}
-
-	// TODO: constant
-	chartName := "stackit-blockstorage-csi-driver"
-
-	// Get the chart Values
-	csiStackitValues := values[openstack.CSISTACKITControllerName].(map[string]any)
-	// Merge csiStackitValues to topLevel. Basically removes the openstack.CSISTACKITControllerName key
-	chartValues := gardenerutils.MergeMaps(values, csiStackitValues)
-	// Override chart values
-	chartValues["prefix"] = "stackit-compat"
-
-	//TODO: Use gardener tools for this? If possible
-	imagesToFind := []string{
-		"csi-driver-stackit",
-		"csi-node-driver-registrar",
-		"csi-liveness-probe",
-	}
-	images := imagevector.ImageVector()
-	imageMap := make(map[string]any)
-
-	for _, image := range imagesToFind {
-		foundImage, err := images.FindImage(image)
-		if err != nil {
-			return err
-		}
-		imageMap[image] = foundImage.String()
-	}
-	chartValues["images"] = imageMap
-	chartValues["healthzPort"] = 9909
-	csiValues := map[string]any{
-		"enableCompatibilityMode": true,
-	}
-	if blockLegacyCreation {
-		csiValues["blockLegacyCreation"] = true
-	}
-	chartValues["csi"] = csiValues
-
-	renderedChart, err := renderer.RenderEmbeddedFS(
-		charts.InternalChart,
-		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
-		chartName,
-		"kube-system",
-		chartValues,
-	)
-	if err != nil {
-		return err
-	}
-
-	data := renderedChart.AsSecretData()
-	return managedresources.CreateForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart", "gardener-extension-provider-stackit", false, data)
-}
-
-func (vp *valuesProvider) deleteShootCSICompatibilityMode(ctx context.Context, namespace string) error {
-	return managedresources.DeleteForShoot(ctx, vp.client, namespace, "stackit-csi-compat-shoot-chart")
 }
 
 // decodeLoadBalancerAPIEmergencySecret decodes a [corev1.Secret] for emergency loadbalancer access and
