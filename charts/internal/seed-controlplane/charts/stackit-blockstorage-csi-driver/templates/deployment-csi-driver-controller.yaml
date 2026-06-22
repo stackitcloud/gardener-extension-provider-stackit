@@ -82,7 +82,6 @@ spec:
           containerPort: {{ .Values.healthzPort }}
           protocol: TCP
         - containerPort: {{ .Values.config.metricsPort }}
-          hostPort: {{ .Values.config.metricsPort }}
           name: metrics
           protocol: TCP
         livenessProbe:
