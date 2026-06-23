@@ -37,11 +37,18 @@ type Options struct {
 	Region string
 	// AvailabilityZone for the Bastion server, first non-metro zone in CloudProfile.
 	AvailabilityZone string
+	// RootDiskSize for the bastion server
+	RootDiskSize int64
 	// Machine type and image for the Bastion, determined from CloudProfile (spec.bastion and spec.providerConfig.machineImages).
 	MachineType, ImageID string
 	// Network and security group used by shoot workers, determined from Infrastructure.status.providerStatus.
 	NetworkID, WorkerSecurityGroupID string
 }
+
+const (
+	// DefaultRootDiskSize is the default root disk size for the bastion server
+	DefaultRootDiskSize = int64(25)
+)
 
 func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1alpha1.Bastion, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
 	opts := &Options{
@@ -70,6 +77,19 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 	opts.ImageID, err = determineImageID(bastionSpec, cluster)
 	if err != nil {
 		return nil, err
+	}
+
+	// Fetch provider-specific options from stackitv1alpha1.CloudProfileConfig
+	cloudProfile, err := helper.CloudProfileConfigFromCluster(cluster)
+	if err != nil {
+		return nil, err
+	}
+	cpBastionConfig := cloudProfile.Bastion
+	if cpBastionConfig != nil && cpBastionConfig.RootDiskSize != nil {
+		opts.RootDiskSize = *cpBastionConfig.RootDiskSize
+	} else {
+		// Set a default in case a custom bastion root disk size is not configured
+		opts.RootDiskSize = DefaultRootDiskSize
 	}
 
 	infraStatus, err := getInfrastructureStatus(ctx, a.Client, cluster)

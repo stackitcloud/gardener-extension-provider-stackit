@@ -35,6 +35,11 @@ type CloudProfileConfig struct {
 	// This field is currently ignored and reserved for future use.
 	// +optional
 	CABundle *string `json:"caBundle,omitempty"`
+	// Bastion are the bastion options for configuring the bastion server
+	// This field for example allows the user to adjust the root disk size of
+	// the bastion server.
+	// +optional
+	Bastion *Bastion `json:"bastion,omitempty"`
 	// Constraints is an object containing constraints for certain values in the control plane config.
 	//
 	// Deprecated: OpenStack-only; not used for STACKIT.
@@ -101,6 +106,11 @@ type CloudProfileConfig struct {
 	// Deprecated: OpenStack-only; not used for STACKIT.
 	// +optional
 	ResolvConfOptions []string `json:"resolvConfOptions,omitempty"`
+}
+
+// Bastion contains options for configuring the bastion server
+type Bastion struct {
+	RootDiskSize *int64 `json:"rootDiskSize,omitempty"`
 }
 
 // Constraints is an object containing constraints for the shoots.

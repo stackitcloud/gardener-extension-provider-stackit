@@ -27,8 +27,7 @@ func (r *Resources) reconcileServer(ctx context.Context, log logr.Logger) error 
 		BootVolume: &iaas.BootVolume{
 			DeleteOnTermination: new(true),
 			Source:              iaas.NewBootVolumeSource(r.ImageID, "image"),
-			// TODO: make size and performance class configurable
-			Size: new(int64(10)),
+			Size:                new(r.RootDiskSize),
 		},
 
 		SecurityGroups: []string{r.SecurityGroup.GetId()},

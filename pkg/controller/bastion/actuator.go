@@ -56,10 +56,6 @@ func (a *Actuator) Reconcile(ctx context.Context, log logr.Logger, bastion *exte
 		return fmt.Errorf("error reconciling server: %w", err)
 	}
 
-	if err := r.reconcilePublicIP(ctx, log); err != nil {
-		return fmt.Errorf("error reconciling public IP: %w", err)
-	}
-
 	switch r.Server.GetStatus() {
 	case iaaswait.ServerActiveStatus:
 		log.Info("Server for Bastion is active", "server", r.Server.GetId())
@@ -78,6 +74,10 @@ func (a *Actuator) Reconcile(ctx context.Context, log logr.Logger, bastion *exte
 			RequeueAfter: 15 * time.Second,
 			Cause:        fmt.Errorf("waiting for server to become ready, current status: %s", r.Server.GetStatus()),
 		}
+	}
+
+	if err := r.reconcilePublicIP(ctx, log); err != nil {
+		return fmt.Errorf("error reconciling public IP: %w", err)
 	}
 
 	// We're ready, publish the endpoint on the Bastion resource to notify the client.
