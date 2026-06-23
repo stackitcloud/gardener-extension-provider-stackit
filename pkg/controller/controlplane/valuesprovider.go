@@ -1258,7 +1258,7 @@ func getCSIDriver(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.
 }
 
 func getCSICompatibilityMode(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.CSICompatibilityMode {
-	return stackitv1alpha1.CSICompatibilityMode(cpConfig.Storage.CSI.Name)
+	return stackitv1alpha1.CSICompatibilityMode(cpConfig.Storage.CSI.CompatibilityMode)
 }
 
 func getCCMController(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.ControllerName {

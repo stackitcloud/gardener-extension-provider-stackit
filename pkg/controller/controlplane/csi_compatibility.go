@@ -34,7 +34,8 @@ type CompatCSICompatibilityHandler struct {
 }
 
 func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
-	if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
+	compatibilityMode := getCSICompatibilityMode(cpConfig)
+	if compatibilityMode != stackitv1alpha1.DEFAULT {
 		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues)
 		if err != nil {
 			return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
