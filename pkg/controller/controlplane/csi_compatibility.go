@@ -31,23 +31,27 @@ type CompatCSICompatibilityHandler struct {
 
 func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
 	if getCSICompatibilityMode(cpConfig) != stackitv1alpha1.DEFAULT {
-		err := ch.deploySeedCSICompatibilityMode(ctx, namespace, controlPlaneValues)
+		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues)
 		if err != nil {
-			return fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
+			return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
+		}
+		err = ch.deploySeedCSICompatibilityMode(ctx, namespace, chart)
+		if err != nil {
+			return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
 		}
 	} else {
 		err := ch.deleteSeedCSICompatibilityMode(ctx, namespace)
 		if err != nil {
-			return fmt.Errorf("failed to deploy CSI CSI compatibility mode: %w", err)
+			return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
 		}
 	}
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) deploySeedCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any) error {
+func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any) (*chartrenderer.RenderedChart, error) {
 	renderer, err := chartrenderer.NewForConfig(ch.config)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	// TODO: constant
@@ -76,23 +80,22 @@ func (ch *CompatCSICompatibilityHandler) deploySeedCSICompatibilityMode(ctx cont
 	for _, image := range imagesToFind {
 		foundImage, err := images.FindImage(image)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		imageMap[image] = foundImage.String()
 	}
 	chartValues["images"] = imageMap
 
-	renderedChart, err := renderer.RenderEmbeddedFS(
+	return renderer.RenderEmbeddedFS(
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
 		chartName,
 		"kube-system",
 		chartValues,
 	)
-	if err != nil {
-		return err
-	}
+}
 
+func (ch *CompatCSICompatibilityHandler) deploySeedCSICompatibilityMode(ctx context.Context, namespace string, renderedChart *chartrenderer.RenderedChart) error {
 	data := renderedChart.AsSecretData()
 	return managedresources.CreateForSeed(ctx, ch.client, namespace, "stackit-csi-compat-chart", false, data)
 }
@@ -105,21 +108,27 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	if compatibilityMode != stackitv1alpha1.DEFAULT {
 		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
-		if err := ch.deployShootCSICompatibilityMode(ctx, namespace, values, blockLegacyCreation); err != nil {
+		chart, err := ch.renderShootCSICompatibilityMode(values, blockLegacyCreation)
+		if err != nil {
+			return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
+		}
+		err = ch.deployShootCSICompatibilityMode(ctx, namespace, chart)
+		if err != nil {
 			return fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
 		}
 	} else {
-		if err := ch.deleteShootCSICompatibilityMode(ctx, namespace); err != nil {
+		err := ch.deleteShootCSICompatibilityMode(ctx, namespace)
+		if err != nil {
 			return fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
 		}
 	}
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) deployShootCSICompatibilityMode(ctx context.Context, namespace string, values map[string]any, blockLegacyCreation bool) error {
+func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
 	renderer, err := chartrenderer.NewForConfig(ch.config)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: constant
@@ -144,7 +153,7 @@ func (ch *CompatCSICompatibilityHandler) deployShootCSICompatibilityMode(ctx con
 	for _, image := range imagesToFind {
 		foundImage, err := images.FindImage(image)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		imageMap[image] = foundImage.String()
 	}
@@ -158,17 +167,16 @@ func (ch *CompatCSICompatibilityHandler) deployShootCSICompatibilityMode(ctx con
 	}
 	chartValues["csi"] = csiValues
 
-	renderedChart, err := renderer.RenderEmbeddedFS(
+	return renderer.RenderEmbeddedFS(
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
 		chartName,
 		"kube-system",
 		chartValues,
 	)
-	if err != nil {
-		return err
-	}
+}
 
+func (ch *CompatCSICompatibilityHandler) deployShootCSICompatibilityMode(ctx context.Context, namespace string, renderedChart *chartrenderer.RenderedChart) error {
 	data := renderedChart.AsSecretData()
 	return managedresources.CreateForShoot(ctx, ch.client, namespace, "stackit-csi-compat-shoot-chart", "gardener-extension-provider-stackit", false, data)
 }
