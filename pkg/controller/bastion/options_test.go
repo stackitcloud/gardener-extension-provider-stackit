@@ -275,7 +275,7 @@ var _ = Describe("Options", func() {
 			Region:                "eu01",
 			AvailabilityZone:      "eu01-1",
 			MachineType:           "c1i.2",
-			RootDiskSize:          RootDiskSize,
+			RootDiskSize:          DefaultRootDiskSize,
 			ImageID:               "eu01-flatcar-1.1.0",
 			NetworkID:             "network-id",
 			WorkerSecurityGroupID: "security-group-id-nodes",

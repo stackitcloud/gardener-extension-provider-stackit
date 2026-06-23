@@ -46,8 +46,8 @@ type Options struct {
 }
 
 const (
-	// RootDiskSize is the default root disk size for the bastion server
-	RootDiskSize = int64(25)
+	// DefaultRootDiskSize is the default root disk size for the bastion server
+	DefaultRootDiskSize = int64(25)
 )
 
 func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1alpha1.Bastion, cluster *extensionscontroller.Cluster, projectID string) (*Options, error) {
@@ -89,7 +89,7 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 		opts.RootDiskSize = *cpBastionConfig.RootDiskSize
 	} else {
 		// Set a default in case a custom bastion root disk size is not configured
-		opts.RootDiskSize = RootDiskSize
+		opts.RootDiskSize = DefaultRootDiskSize
 	}
 
 	infraStatus, err := getInfrastructureStatus(ctx, a.Client, cluster)
