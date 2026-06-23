@@ -7,19 +7,23 @@ package controlplane
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/yaml"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
@@ -71,6 +75,38 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 
 		handler = NewCompatCSICompatibilityHandler(fakeClient, config)
 	})
+
+	getDaemonSetFromSecret := func(prefix string) *appsv1.DaemonSet {
+		GinkgoHelper()
+		secretList := &corev1.SecretList{}
+		Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+		var matchedSecret *corev1.Secret
+		var names []string
+		for _, s := range secretList.Items {
+			names = append(names, s.Name)
+			if strings.HasPrefix(s.Name, prefix) {
+				matchedSecret = &s
+				break
+			}
+		}
+
+		if matchedSecret == nil {
+			Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
+		}
+
+		for _, data := range matchedSecret.Data {
+			docs := bytes.Split(data, []byte("\n---"))
+			for _, doc := range docs {
+				if bytes.Contains(doc, []byte("kind: DaemonSet")) {
+					ds := &appsv1.DaemonSet{}
+					Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
+					return ds
+				}
+			}
+		}
+		Fail("DaemonSet not found in secret " + matchedSecret.Name)
+		return nil
+	}
 
 	Describe("#HandleSeedCSICompatibility", func() {
 		Context("when CSICompatibilityMode is DEFAULT", func() {
@@ -200,6 +236,18 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{}
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
+
+				ds := getDaemonSetFromSecret("managedresource-stackit-csi-compat-shoot-chart-")
+				var csiContainer *corev1.Container
+				for i := range ds.Spec.Template.Spec.Containers {
+					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
+						csiContainer = &ds.Spec.Template.Spec.Containers[i]
+						break
+					}
+				}
+				Expect(csiContainer).NotTo(BeNil(), "csi-driver-stackit container not found")
+				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
+				Expect(csiContainer.Args).NotTo(ContainElement("--legacy-volume-creation=false"))
 			})
 		})
 
@@ -228,6 +276,18 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{}
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
+
+				ds := getDaemonSetFromSecret("managedresource-stackit-csi-compat-shoot-chart-")
+				var csiContainer *corev1.Container
+				for i := range ds.Spec.Template.Spec.Containers {
+					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
+						csiContainer = &ds.Spec.Template.Spec.Containers[i]
+						break
+					}
+				}
+				Expect(csiContainer).NotTo(BeNil(), "csi-driver-stackit container not found")
+				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
+				Expect(csiContainer.Args).To(ContainElement("--legacy-volume-creation=false"))
 			})
 		})
 	})
