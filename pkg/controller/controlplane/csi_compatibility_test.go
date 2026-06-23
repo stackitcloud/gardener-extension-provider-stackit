@@ -73,7 +73,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 			Transport: &mockRoundTripper{},
 		}
 
-		handler = NewCompatCSICompatibilityHandler(fakeClient, config)
+		handler, _ = NewCompatCSICompatibilityHandler(fakeClient, config)
 	})
 
 	// getDaemonSetFromSecret := func(prefix string) *appsv1.DaemonSet {

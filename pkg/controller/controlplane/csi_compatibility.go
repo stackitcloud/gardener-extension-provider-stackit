@@ -17,16 +17,20 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
-func NewCompatCSICompatibilityHandler(client client.Client, config *rest.Config) *CompatCSICompatibilityHandler {
-	return &CompatCSICompatibilityHandler{
-		client: client,
-		config: config,
+func NewCompatCSICompatibilityHandler(client client.Client, config *rest.Config) (*CompatCSICompatibilityHandler, error) {
+	renderer, err := chartrenderer.NewForConfig(config)
+	if err != nil {
+		return nil, err
 	}
+	return &CompatCSICompatibilityHandler{
+		client:   client,
+		renderer: renderer,
+	}, nil
 }
 
 type CompatCSICompatibilityHandler struct {
-	client client.Client
-	config *rest.Config
+	client   client.Client
+	renderer chartrenderer.Interface
 }
 
 func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
@@ -49,11 +53,6 @@ func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.
 }
 
 func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any) (*chartrenderer.RenderedChart, error) {
-	renderer, err := chartrenderer.NewForConfig(ch.config)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: constant
 	chartName := "stackit-blockstorage-csi-driver"
 
@@ -86,7 +85,7 @@ func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values m
 	}
 	chartValues["images"] = imageMap
 
-	return renderer.RenderEmbeddedFS(
+	return ch.renderer.RenderEmbeddedFS(
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
 		chartName,
@@ -126,11 +125,6 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 }
 
 func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
-	renderer, err := chartrenderer.NewForConfig(ch.config)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: constant
 	chartName := "stackit-blockstorage-csi-driver"
 
@@ -167,7 +161,7 @@ func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values 
 	}
 	chartValues["csi"] = csiValues
 
-	return renderer.RenderEmbeddedFS(
+	return ch.renderer.RenderEmbeddedFS(
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
 		chartName,
