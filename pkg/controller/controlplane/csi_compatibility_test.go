@@ -76,37 +76,37 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 		handler = NewCompatCSICompatibilityHandler(fakeClient, config)
 	})
 
-	getDaemonSetFromSecret := func(prefix string) *appsv1.DaemonSet {
-		GinkgoHelper()
-		secretList := &corev1.SecretList{}
-		Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
-		var matchedSecret *corev1.Secret
-		var names []string
-		for _, s := range secretList.Items {
-			names = append(names, s.Name)
-			if strings.HasPrefix(s.Name, prefix) {
-				matchedSecret = &s
-				break
-			}
-		}
+	// getDaemonSetFromSecret := func(prefix string) *appsv1.DaemonSet {
+	// 	GinkgoHelper()
+	// 	secretList := &corev1.SecretList{}
+	// 	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+	// 	var matchedSecret *corev1.Secret
+	// 	var names []string
+	// 	for _, s := range secretList.Items {
+	// 		names = append(names, s.Name)
+	// 		if strings.HasPrefix(s.Name, prefix) {
+	// 			matchedSecret = &s
+	// 			break
+	// 		}
+	// 	}
 
-		if matchedSecret == nil {
-			Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
-		}
+	// 	if matchedSecret == nil {
+	// 		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
+	// 	}
 
-		for _, data := range matchedSecret.Data {
-			docs := bytes.Split(data, []byte("\n---"))
-			for _, doc := range docs {
-				if bytes.Contains(doc, []byte("kind: DaemonSet")) {
-					ds := &appsv1.DaemonSet{}
-					Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
-					return ds
-				}
-			}
-		}
-		Fail("DaemonSet not found in secret " + matchedSecret.Name)
-		return nil
-	}
+	// 	for _, data := range matchedSecret.Data {
+	// 		docs := bytes.Split(data, []byte("\n---"))
+	// 		for _, doc := range docs {
+	// 			if bytes.Contains(doc, []byte("kind: DaemonSet")) {
+	// 				ds := &appsv1.DaemonSet{}
+	// 				Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
+	// 				return ds
+	// 			}
+	// 		}
+	// 	}
+	// 	Fail("DaemonSet not found in secret " + matchedSecret.Name)
+	// 	return nil
+	// }
 
 	Describe("#HandleSeedCSICompatibility", func() {
 		Context("when CSICompatibilityMode is DEFAULT", func() {
@@ -237,7 +237,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				ds := getDaemonSetFromSecret("managedresource-stackit-csi-compat-shoot-chart-")
+				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-stackit-csi-compat-shoot-chart-")
 				var csiContainer *corev1.Container
 				for i := range ds.Spec.Template.Spec.Containers {
 					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
@@ -277,7 +277,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				ds := getDaemonSetFromSecret("managedresource-stackit-csi-compat-shoot-chart-")
+				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-stackit-csi-compat-shoot-chart-")
 				var csiContainer *corev1.Container
 				for i := range ds.Spec.Template.Spec.Containers {
 					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
@@ -292,3 +292,35 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 		})
 	})
 })
+
+func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, namespace string, prefix string) *appsv1.DaemonSet {
+	GinkgoHelper()
+	secretList := &corev1.SecretList{}
+	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+	var matchedSecret *corev1.Secret
+	var names []string
+	for _, s := range secretList.Items {
+		names = append(names, s.Name)
+		if strings.HasPrefix(s.Name, prefix) {
+			matchedSecret = &s
+			break
+		}
+	}
+
+	if matchedSecret == nil {
+		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
+	}
+
+	for _, data := range matchedSecret.Data {
+		docs := bytes.Split(data, []byte("\n---"))
+		for _, doc := range docs {
+			if bytes.Contains(doc, []byte("kind: DaemonSet")) {
+				ds := &appsv1.DaemonSet{}
+				Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
+				return ds
+			}
+		}
+	}
+	Fail("DaemonSet not found in secret " + matchedSecret.Name)
+	return nil
+}
