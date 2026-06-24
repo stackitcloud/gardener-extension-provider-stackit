@@ -124,6 +124,42 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 			})
 		})
 
+		Context("when CSICompatibilityMode is not set", func() {
+			It("should delete the managed resource", func() {
+				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
+					Storage: &stackitv1alpha1.Storage{
+						CSI: &stackitv1alpha1.CSI{
+							CompatibilityMode: "",
+						},
+					},
+				}
+
+				// Create the managed resource and secret beforehand to ensure deletion works
+				mr := &resourcesv1alpha1.ManagedResource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      csiCompatSeedChartName,
+						Namespace: "kube-system",
+					},
+				}
+				secret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managedresource-" + csiCompatSeedChartName,
+						Namespace: "kube-system",
+					},
+				}
+				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
+
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Check deletion
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatSeedChartName, Namespace: namespace}, mr)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			})
+		})
+
 		Context("when CSICompatibilityMode is COMPAT", func() {
 			It("should deploy the seed csi compatibility mode", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
@@ -151,6 +187,41 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
 							CompatibilityMode: string(stackitv1alpha1.DEFAULT),
+						},
+					},
+				}
+
+				// Create the managed resource and secret beforehand to ensure deletion works
+				mr := &resourcesv1alpha1.ManagedResource{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      csiCompatShootChartName,
+						Namespace: namespace,
+					},
+				}
+				secret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managedresource-" + csiCompatShootChartName,
+						Namespace: namespace,
+					},
+				}
+				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
+
+				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Check deletion
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatShootChartName, Namespace: namespace}, mr)
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			})
+		})
+
+		Context("when CSICompatibilityMode is not set", func() {
+			It("should delete the managed resource", func() {
+				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
+					Storage: &stackitv1alpha1.Storage{
+						CSI: &stackitv1alpha1.CSI{
+							CompatibilityMode: "",
 						},
 					},
 				}
