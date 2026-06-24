@@ -54,11 +54,12 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 var _ = Describe("CompatCSICompatibilityHandler", func() {
 	var (
-		ctx        context.Context
-		fakeClient client.Client
-		handler    *CompatCSICompatibilityHandler
-		namespace  string
-		config     *rest.Config
+		ctx                context.Context
+		fakeClient         client.Client
+		handler            *CompatCSICompatibilityHandler
+		namespace          string
+		config             *rest.Config
+		controlPlaneValues map[string]any
 	)
 
 	BeforeEach(func() {
@@ -75,39 +76,16 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 		}
 
 		handler, _ = NewCompatCSICompatibilityHandler(fakeClient, config)
+
+		controlPlaneValues = map[string]any{
+			"global": map[string]any{
+				"genericTokenKubeconfigSecretName": "generic-token-kubeconfig-92e9ae14",
+			},
+			openstack.CSISTACKITControllerName: map[string]any{
+				"foo": "bar",
+			},
+		}
 	})
-
-	// getDaemonSetFromSecret := func(prefix string) *appsv1.DaemonSet {
-	// 	GinkgoHelper()
-	// 	secretList := &corev1.SecretList{}
-	// 	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
-	// 	var matchedSecret *corev1.Secret
-	// 	var names []string
-	// 	for _, s := range secretList.Items {
-	// 		names = append(names, s.Name)
-	// 		if strings.HasPrefix(s.Name, prefix) {
-	// 			matchedSecret = &s
-	// 			break
-	// 		}
-	// 	}
-
-	// 	if matchedSecret == nil {
-	// 		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
-	// 	}
-
-	// 	for _, data := range matchedSecret.Data {
-	// 		docs := bytes.Split(data, []byte("\n---"))
-	// 		for _, doc := range docs {
-	// 			if bytes.Contains(doc, []byte("kind: DaemonSet")) {
-	// 				ds := &appsv1.DaemonSet{}
-	// 				Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
-	// 				return ds
-	// 			}
-	// 		}
-	// 	}
-	// 	Fail("DaemonSet not found in secret " + matchedSecret.Name)
-	// 	return nil
-	// }
 
 	Describe("#HandleSeedCSICompatibility", func() {
 		Context("when CSICompatibilityMode is DEFAULT", func() {
@@ -115,7 +93,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
-							Name: string(stackitv1alpha1.DEFAULT),
+							CompatibilityMode: string(stackitv1alpha1.DEFAULT),
 						},
 					},
 				}
@@ -123,24 +101,25 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				// Create the managed resource and secret beforehand to ensure deletion works
 				mr := &resourcesv1alpha1.ManagedResource{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "stackit-csi-compat-chart",
-						Namespace: namespace,
+						Name:      csiCompatSeedChartName,
+						Namespace: "kube-system",
 					},
 				}
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "managedresource-stackit-csi-compat-chart",
-						Namespace: namespace,
+						Name:      "managedresource-" + csiCompatSeedChartName,
+						Namespace: "kube-system",
 					},
 				}
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, nil)
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatSeedChartName, Namespace: namespace}, mr)
+				Expect(err).To(HaveOccurred())
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			})
 		})
@@ -150,17 +129,8 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
-							Name: string(stackitv1alpha1.COMPAT),
+							CompatibilityMode: string(stackitv1alpha1.COMPAT),
 						},
-					},
-				}
-
-				controlPlaneValues := map[string]any{
-					"global": map[string]any{
-						"genericTokenKubeconfigSecretName": "generic-token-kubeconfig-92e9ae14",
-					},
-					openstack.CSISTACKITControllerName: map[string]any{
-						"foo": "bar",
 					},
 				}
 
@@ -180,7 +150,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
-							Name: string(stackitv1alpha1.DEFAULT),
+							CompatibilityMode: string(stackitv1alpha1.DEFAULT),
 						},
 					},
 				}
@@ -188,24 +158,24 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				// Create the managed resource and secret beforehand to ensure deletion works
 				mr := &resourcesv1alpha1.ManagedResource{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "stackit-csi-compat-shoot-chart",
+						Name:      csiCompatShootChartName,
 						Namespace: namespace,
 					},
 				}
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "managedresource-stackit-csi-compat-shoot-chart",
+						Name:      "managedresource-" + csiCompatShootChartName,
 						Namespace: namespace,
 					},
 				}
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, nil)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatShootChartName, Namespace: namespace}, mr)
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			})
 		})
@@ -215,28 +185,19 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
-							Name: string(stackitv1alpha1.COMPAT),
+							CompatibilityMode: string(stackitv1alpha1.COMPAT),
 						},
 					},
 				}
 
-				values := map[string]any{
-					"global": map[string]any{
-						"genericTokenKubeconfigSecretName": "generic-token-kubeconfig-92e9ae14",
-					},
-					openstack.CSISTACKITControllerName: map[string]any{
-						"foo": "bar",
-					},
-				}
-
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, values)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatShootChartName, Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-stackit-csi-compat-shoot-chart-")
+				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatShootChartName)
 				var csiContainer *corev1.Container
 				for i := range ds.Spec.Template.Spec.Containers {
 					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
@@ -255,7 +216,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
-							Name: string(stackitv1alpha1.COMPATBLOCK),
+							CompatibilityMode: string(stackitv1alpha1.COMPATBLOCK),
 						},
 					},
 				}
@@ -273,10 +234,10 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-shoot-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: csiCompatShootChartName, Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-stackit-csi-compat-shoot-chart-")
+				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatShootChartName)
 				var csiContainer *corev1.Container
 				for i := range ds.Spec.Template.Spec.Containers {
 					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
