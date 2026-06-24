@@ -13,7 +13,6 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
@@ -52,7 +52,7 @@ const (
 var _ = Describe("ConfigValidator", func() {
 	var (
 		ctrl                          *gomock.Controller
-		c                             *mockclient.MockClient
+		c                             client.Client
 		mgr                           *testutils.FakeManager
 		openstackClientFactoryFactory *mockopenstackclient.MockFactoryFactory
 		openstackClientFactory        *mockopenstackclient.MockFactory
@@ -68,17 +68,12 @@ var _ = Describe("ConfigValidator", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 
-		c = mockclient.NewMockClient(ctrl)
 		openstackClientFactoryFactory = mockopenstackclient.NewMockFactoryFactory(ctrl)
 		openstackClientFactory = mockopenstackclient.NewMockFactory(ctrl)
 		networkingClient = mockopenstackclient.NewMockNetworking(ctrl)
 
 		ctx = context.TODO()
 		logger = log.Log.WithName("test")
-
-		mgr = &testutils.FakeManager{Client: c}
-
-		cv = NewConfigValidator(mgr, openstackClientFactoryFactory, logger)
 
 		infra = &extensionsv1alpha1.Infrastructure{
 			ObjectMeta: metav1.ObjectMeta{
@@ -122,6 +117,10 @@ var _ = Describe("ConfigValidator", func() {
 			Password:   password,
 			AuthURL:    authURL,
 		}
+
+		c = fakeclient.NewClientBuilder().WithObjects(secret.DeepCopy()).Build()
+		mgr = &testutils.FakeManager{Client: c}
+		cv = NewConfigValidator(mgr, openstackClientFactoryFactory, logger)
 	})
 
 	AfterEach(func() {
@@ -130,12 +129,6 @@ var _ = Describe("ConfigValidator", func() {
 
 	Describe("#Validate", func() {
 		BeforeEach(func() {
-			c.EXPECT().Get(ctx, client.ObjectKey{namespace, name}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(
-				func(_ context.Context, _ client.ObjectKey, obj *corev1.Secret, _ ...client.GetOption) error {
-					*obj = *secret
-					return nil
-				},
-			)
 			openstackClientFactoryFactory.EXPECT().NewFactory(ctx, credentials).Return(openstackClientFactory, nil)
 			openstackClientFactory.EXPECT().Networking(gomock.Any()).Return(networkingClient, nil)
 		})

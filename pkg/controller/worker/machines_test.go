@@ -23,7 +23,6 @@ import (
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
 	"github.com/gardener/gardener/pkg/utils"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,7 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
@@ -47,8 +48,7 @@ var _ = Describe("Machines", func() {
 		ctx = context.Background()
 
 		ctrl         *gomock.Controller
-		c            *mockclient.MockClient
-		statusWriter *mockclient.MockStatusWriter
+		c            client.Client
 		chartApplier *mockkubernetes.MockChartApplier
 
 		workerDelegate genericworkeractuator.WorkerDelegate
@@ -58,12 +58,12 @@ var _ = Describe("Machines", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 
-		c = mockclient.NewMockClient(ctrl)
-		statusWriter = mockclient.NewMockStatusWriter(ctrl)
 		chartApplier = mockkubernetes.NewMockChartApplier(ctrl)
 
 		scheme = runtime.NewScheme()
-		_ = stackitv1alpha1.AddToScheme(scheme)
+		utilruntime.Must(corev1.AddToScheme(scheme))
+		utilruntime.Must(extensionsv1alpha1.AddToScheme(scheme))
+		utilruntime.Must(stackitv1alpha1.AddToScheme(scheme))
 	})
 
 	AfterEach(func() {
@@ -156,6 +156,14 @@ var _ = Describe("Machines", func() {
 
 				emptyClusterAutoscalerAnnotations map[string]string
 			)
+
+			newFakeClient := func(objects ...client.Object) client.Client {
+				return fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithStatusSubresource(&extensionsv1alpha1.Worker{}).
+					WithObjects(objects...).
+					Build()
+			}
 
 			BeforeEach(func() {
 				namespace = "control-plane-namespace"
@@ -297,6 +305,7 @@ var _ = Describe("Machines", func() {
 
 				w = &extensionsv1alpha1.Worker{
 					ObjectMeta: metav1.ObjectMeta{
+						Name:      "worker",
 						Namespace: namespace,
 					},
 					Spec: extensionsv1alpha1.WorkerSpec{
@@ -414,16 +423,31 @@ var _ = Describe("Machines", func() {
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster, nil, nil, nil)
 				workerPoolHash3, _ = worker.WorkerPoolHash(w.Spec.Pools[2], cluster, nil, nil, nil)
 
+				c = newFakeClient(
+					w.DeepCopy(),
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      userDataSecretName,
+							Namespace: namespace,
+						},
+						Data: map[string][]byte{userDataSecretDataKey: userData},
+					},
+				)
+
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, "")
 			})
 
-			expectedUserDataSecretRefRead := func() {
-				c.EXPECT().Get(ctx, client.ObjectKey{Namespace: namespace, Name: userDataSecretName}, gomock.AssignableToTypeOf(&corev1.Secret{})).DoAndReturn(
-					func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
-						secret.Data = map[string][]byte{userDataSecretDataKey: userData}
-						return nil
-					},
-				).AnyTimes()
+			expectWorkerStatus := func(workerObj *extensionsv1alpha1.Worker, expectedStatus *stackitv1alpha1.WorkerStatus) {
+				persistedWorker := &extensionsv1alpha1.Worker{}
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(workerObj), persistedWorker)).To(Succeed())
+				Expect(persistedWorker.Status.ProviderStatus).NotTo(BeNil())
+
+				rawStatus, err := persistedWorker.Status.GetProviderStatus().MarshalJSON()
+				Expect(err).NotTo(HaveOccurred())
+
+				actualStatus := &stackitv1alpha1.WorkerStatus{}
+				Expect(json.Unmarshal(rawStatus, actualStatus)).To(Succeed())
+				Expect(actualStatus).To(Equal(expectedStatus))
 			}
 
 			setupMachineTest := func(region, name, imageID, architecture string, useStackitMCM bool, defaultMachineClass *map[string]any, machineDeployments *worker.MachineDeployments, machineClasses *map[string]any, workerWithRegion **extensionsv1alpha1.Worker, clusterWithRegion **extensionscontroller.Cluster) {
@@ -471,6 +495,17 @@ var _ = Describe("Machines", func() {
 					Seed:         cluster.Seed,
 				}
 				(*clusterWithRegion).Shoot.Spec.Region = region
+
+				c = newFakeClient(
+					(*workerWithRegion).DeepCopy(),
+					&corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      userDataSecretName,
+							Namespace: namespace,
+						},
+						Data: map[string][]byte{userDataSecretDataKey: userData},
+					},
+				)
 
 				// For STACKIT, region is determined using DetermineRegion which handles RegionOne -> eu01 mapping
 				effectiveRegion := region
@@ -736,8 +771,6 @@ var _ = Describe("Machines", func() {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
 
 					// Test workerDelegate.DeployMachineClasses()
-					expectedUserDataSecretRefRead()
-
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -775,11 +808,9 @@ var _ = Describe("Machines", func() {
 						Object: expectedImages,
 					}
 
-					c.EXPECT().Status().Return(statusWriter)
-					statusWriter.EXPECT().Patch(ctx, workerWithExpectedImages, gomock.Any()).Return(nil)
-
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
+					expectWorkerStatus(w, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 
@@ -794,8 +825,6 @@ var _ = Describe("Machines", func() {
 					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
-					expectedUserDataSecretRefRead()
-
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -832,12 +861,9 @@ var _ = Describe("Machines", func() {
 						Object: expectedImages,
 					}
 
-					ctx := ctx
-					c.EXPECT().Status().Return(statusWriter)
-					statusWriter.EXPECT().Patch(ctx, workerWithExpectedImages, gomock.Any()).Return(nil)
-
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
+					expectWorkerStatus(workerWithRegion, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 
@@ -864,8 +890,6 @@ var _ = Describe("Machines", func() {
 								Raw: encode(workerConfig),
 							}
 							workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
-
-							expectedUserDataSecretRefRead()
 
 							result, err := workerDelegate.GenerateMachineDeployments(ctx)
 							Expect(err).NotTo(HaveOccurred())
@@ -930,8 +954,6 @@ var _ = Describe("Machines", func() {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "kubernetes.io")
 
 					// Test workerDelegate.DeployMachineClasses()
-					expectedUserDataSecretRefRead()
-
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -968,11 +990,9 @@ var _ = Describe("Machines", func() {
 						Object: expectedImages,
 					}
 
-					c.EXPECT().Status().Return(statusWriter)
-					statusWriter.EXPECT().Patch(ctx, workerWithExpectedImages, gomock.Any()).Return(nil)
-
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
+					expectWorkerStatus(workerWithRegion, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 					result, err := workerDelegate.GenerateMachineDeployments(ctx)
@@ -986,8 +1006,6 @@ var _ = Describe("Machines", func() {
 					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
-					expectedUserDataSecretRefRead()
-
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -1024,11 +1042,9 @@ var _ = Describe("Machines", func() {
 						Object: expectedImages,
 					}
 
-					c.EXPECT().Status().Return(statusWriter)
-					statusWriter.EXPECT().Patch(ctx, workerWithExpectedImages, gomock.Any()).Return(nil)
-
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
+					expectWorkerStatus(workerWithRegion, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 					result, err := workerDelegate.GenerateMachineDeployments(ctx)
@@ -1094,8 +1110,6 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
 
-				expectedUserDataSecretRefRead()
-
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
 				resultNodeConditions := strings.Join(testNodeConditions, ",")
@@ -1118,8 +1132,6 @@ var _ = Describe("Machines", func() {
 				}
 				w.Spec.Pools[1].ClusterAutoscaler = nil
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
-
-				expectedUserDataSecretRefRead()
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1150,8 +1162,6 @@ var _ = Describe("Machines", func() {
 			DescribeTable("customLabelDomain in machineclass helm chart",
 				func(customDomain string) {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
-
-					expectedUserDataSecretRefRead()
 
 					chartApplier.
 						EXPECT().
@@ -1196,15 +1206,6 @@ func useDefaultMachineClass(def map[string]any, value any) map[string]any {
 	maps.Copy(out, def)
 
 	out["availabilityZone"] = value
-	return out
-}
-
-func useDefaultMachineClassWith(def map[string]any, add map[string]any) map[string]any {
-	out := make(map[string]any, len(add))
-
-	maps.Copy(out, def)
-	maps.Copy(out, add)
-
 	return out
 }
 
