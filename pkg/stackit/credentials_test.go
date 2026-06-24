@@ -20,9 +20,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -36,8 +38,7 @@ var (
 var _ = Describe("Secret", func() {
 	Describe("#GetCredentialsFromSecretRef", func() {
 		var (
-			ctrl *gomock.Controller
-			c    *mockclient.MockClient
+			c client.Client
 
 			ctx       = context.TODO()
 			namespace = "namespace"
@@ -50,18 +51,18 @@ var _ = Describe("Secret", func() {
 		)
 
 		BeforeEach(func() {
-			ctrl = gomock.NewController(GinkgoT())
-
-			c = mockclient.NewMockClient(ctrl)
-		})
-
-		AfterEach(func() {
-			ctrl.Finish()
+			c = fake.NewClientBuilder().Build()
 		})
 
 		It("should fail if the secret could not be read", func() {
 			fakeErr := errors.New("error")
-			c.EXPECT().Get(ctx, client.ObjectKey{namespace, name}, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(fakeErr)
+			c = fake.NewClientBuilder().WithInterceptorFuncs(interceptor.Funcs{
+				Get: func(_ context.Context, _ client.WithWatch, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
+					Expect(key).To(Equal(client.ObjectKey{Namespace: namespace, Name: name}))
+					Expect(obj).To(BeAssignableToTypeOf(&corev1.Secret{}))
+					return fakeErr
+				},
+			}).Build()
 
 			credentials, err := GetCredentialsFromSecretRef(ctx, c, secretRef)
 
@@ -70,19 +71,16 @@ var _ = Describe("Secret", func() {
 		})
 
 		It("should return the correct credentials object", func() {
-			c.EXPECT().Get(
-				ctx, client.ObjectKey{namespace, name},
-				gomock.AssignableToTypeOf(&corev1.Secret{}),
-				gomock.Any(),
-			).DoAndReturn(
-				func(_ context.Context, _ client.ObjectKey, secret *corev1.Secret, _ ...client.GetOption) error {
-					secret.Data = map[string][]byte{
-						ProjectID: []byte(projectID),
-						SaKeyJSON: []byte(saKeyJSON),
-					}
-					return nil
+			c = fake.NewClientBuilder().WithObjects(&corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretRef.Name,
+					Namespace: secretRef.Namespace,
 				},
-			)
+				Data: map[string][]byte{
+					ProjectID: []byte(projectID),
+					SaKeyJSON: []byte(saKeyJSON),
+				},
+			}).Build()
 
 			credentials, err := GetCredentialsFromSecretRef(ctx, c, secretRef)
 
