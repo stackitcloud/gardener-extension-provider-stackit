@@ -340,11 +340,12 @@ func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, names
 
 	if matchedSecret == nil {
 		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
+		return nil // will never be reached, but makes the linter very happy
 	}
 
 	for _, data := range matchedSecret.Data {
-		docs := bytes.Split(data, []byte("\n---"))
-		for _, doc := range docs {
+		docs := bytes.SplitSeq(data, []byte("\n---"))
+		for doc := range docs {
 			if bytes.Contains(doc, []byte("kind: DaemonSet")) {
 				ds := &appsv1.DaemonSet{}
 				Expect(yaml.Unmarshal(doc, ds)).To(Succeed())
