@@ -82,6 +82,7 @@ func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values m
 	}
 	chartValues["images"] = imageMap
 
+	chartValues["healthzPort"] = 9809
 	csiValues := map[string]any{
 		"enableCompatibilityMode": true,
 	}

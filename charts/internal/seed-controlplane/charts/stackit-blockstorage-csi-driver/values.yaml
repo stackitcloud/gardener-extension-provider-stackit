@@ -4,6 +4,8 @@ kubernetesVersion: 1.30.0
 prefix: stackit-blockstorage
 projectID: ""
 
+healthzPort: 9808
+
 csi:
   enableCompatibilityMode: false
   blockLegacyCreation: false
