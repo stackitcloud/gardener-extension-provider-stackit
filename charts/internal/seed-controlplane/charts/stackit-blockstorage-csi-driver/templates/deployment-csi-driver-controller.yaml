@@ -256,6 +256,7 @@ spec:
         args:
         - --probe-timeout=3m
         - --csi-address=/csi/csi.sock
+        - --health-port={{.Values.healthzPort}}
 {{- if .Values.resources.livenessProbe }}
         resources:
 {{ toYaml .Values.resources.livenessProbe | indent 10 }}
