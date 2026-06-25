@@ -1,3 +1,4 @@
+{{- if .Values.csi.enableCompatibilityMode }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -70,3 +71,4 @@ spec:
                 path: token
               name: shoot-access-csi-snapshot-controller
               optional: false
+{{- end }}
