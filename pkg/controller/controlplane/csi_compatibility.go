@@ -21,7 +21,7 @@ const (
 	csiDriverChartName      = "stackit-blockstorage-csi-driver"
 	csiCompatibilityPrefix  = "stackit-csi-compat"
 	csiCompatSeedChartName  = csiCompatibilityPrefix + "-chart"
-	csiCompatShootChartName = csiCompatibilityPrefix + "-shoort-chart"
+	csiCompatShootChartName = csiCompatibilityPrefix + "-shoot-chart"
 )
 
 func NewCompatCSICompatibilityHandler(client client.Client, config *rest.Config) (*CompatCSICompatibilityHandler, error) {
