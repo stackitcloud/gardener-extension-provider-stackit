@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 

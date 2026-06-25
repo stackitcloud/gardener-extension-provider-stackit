@@ -23,7 +23,6 @@ import (
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
 	"github.com/gardener/gardener/pkg/utils"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,6 +38,7 @@ import (
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 

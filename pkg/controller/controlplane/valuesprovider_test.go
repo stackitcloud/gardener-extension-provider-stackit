@@ -20,7 +20,6 @@ import (
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -40,6 +39,7 @@ import (
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
+	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )

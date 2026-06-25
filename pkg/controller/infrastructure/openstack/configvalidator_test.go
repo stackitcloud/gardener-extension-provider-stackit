@@ -13,7 +13,6 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	testutils "github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gophercloud/gophercloud/v2/openstack/networking/v2/extensions/layer3/routers"
@@ -32,6 +31,7 @@ import (
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack"
+	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	mockopenstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client/mocks"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
