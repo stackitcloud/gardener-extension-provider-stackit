@@ -176,6 +176,49 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{}
 				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
+
+				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-csi-compat-csi-driver-controller")
+				var csiContainer *corev1.Container
+				for i := range deployment.Spec.Template.Spec.Containers {
+					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {
+						csiContainer = &deployment.Spec.Template.Spec.Containers[i]
+						break
+					}
+				}
+				Expect(csiContainer).NotTo(BeNil(), "stackit-csi-driver container not found")
+				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
+				Expect(csiContainer.Args).NotTo(ContainElement("--legacy-volume-creation=false"))
+			})
+		})
+
+		Context("when CSICompatibilityMode is COMPATBLOCK", func() {
+			It("should deploy the seed csi compatibility mode", func() {
+				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
+					Storage: &stackitv1alpha1.Storage{
+						CSI: &stackitv1alpha1.CSI{
+							CompatibilityMode: string(stackitv1alpha1.COMPATBLOCK),
+						},
+					},
+				}
+
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				Expect(err).NotTo(HaveOccurred())
+
+				mr := &resourcesv1alpha1.ManagedResource{}
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-chart", Namespace: namespace}, mr)
+				Expect(err).NotTo(HaveOccurred())
+
+				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-csi-compat-csi-driver-controller")
+				var csiContainer *corev1.Container
+				for i := range deployment.Spec.Template.Spec.Containers {
+					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {
+						csiContainer = &deployment.Spec.Template.Spec.Containers[i]
+						break
+					}
+				}
+				Expect(csiContainer).NotTo(BeNil(), "stackit-csi-driver container not found")
+				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
+				Expect(csiContainer.Args).To(ContainElement("--legacy-volume-creation=false"))
 			})
 		})
 	})
@@ -318,13 +361,12 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				}
 				Expect(csiContainer).NotTo(BeNil(), "csi-driver-stackit container not found")
 				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
-				Expect(csiContainer.Args).To(ContainElement("--legacy-volume-creation=false"))
 			})
 		})
 	})
 })
 
-func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, namespace string, prefix string) *appsv1.DaemonSet {
+func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, namespace string, secretNamePrefix string) *appsv1.DaemonSet {
 	GinkgoHelper()
 	secretList := &corev1.SecretList{}
 	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
@@ -332,14 +374,14 @@ func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, names
 	var names []string
 	for _, s := range secretList.Items {
 		names = append(names, s.Name)
-		if strings.HasPrefix(s.Name, prefix) {
+		if strings.HasPrefix(s.Name, secretNamePrefix) {
 			matchedSecret = &s
 			break
 		}
 	}
 
 	if matchedSecret == nil {
-		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", prefix, names))
+		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", secretNamePrefix, names))
 		return nil // will never be reached, but makes the linter very happy
 	}
 
@@ -355,4 +397,39 @@ func getDaemonSetFromSecret(ctx context.Context, fakeClient client.Client, names
 	}
 	Fail("DaemonSet not found in secret " + matchedSecret.Name)
 	return nil
+}
+
+func getDeploymentFromSecret(ctx context.Context, fakeClient client.Client, namespace string, secretName string, deploymentName string) *appsv1.Deployment {
+	GinkgoHelper()
+	secretList := &corev1.SecretList{}
+	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+	var matchedSecret *corev1.Secret
+	var names []string
+	for _, s := range secretList.Items {
+		names = append(names, s.Name)
+		if strings.HasPrefix(s.Name, secretName) {
+			matchedSecret = &s
+			break
+		}
+	}
+
+	if matchedSecret == nil {
+		Fail(fmt.Sprintf("Secret starting with prefix %s not found. Found secrets: %v", secretName, names))
+		return nil // will never be reached, but makes the linter very happy
+	}
+
+	for _, data := range matchedSecret.Data {
+		docs := bytes.SplitSeq(data, []byte("\n---"))
+		for doc := range docs {
+			if bytes.Contains(doc, []byte("kind: Deployment")) {
+				deployment := &appsv1.Deployment{}
+				Expect(yaml.Unmarshal(doc, deployment)).To(Succeed())
+				if deployment.Name == deploymentName {
+					return deployment
+				}
+			}
+		}
+	}
+	Fail(fmt.Sprintf("Deployment %s not found in secret %s", deploymentName, matchedSecret.Name))
+	return nil // will never be reached, but makes the linter very happy
 }

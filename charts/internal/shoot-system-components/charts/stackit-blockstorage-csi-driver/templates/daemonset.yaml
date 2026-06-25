@@ -51,9 +51,6 @@ spec:
         {{- if .Values.csi.enableCompatibilityMode }}
         - --legacy-storage-mode=true
         {{- end }}
-        {{- if .Values.csi.blockLegacyCreation }}
-        - --legacy-volume-creation=false
-        {{- end }}
         env:
         - name: CSI_ENDPOINT
           value: unix://{{ .Values.socketPath }}

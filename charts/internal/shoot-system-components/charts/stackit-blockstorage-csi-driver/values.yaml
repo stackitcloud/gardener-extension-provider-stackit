@@ -7,7 +7,6 @@ healthzPort: 9908
 
 csi:
   enableCompatibilityMode: false
-  blockLegacyCreation: false
 
 images:
   csi-driver-stackit: image-repository:image-tag

@@ -44,7 +44,8 @@ func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	switch compatibilityMode {
 	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
-		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues)
+		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
+		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, blockLegacyCreation)
 		if err != nil {
 			return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
 		}
@@ -61,7 +62,7 @@ func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any) (*chartrenderer.RenderedChart, error) {
+func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
 	chartValues := composeCompatibilityChartValues(values)
 
 	// Override chart values
@@ -80,6 +81,14 @@ func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values m
 		return nil, err
 	}
 	chartValues["images"] = imageMap
+
+	csiValues := map[string]any{
+		"enableCompatibilityMode": true,
+	}
+	if blockLegacyCreation {
+		csiValues["blockLegacyCreation"] = true
+	}
+	chartValues["csi"] = csiValues
 
 	return ch.renderer.RenderEmbeddedFS(
 		charts.InternalChart,
@@ -103,8 +112,7 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	switch compatibilityMode {
 	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
-		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
-		chart, err := ch.renderShootCSICompatibilityMode(values, blockLegacyCreation)
+		chart, err := ch.renderShootCSICompatibilityMode(values)
 		if err != nil {
 			return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
 		}
@@ -121,7 +129,7 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
+func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any) (*chartrenderer.RenderedChart, error) {
 	chartValues := composeCompatibilityChartValues(values)
 
 	// Override chart values
@@ -140,9 +148,6 @@ func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values 
 	chartValues["healthzPort"] = 9909
 	csiValues := map[string]any{
 		"enableCompatibilityMode": true,
-	}
-	if blockLegacyCreation {
-		csiValues["blockLegacyCreation"] = true
 	}
 	chartValues["csi"] = csiValues
 
