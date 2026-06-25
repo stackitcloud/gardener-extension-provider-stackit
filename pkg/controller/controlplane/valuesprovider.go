@@ -358,8 +358,8 @@ var (
 )
 
 type CSICompatibilityHandler interface {
-	HandleSeedCSICompatibility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
-	HandleShootCSICompatibility(context.Context, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+	HandleSeedCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+	HandleShootCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
@@ -779,7 +779,7 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		controlPlaneValues[openstack.CSIControllerName] = map[string]any{
 			"enabled": false,
 		}
-		err := vp.csiCompatibilityHandler.HandleSeedCSICompatibility(ctx, cp.Namespace, cpConfig, controlPlaneValues)
+		err := vp.csiCompatibilityHandler.HandleSeedCSICompatibility(ctx, cp.Namespace, cluster.Shoot.Spec.Kubernetes.Version, cpConfig, controlPlaneValues)
 		if err != nil {
 			return nil, err
 		}
@@ -1113,7 +1113,7 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 	case stackitv1alpha1.STACKIT:
 		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
 		values[openstack.CSINodeName] = map[string]any{"enabled": false}
-		err := vp.csiCompatibilityHandler.HandleShootCSICompatibility(ctx, cp.Namespace, cpConfig, values)
+		err := vp.csiCompatibilityHandler.HandleShootCSICompatibility(ctx, cp.Namespace, cluster.Shoot.Spec.Kubernetes.Version, cpConfig, values)
 		if err != nil {
 			return nil, err
 		}

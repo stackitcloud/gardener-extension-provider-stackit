@@ -7,6 +7,7 @@ import (
 
 	"github.com/gardener/gardener/pkg/chartrenderer"
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
+	imagevectorutils "github.com/gardener/gardener/pkg/utils/imagevector"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,12 +41,12 @@ type CompatCSICompatibilityHandler struct {
 	renderer chartrenderer.Interface
 }
 
-func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
+func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	switch compatibilityMode {
 	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
 		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
-		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, blockLegacyCreation)
+		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, namespace, version, blockLegacyCreation)
 		if err != nil {
 			return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
 		}
@@ -62,21 +63,13 @@ func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
+func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any, namespace string, version string, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
 	chartValues := composeCompatibilityChartValues(values)
 
 	// Override chart values
 	chartValues["prefix"] = csiCompatibilityPrefix
 
-	imageMap, err := findImages(
-		"csi-driver-stackit",
-		"csi-provisioner",
-		"csi-attacher",
-		"csi-snapshotter",
-		"csi-resizer",
-		"csi-liveness-probe",
-		"csi-snapshot-controller",
-	)
+	imageMap, err := findImages(version, "csi-driver-stackit", "csi-provisioner", "csi-attacher", "csi-snapshotter", "csi-resizer", "csi-liveness-probe", "csi-snapshot-controller")
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +88,7 @@ func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values m
 		charts.InternalChart,
 		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
 		csiDriverChartName,
-		"kube-system",
+		namespace,
 		chartValues,
 	)
 }
@@ -109,11 +102,11 @@ func (ch *CompatCSICompatibilityHandler) deleteSeedCSICompatibilityMode(ctx cont
 	return client.IgnoreNotFound(managedresources.DeleteForSeed(ctx, ch.client, namespace, csiCompatSeedChartName))
 }
 
-func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context.Context, namespace string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
+func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
 	switch compatibilityMode {
 	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
-		chart, err := ch.renderShootCSICompatibilityMode(values)
+		chart, err := ch.renderShootCSICompatibilityMode(values, version)
 		if err != nil {
 			return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
 		}
@@ -130,17 +123,13 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 	return nil
 }
 
-func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any) (*chartrenderer.RenderedChart, error) {
+func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, version string) (*chartrenderer.RenderedChart, error) {
 	chartValues := composeCompatibilityChartValues(values)
 
 	// Override chart values
 	chartValues["prefix"] = csiCompatibilityPrefix
 
-	imageMap, err := findImages(
-		"csi-driver-stackit",
-		"csi-node-driver-registrar",
-		"csi-liveness-probe",
-	)
+	imageMap, err := findImages(version, "csi-driver-stackit", "csi-node-driver-registrar", "csi-liveness-probe")
 	if err != nil {
 		return nil, err
 	}
@@ -183,11 +172,11 @@ func composeCompatibilityChartValues(values map[string]any) map[string]any {
 	return gardenerutils.MergeMaps(values, csiStackitValues)
 }
 
-func findImages(imagesToFind ...string) (map[string]any, error) {
+func findImages(version string, imagesToFind ...string) (map[string]any, error) {
 	images := imagevector.ImageVector()
 	result := make(map[string]any)
 	for _, image := range imagesToFind {
-		foundImage, err := images.FindImage(image)
+		foundImage, err := images.FindImage(image, imagevectorutils.TargetVersion(version))
 		if err != nil {
 			return nil, err
 		}

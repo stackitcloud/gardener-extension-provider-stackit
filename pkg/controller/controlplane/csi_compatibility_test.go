@@ -59,12 +59,14 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 		handler            *CompatCSICompatibilityHandler
 		namespace          string
 		config             *rest.Config
+		shootVersion       string
 		controlPlaneValues map[string]any
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		namespace = "test-namespace"
+		shootVersion = "1.33.5"
 
 		fakeClient = fakeclient.NewClientBuilder().
 			WithScheme(kubernetes.SeedScheme).
@@ -90,6 +92,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 	Describe("#HandleSeedCSICompatibility", func() {
 		Context("when CSICompatibilityMode is DEFAULT", func() {
 			It("should delete the managed resource", func() {
+				namespace = "shoot--foo--bar"
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
@@ -102,19 +105,19 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      csiCompatSeedChartName,
-						Namespace: "kube-system",
+						Namespace: namespace,
 					},
 				}
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "managedresource-" + csiCompatSeedChartName,
-						Namespace: "kube-system",
+						Namespace: namespace,
 					},
 				}
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
@@ -138,7 +141,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      csiCompatSeedChartName,
-						Namespace: "kube-system",
+						Namespace: "shoot--foo--bar",
 					},
 				}
 				secret := &corev1.Secret{
@@ -150,7 +153,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
@@ -170,7 +173,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 					},
 				}
 
-				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
@@ -201,7 +204,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 					},
 				}
 
-				err := handler.HandleSeedCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleSeedCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
@@ -250,7 +253,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
@@ -285,7 +288,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check deletion
@@ -304,7 +307,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 					},
 				}
 
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, controlPlaneValues)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, shootVersion, cpConfig, controlPlaneValues)
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
@@ -344,7 +347,7 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 					},
 				}
 
-				err := handler.HandleShootCSICompatibility(ctx, namespace, cpConfig, values)
+				err := handler.HandleShootCSICompatibility(ctx, namespace, shootVersion, cpConfig, values)
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
