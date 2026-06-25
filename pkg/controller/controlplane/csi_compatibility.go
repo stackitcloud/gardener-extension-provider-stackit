@@ -136,6 +136,7 @@ func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values 
 	chartValues["images"] = imageMap
 
 	chartValues["healthzPort"] = 9909
+	chartValues["driverName"] = openstack.CSIStorageProvisioner
 	csiValues := map[string]any{
 		"enableCompatibilityMode": true,
 	}

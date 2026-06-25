@@ -17,7 +17,11 @@ spec:
     metadata:
       annotations:
         checksum/configmap-cloud-provider-config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        node.gardener.cloud/wait-for-csi-node-stackit: block-storage.csi.stackit.cloud
+        {{- if eq .Values.driverName "cinder.csi.openstack.org" }}
+        node.gardener.cloud/wait-for-csi-node-openstack: {{ .Values.driverName }}
+        {{- else }}
+        node.gardener.cloud/wait-for-csi-node-stackit: {{ .Values.driverName }}
+        {{- end }}
       labels:
         node.gardener.cloud/critical-component: "true"
         app: {{ .Values.prefix }}-csi
@@ -97,7 +101,7 @@ spec:
         - name: ADDRESS
           value: {{ .Values.socketPath }}
         - name: DRIVER_REG_SOCK_PATH
-          value: /var/lib/kubelet/plugins/block-storage.csi.stackit.cloud/csi.sock
+          value: /var/lib/kubelet/plugins/{{ .Values.driverName }}/csi.sock
 {{- if .Values.resources.nodeDriverRegistrar }}
         resources:
 {{ toYaml .Values.resources.nodeDriverRegistrar | indent 10 }}
@@ -133,7 +137,7 @@ spec:
           type: Directory
       - name: plugin-dir
         hostPath:
-          path: /var/lib/kubelet/plugins/block-storage.csi.stackit.cloud/
+          path: /var/lib/kubelet/plugins/{{ .Values.driverName }}/
           type: DirectoryOrCreate
       - name: registration-dir
         hostPath:
