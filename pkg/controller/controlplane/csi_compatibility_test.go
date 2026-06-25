@@ -174,10 +174,10 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-compatibility-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-csi-compat-csi-driver-controller")
+				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-driver-controller")
 				var csiContainer *corev1.Container
 				for i := range deployment.Spec.Template.Spec.Containers {
 					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {
@@ -205,10 +205,10 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				mr := &resourcesv1alpha1.ManagedResource{}
-				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-csi-compat-chart", Namespace: namespace}, mr)
+				err = fakeClient.Get(ctx, types.NamespacedName{Name: "stackit-compatibility-chart", Namespace: namespace}, mr)
 				Expect(err).NotTo(HaveOccurred())
 
-				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-csi-compat-csi-driver-controller")
+				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-driver-controller")
 				var csiContainer *corev1.Container
 				for i := range deployment.Spec.Template.Spec.Containers {
 					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {

@@ -19,7 +19,7 @@ import (
 
 const (
 	csiDriverChartName      = "stackit-blockstorage-csi-driver"
-	csiCompatibilityPrefix  = "stackit-csi-compat"
+	csiCompatibilityPrefix  = "stackit-compatibility"
 	csiCompatSeedChartName  = csiCompatibilityPrefix + "-chart"
 	csiCompatShootChartName = csiCompatibilityPrefix + "-shoot-chart"
 )
