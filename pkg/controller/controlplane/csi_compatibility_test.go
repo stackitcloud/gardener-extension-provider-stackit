@@ -92,7 +92,6 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 	Describe("#HandleSeedCSICompatibility", func() {
 		Context("when CSICompatibilityMode is DEFAULT", func() {
 			It("should delete the managed resource", func() {
-				namespace = "shoot--foo--bar"
 				cpConfig := &stackitv1alpha1.ControlPlaneConfig{
 					Storage: &stackitv1alpha1.Storage{
 						CSI: &stackitv1alpha1.CSI{
@@ -141,13 +140,13 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				mr := &resourcesv1alpha1.ManagedResource{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      csiCompatSeedChartName,
-						Namespace: "shoot--foo--bar",
+						Namespace: namespace,
 					},
 				}
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "managedresource-" + csiCompatSeedChartName,
-						Namespace: "kube-system",
+						Namespace: namespace,
 					},
 				}
 				Expect(fakeClient.Create(ctx, mr)).To(Succeed())
