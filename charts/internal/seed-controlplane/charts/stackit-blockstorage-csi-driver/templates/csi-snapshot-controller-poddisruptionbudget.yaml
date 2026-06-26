@@ -1,4 +1,4 @@
-{{- if .Values.csi.enableCompatibilityMode }}
+{{- if not .Values.csi.enableCompatibilityMode }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

@@ -1,4 +1,4 @@
-{{- if .Values.csi.enableCompatibilityMode }}
+{{- if not .Values.csi.enableCompatibilityMode }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
