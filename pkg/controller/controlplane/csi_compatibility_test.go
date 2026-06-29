@@ -180,16 +180,14 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-driver-controller")
-				var csiContainer *corev1.Container
-				for i := range deployment.Spec.Template.Spec.Containers {
-					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {
-						csiContainer = &deployment.Spec.Template.Spec.Containers[i]
-						break
-					}
-				}
-				Expect(csiContainer).NotTo(BeNil(), "stackit-csi-driver container not found")
+				csiContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-driver")
+				Expect(found).To(BeTrue(), "stackit-csi-driver container not found")
 				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
 				Expect(csiContainer.Args).NotTo(ContainElement("--legacy-volume-creation=false"))
+
+				livenessContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-liveness-probe")
+				Expect(found).To(BeTrue(), "stackit-csi-liveness-probe container not found")
+				Expect(livenessContainer.Args).To(ContainElement("--health-port=9809"))
 			})
 		})
 
@@ -211,16 +209,15 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				deployment := getDeploymentFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-driver-controller")
-				var csiContainer *corev1.Container
-				for i := range deployment.Spec.Template.Spec.Containers {
-					if deployment.Spec.Template.Spec.Containers[i].Name == "stackit-csi-driver" {
-						csiContainer = &deployment.Spec.Template.Spec.Containers[i]
-						break
-					}
-				}
-				Expect(csiContainer).NotTo(BeNil(), "stackit-csi-driver container not found")
+
+				csiContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-driver")
+				Expect(found).To(BeTrue(), "stackit-csi-driver container not found")
 				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
 				Expect(csiContainer.Args).To(ContainElement("--legacy-volume-creation=false"))
+
+				livenessContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-liveness-probe")
+				Expect(found).To(BeTrue(), "stackit-csi-liveness-probe container not found")
+				Expect(livenessContainer.Args).To(ContainElement("--health-port=9809"))
 			})
 		})
 	})
@@ -314,16 +311,15 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatShootChartName)
-				var csiContainer *corev1.Container
-				for i := range ds.Spec.Template.Spec.Containers {
-					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
-						csiContainer = &ds.Spec.Template.Spec.Containers[i]
-						break
-					}
-				}
-				Expect(csiContainer).NotTo(BeNil(), "csi-driver-stackit container not found")
+
+				csiContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-driver-stackit")
+				Expect(found).To(BeTrue(), "csi-driver-stackit container not found")
 				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
 				Expect(csiContainer.Args).NotTo(ContainElement("--legacy-volume-creation=false"))
+
+				livenessContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-liveness-probe")
+				Expect(found).To(BeTrue(), "csi-liveness-probe container not found")
+				Expect(livenessContainer.Args).To(ContainElement("--health-port=9909"))
 			})
 		})
 
@@ -354,15 +350,14 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				ds := getDaemonSetFromSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatShootChartName)
-				var csiContainer *corev1.Container
-				for i := range ds.Spec.Template.Spec.Containers {
-					if ds.Spec.Template.Spec.Containers[i].Name == "csi-driver-stackit" {
-						csiContainer = &ds.Spec.Template.Spec.Containers[i]
-						break
-					}
-				}
-				Expect(csiContainer).NotTo(BeNil(), "csi-driver-stackit container not found")
+
+				csiContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-driver-stackit")
+				Expect(found).To(BeTrue(), "csi-driver-stackit container not found")
 				Expect(csiContainer.Args).To(ContainElement("--legacy-storage-mode=true"))
+
+				livenessContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-liveness-probe")
+				Expect(found).To(BeTrue(), "csi-liveness-probe container not found")
+				Expect(livenessContainer.Args).To(ContainElement("--health-port=9909"))
 			})
 		})
 	})
@@ -434,4 +429,13 @@ func getDeploymentFromSecret(ctx context.Context, fakeClient client.Client, name
 	}
 	Fail(fmt.Sprintf("Deployment %s not found in secret %s", deploymentName, matchedSecret.Name))
 	return nil // will never be reached, but makes the linter very happy
+}
+
+func findContainerInPod(podSpec *corev1.PodSpec, name string) (*corev1.Container, bool) {
+	for i := range podSpec.Containers {
+		if podSpec.Containers[i].Name == name {
+			return &podSpec.Containers[i], true
+		}
+	}
+	return nil, false
 }
