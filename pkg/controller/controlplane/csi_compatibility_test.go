@@ -320,6 +320,9 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				livenessContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-liveness-probe")
 				Expect(found).To(BeTrue(), "csi-liveness-probe container not found")
 				Expect(livenessContainer.Args).To(ContainElement("--health-port=9909"))
+
+				Expect(ds.Spec.Template.Annotations).To(HaveKeyWithValue("node.gardener.cloud/wait-for-csi-node-openstack", openstack.CSIStorageProvisioner))
+				Expect(ds.Spec.Template.Annotations).NotTo(HaveKey("node.gardener.cloud/wait-for-csi-node-stackit"))
 			})
 		})
 
@@ -358,6 +361,9 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				livenessContainer, found := findContainerInPod(&ds.Spec.Template.Spec, "csi-liveness-probe")
 				Expect(found).To(BeTrue(), "csi-liveness-probe container not found")
 				Expect(livenessContainer.Args).To(ContainElement("--health-port=9909"))
+
+				Expect(ds.Spec.Template.Annotations).To(HaveKeyWithValue("node.gardener.cloud/wait-for-csi-node-openstack", openstack.CSIStorageProvisioner))
+				Expect(ds.Spec.Template.Annotations).NotTo(HaveKey("node.gardener.cloud/wait-for-csi-node-stackit"))
 			})
 		})
 	})
