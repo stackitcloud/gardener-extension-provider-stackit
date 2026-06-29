@@ -1,5 +1,5 @@
 # renovate: datasource=github-releases depName=ko-build/ko
-KO_VERSION ?= v0.18.1
+KO_VERSION ?= v0.19.1
 # renovate: datasource=github-releases depName=uber-go/mock
 MOCKGEN_VERSION = v0.6.0
 # renovate: datasource=github-releases depName=golangci/golangci-lint
