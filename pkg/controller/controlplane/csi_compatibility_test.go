@@ -188,6 +188,8 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				livenessContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-liveness-probe")
 				Expect(found).To(BeTrue(), "stackit-csi-liveness-probe container not found")
 				Expect(livenessContainer.Args).To(ContainElement("--health-port=9809"))
+
+				Expect(deploymentExistsInSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-snapshot-controller")).To(BeFalse())
 			})
 		})
 
@@ -218,6 +220,8 @@ var _ = Describe("CompatCSICompatibilityHandler", func() {
 				livenessContainer, found := findContainerInPod(&deployment.Spec.Template.Spec, "stackit-csi-liveness-probe")
 				Expect(found).To(BeTrue(), "stackit-csi-liveness-probe container not found")
 				Expect(livenessContainer.Args).To(ContainElement("--health-port=9809"))
+
+				Expect(deploymentExistsInSecret(ctx, fakeClient, namespace, "managedresource-"+csiCompatSeedChartName, "stackit-compatibility-csi-snapshot-controller")).To(BeFalse())
 			})
 		})
 	})
@@ -435,6 +439,29 @@ func getDeploymentFromSecret(ctx context.Context, fakeClient client.Client, name
 	}
 	Fail(fmt.Sprintf("Deployment %s not found in secret %s", deploymentName, matchedSecret.Name))
 	return nil // will never be reached, but makes the linter very happy
+}
+
+func deploymentExistsInSecret(ctx context.Context, fakeClient client.Client, namespace string, secretNamePrefix string, deploymentName string) bool {
+	GinkgoHelper()
+	secretList := &corev1.SecretList{}
+	Expect(fakeClient.List(ctx, secretList, client.InNamespace(namespace))).To(Succeed())
+	for _, s := range secretList.Items {
+		if !strings.HasPrefix(s.Name, secretNamePrefix) {
+			continue
+		}
+		for _, data := range s.Data {
+			for doc := range bytes.SplitSeq(data, []byte("\n---")) {
+				if bytes.Contains(doc, []byte("kind: Deployment")) {
+					deployment := &appsv1.Deployment{}
+					Expect(yaml.Unmarshal(doc, deployment)).To(Succeed())
+					if deployment.Name == deploymentName {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func findContainerInPod(podSpec *corev1.PodSpec, name string) (*corev1.Container, bool) {
