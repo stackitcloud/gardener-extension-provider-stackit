@@ -98,13 +98,6 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 		}
 	}
 
-	// avoid unnecessary reconciles if a recourse exhausted. Specially needed for machine-controller-manager-provider-openstack
-	// to avoid the creation of many volumes. But also on machine-controller-manager-provider-stackit this limits the amount of requests.
-	sidecarContainer.Args = extensionswebhook.EnsureStringWithPrefix(
-		sidecarContainer.Args,
-		"--resource-exhausted-retry=", "30m",
-	)
-
 	newObj.Spec.Template.Spec.Containers = extensionswebhook.EnsureContainerWithName(
 		newObj.Spec.Template.Spec.Containers,
 		sidecarContainer,
