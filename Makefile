@@ -120,6 +120,7 @@ generate-mocks: $(MOCKGEN)
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/mocks.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client Factory,DNSClient
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/iaas_mock.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client IaaSClient
 	@$(MOCKGEN) -destination ./pkg/stackit/client/mock/loadbalancing_mock.go -package client github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client LoadBalancingClient
+	@$(MOCKGEN) -destination ./pkg/mock/controller-runtime/client/mocks.go -package client sigs.k8s.io/controller-runtime/pkg/client Client,StatusWriter,Reader,Writer,SubResourceClient
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(CRD_REF_DOCS) $(HELM) $(MOCKGEN) $(YQ) $(YAML2JSON) $(GOIMPORTS) generate-mocks ## Generates the controller-registration, other code-gen, the imagename constants as well as executes go:generate directives
