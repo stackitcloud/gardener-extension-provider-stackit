@@ -2,15 +2,13 @@ module github.com/stackitcloud/gardener-extension-provider-stackit/v2
 
 go 1.26.1
 
-exclude github.com/open-telemetry/opentelemetry-operator v0.143.0
-
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.36.4
 	github.com/gardener/gardener v1.145.0
 	github.com/gardener/gardener-extension-networking-calico v1.58.0
-	github.com/gardener/gardener-extension-os-coreos v1.29.0
+	github.com/gardener/gardener-extension-os-coreos v1.30.0
 	github.com/gardener/gardener/pkg/apis v1.145.0
 	github.com/gardener/machine-controller-manager v0.61.3
 	github.com/go-logr/logr v1.4.3
