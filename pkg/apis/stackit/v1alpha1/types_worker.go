@@ -66,6 +66,8 @@ type WorkerConfig struct {
 
 	// MachineLabels define key value pairs to add to machines.
 	MachineLabels []MachineLabel `json:"machineLabels,omitempty"`
+
+	SecondaryNetworkIDs []string `json:"secondaryNetworkIDs,omitempty"`
 }
 
 // MachineLabel define key value pair to label machines.

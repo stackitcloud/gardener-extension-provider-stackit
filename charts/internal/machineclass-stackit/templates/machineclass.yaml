@@ -48,6 +48,7 @@ providerSpec:
   keypairName: {{ $machineClass.keyName }}
   networking:
     networkId: {{ $machineClass.networkID }}
+    secondaryNetworkIDs: {{ $machineClass.secondaryNetworkIDs }}
   allowedAddresses: {{ $machineClass.podNetworkCIDRs }}
   bootVolume:
     size: {{ $machineClass.rootDiskSize }}

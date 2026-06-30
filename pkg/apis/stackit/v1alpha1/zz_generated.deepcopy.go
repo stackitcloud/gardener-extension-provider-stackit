@@ -999,6 +999,11 @@ func (in *WorkerConfig) DeepCopyInto(out *WorkerConfig) {
 		*out = make([]MachineLabel, len(*in))
 		copy(*out, *in)
 	}
+	if in.SecondaryNetworkIDs != nil {
+		in, out := &in.SecondaryNetworkIDs, &out.SecondaryNetworkIDs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

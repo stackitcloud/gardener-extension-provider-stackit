@@ -2271,6 +2271,17 @@ WorkerConfig contains configuration data for a worker pool.
 <p>MachineLabels define key value pairs to add to machines.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>secondaryNetworkIDs</code></br>
+<em>
+string array
+</em>
+</td>
+<td>
+<p></p>
+</td>
+</tr>
 
 </tbody>
 </table>
