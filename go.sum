@@ -162,8 +162,8 @@ github.com/gardener/etcd-druid/api v0.36.4 h1:o/17ciPrbh/w+igKMUuglW7N9XLjoMh7Av
 github.com/gardener/etcd-druid/api v0.36.4/go.mod h1:RwZzKp8K415AS0zg8VoODjBxYepCAUYyLgXnZc1bmbo=
 github.com/gardener/gardener v1.145.0 h1:4vwUQtjr+hLIiDGci0Mu6sJhVWWSj/CoLD3T172nmg0=
 github.com/gardener/gardener v1.145.0/go.mod h1:cDTZIPHaoj9ywmBTvronK5SpPBc/zI942hsp2//WVNo=
-github.com/gardener/gardener-extension-networking-calico v1.58.0 h1:jCHWWRPB5temGZYYl1mls1Aw69Xmvj44meJ2gEWE4Rw=
-github.com/gardener/gardener-extension-networking-calico v1.58.0/go.mod h1:9nbH2Ftc2Rk/HQ2nYMiiHtMTENLAj0OaadGVts3zCu8=
+github.com/gardener/gardener-extension-networking-calico v1.59.0 h1:L5w61z7ueiV8y2m4oHLFEQbv3sw7JVqouk3o0UPjdu8=
+github.com/gardener/gardener-extension-networking-calico v1.59.0/go.mod h1:CTdu8c+5C8y7yoNR6QAvDBVRO4l8i8r7jvzIKv9ZFRc=
 github.com/gardener/gardener-extension-os-coreos v1.30.0 h1:v0eqpNL+VkAH5bN/xQ141ystGTcl/+FF18Quqd2XcNY=
 github.com/gardener/gardener-extension-os-coreos v1.30.0/go.mod h1:d5K2QNpBjBQZZo1T6QM2x30GlmRDg1qH3YUZQV6yLh0=
 github.com/gardener/gardener/pkg/apis v1.145.0 h1:E9mnDYOKOoOEJnpGCPpFuS0OX32uoOnv27a03b/nlP0=
