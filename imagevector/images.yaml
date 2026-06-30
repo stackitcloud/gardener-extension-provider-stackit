@@ -23,24 +23,8 @@ images:
 
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
-  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.32.16"
-  targetVersion: "1.32.x"
-- name: stackit-cloud-controller-manager
-  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
-  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.33.16"
-  targetVersion: "1.33.x"
-- name: stackit-cloud-controller-manager
-  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
-  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.34.9"
-  targetVersion: "1.34.x"
-- name: stackit-cloud-controller-manager
-  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
-  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.35.4"
-  targetVersion: ">= 1.35"
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager-dev
+  tag: "sort-node-addresses"
 
 - name: machine-controller-manager-provider-openstack
   sourceRepository: github.com/gardener/machine-controller-manager-provider-openstack
@@ -48,8 +32,8 @@ images:
   tag: "v0.25.0-ske-1"
 - name: machine-controller-manager-provider-stackit
   sourceRepository: github.com/stackitcloud/machine-controller-manager-provider-stackit
-  repository: ghcr.io/stackitcloud/machine-controller-manager-provider-stackit
-  tag: "v0.7.0"
+  repository: ghcr.io/stackitcloud/machine-controller-manager-provider-stackit-dev
+  tag: "v0.7.0-12-g3913699"
 
 - name: csi-driver-cinder
   sourceRepository: github.com/stackitcloud/cloud-provider-openstack
