@@ -23,3 +23,6 @@ data:
       extraLabels:
         {{- toYaml .Values.config.extraLabels | nindent 8 }}
       {{- end }}
+    instance:
+      defaultNetwork: {{ .Values.config.instance.defaultNetwork | quote }}
+

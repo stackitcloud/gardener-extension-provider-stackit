@@ -863,6 +863,9 @@ func getSTACKITCCMChartValues(
 			// utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
 		},
 		"customLabelDomain": customLabelDomain,
+		"instance": map[string]any{
+			"defaultNetwork": infra.Networks.ID,
+		},
 	}
 
 	if credentials.LoadBalancerAPIEmergencyToken != "" {

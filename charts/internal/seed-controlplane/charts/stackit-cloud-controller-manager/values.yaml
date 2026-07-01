@@ -10,6 +10,8 @@ config:
   #tokenUrl: foo.bar.example.com/v1
   port: 10258
   metricsPort: 9090
+  instance:
+    defaultNetwork: ""
 podAnnotations: {}
 podLabels: {}
 featureGates: {}
