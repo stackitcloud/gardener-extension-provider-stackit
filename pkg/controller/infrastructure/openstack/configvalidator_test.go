@@ -32,7 +32,6 @@ import (
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/infrastructure/openstack"
-	mockclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/mock/controller-runtime/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	mockopenstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client/mocks"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
