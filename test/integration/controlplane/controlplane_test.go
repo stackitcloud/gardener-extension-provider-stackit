@@ -20,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -272,5 +273,124 @@ var _ = Describe("ControlPlane CSI compatibility mode", func() {
 				Namespace: namespace,
 			}, shootMR)
 		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(Succeed())
+	})
+
+	It("should delete both ManagedResources when transitioning from compat to default", func() {
+		cpConfigCompat := &stackitv1alpha1.ControlPlaneConfig{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
+				Kind:       "ControlPlaneConfig",
+			},
+			CloudControllerManager: &stackitv1alpha1.CloudControllerManagerConfig{
+				Name: string(stackitv1alpha1.STACKIT),
+			},
+			Storage: &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{
+					Name:              string(stackitv1alpha1.STACKIT),
+					CompatibilityMode: string(stackitv1alpha1.COMPAT),
+				},
+			},
+		}
+		cpConfigCompatBytes, err := json.Marshal(cpConfigCompat)
+		Expect(err).NotTo(HaveOccurred())
+
+		infraStatus := &stackitv1alpha1.InfrastructureStatus{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
+				Kind:       "InfrastructureStatus",
+			},
+			Networks: stackitv1alpha1.NetworkStatus{
+				ID:   "test-network-id",
+				Name: "test-network-name",
+				Router: stackitv1alpha1.RouterStatus{
+					ID: "test-router-id",
+				},
+			},
+			Node: stackitv1alpha1.NodeStatus{KeyName: "test-key"},
+		}
+		infraStatusBytes, err := json.Marshal(infraStatus)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("create ControlPlane CR with compat mode")
+		cp := &extensionsv1alpha1.ControlPlane{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "controlplane",
+				Namespace: namespace,
+				Labels:    map[string]string{"test-id": testID},
+			},
+			Spec: extensionsv1alpha1.ControlPlaneSpec{
+				DefaultSpec: extensionsv1alpha1.DefaultSpec{
+					Type:           stackit.Type,
+					ProviderConfig: &runtime.RawExtension{Raw: cpConfigCompatBytes},
+				},
+				Region: "eu01",
+				SecretRef: corev1.SecretReference{
+					Name:      "cloudprovider",
+					Namespace: namespace,
+				},
+				InfrastructureProviderStatus: &runtime.RawExtension{Raw: infraStatusBytes},
+			},
+		}
+		Expect(k8sclient.Create(ctx, cp)).To(Succeed())
+		DeferCleanup(func() { Expect(client.IgnoreNotFound(k8sclient.Delete(ctx, cp))).To(Succeed()) })
+
+		By("wait for seed ManagedResource to be created")
+		Eventually(func() error {
+			return k8sclient.Get(ctx, types.NamespacedName{
+				Name:      "stackit-compatibility-chart",
+				Namespace: namespace,
+			}, &resourcesv1alpha1.ManagedResource{})
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(Succeed())
+
+		By("wait for shoot ManagedResource to be created")
+		Eventually(func() error {
+			return k8sclient.Get(ctx, types.NamespacedName{
+				Name:      "stackit-compatibility-shoot-chart",
+				Namespace: namespace,
+			}, &resourcesv1alpha1.ManagedResource{})
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(Succeed())
+
+		By("update ControlPlane to default compatibility mode")
+		cpConfigDefault := &stackitv1alpha1.ControlPlaneConfig{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
+				Kind:       "ControlPlaneConfig",
+			},
+			CloudControllerManager: &stackitv1alpha1.CloudControllerManagerConfig{
+				Name: string(stackitv1alpha1.STACKIT),
+			},
+			Storage: &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{
+					Name:              string(stackitv1alpha1.STACKIT),
+					CompatibilityMode: string(stackitv1alpha1.DEFAULT),
+				},
+			},
+		}
+		cpConfigDefaultBytes, err := json.Marshal(cpConfigDefault)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("trigger reconciliation")
+		Expect(k8sclient.Get(ctx, types.NamespacedName{Name: cp.Name, Namespace: cp.Namespace}, cp)).To(Succeed())
+		cp.Spec.ProviderConfig = &runtime.RawExtension{Raw: cpConfigDefaultBytes}
+		metav1.SetMetaDataAnnotation(&cp.ObjectMeta, "gardener.cloud/operation", "reconcile")
+		Expect(k8sclient.Update(ctx, cp)).To(Succeed())
+
+		By("wait for seed ManagedResource to be deleted")
+		Eventually(func() bool {
+			err := k8sclient.Get(ctx, types.NamespacedName{
+				Name:      "stackit-compatibility-chart",
+				Namespace: namespace,
+			}, &resourcesv1alpha1.ManagedResource{})
+			return apierrors.IsNotFound(err)
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(BeTrue())
+
+		By("wait for shoot ManagedResource to be deleted")
+		Eventually(func() bool {
+			err := k8sclient.Get(ctx, types.NamespacedName{
+				Name:      "stackit-compatibility-shoot-chart",
+				Namespace: namespace,
+			}, &resourcesv1alpha1.ManagedResource{})
+			return apierrors.IsNotFound(err)
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).Should(BeTrue())
 	})
 })
