@@ -139,3 +139,26 @@ images:
   sourceRepository: github.com/stackitcloud/stackit-pod-identity-webhook
   repository: ghcr.io/stackitcloud/stackit-pod-identity-webhook
   tag: "v0.4.0"
+
+
+- name: stackit-credential-provider
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-credential-provider
+  tag: "v1.32.16"
+  targetVersion: "1.32.x"
+- name: stackit-credential-provider
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-credential-provider
+  tag: "v1.33.16"
+  targetVersion: "1.33.x"
+- name: stackit-credential-provider
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-credential-provider
+  tag: "v1.34.9"
+  targetVersion: "1.34.x"
+- name: stackit-credential-provider
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-credential-provider
+  tag: "v1.35.4"
+  targetVersion: ">= 1.35"
+

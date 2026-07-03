@@ -7,7 +7,9 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
@@ -20,6 +22,8 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"k8s.io/utils/ptr"
@@ -34,13 +38,19 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane/registrycache"
 )
 
+const (
+	kubeletCredentialProviderDir        = "/opt/kubelet-credential-provider"
+	kubeletCredentialProviderConfigFile = "/etc/kubelet/credential-provider-config.yaml"
+)
+
 // NewEnsurer creates a new controlplane ensurer.
-func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger) genericmutator.Ensurer {
+func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger, encoder runtime.Encoder) genericmutator.Ensurer {
 	return &ensurer{
 		logger: logger.WithName("openstack-controlplane-ensurer"),
 		regCacheEnsurer: &registrycache.Ensurer{
 			Caches: regCaches,
 		},
+		encoder: encoder,
 	}
 }
 
@@ -48,6 +58,7 @@ type ensurer struct {
 	genericmutator.NoopEnsurer
 	logger          logr.Logger
 	regCacheEnsurer *registrycache.Ensurer
+	encoder         runtime.Encoder
 }
 
 // ImageVector is exposed for testing.
@@ -235,7 +246,10 @@ func (e *ensurer) EnsureKubeletServiceUnitOptions(_ context.Context, _ gcontext.
 }
 
 func ensureKubeletCommandLineArgs(command []string) []string {
-	return extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
+	command = extensionswebhook.EnsureStringWithPrefix(command, "--cloud-provider=", "external")
+	command = extensionswebhook.EnsureStringWithPrefix(command, "--image-credential-provider-bin-dir=", kubeletCredentialProviderDir)
+	command = extensionswebhook.EnsureStringWithPrefix(command, "--image-credential-provider-config=", kubeletCredentialProviderConfigFile)
+	return command
 }
 
 // EnsureKubeletConfiguration ensures that the kubelet configuration conforms to the provider requirements.
@@ -358,6 +372,56 @@ mv "$tmp" "$dest" && echo updated "$dest"
 		},
 	}
 	*newObj = extensionswebhook.EnsureFileWithPath(*newObj, file)
+}
+
+func (e *ensurer) ensureCredentialProviderFiles(newObj *[]extensionsv1alpha1.File) error {
+	cpc := &kubeletconfigv1beta1.CredentialProviderConfig{
+		Providers: []kubeletconfigv1beta1.CredentialProvider{
+			{
+				Name:        "stackit-credential-provider",
+				MatchImages: []string{"registry.onstackit.cloud"},
+				DefaultCacheDuration: &metav1.Duration{
+					Duration: 1 * time.Hour,
+				},
+			},
+		},
+	}
+
+	cpcRaw, err := runtime.Encode(e.encoder, cpc)
+	if err != nil {
+		return err
+	}
+
+	file := extensionsv1alpha1.File{
+		Path:        kubeletCredentialProviderConfigFile,
+		Permissions: new(uint32(0o640)),
+		Content: extensionsv1alpha1.FileContent{
+			Inline: &extensionsv1alpha1.FileContentInline{
+				Encoding: "",
+				Data:     string(cpcRaw),
+			},
+		},
+	}
+	*newObj = extensionswebhook.EnsureFileWithPath(*newObj, file)
+
+	image, err := imagevector.ImageVector().FindImage(imagevector.ImageNameStackitCredentialProvider)
+	if err != nil {
+		return err
+	}
+
+	bin := extensionsv1alpha1.File{
+		Path:        filepath.Join(kubeletCredentialProviderDir, "stackit-credential-provider"),
+		Permissions: new(uint32(0o755)),
+		Content: extensionsv1alpha1.FileContent{
+			ImageRef: &extensionsv1alpha1.FileContentImageRef{
+				Image:           image.String(),
+				FilePathInImage: "/ko-app/stackit-credential-provider",
+			},
+		},
+	}
+
+	*newObj = extensionswebhook.EnsureFileWithPath(*newObj, bin)
+	return nil
 }
 
 func getCloudProfileConfig(ctx context.Context, gctx gcontext.GardenContext) (*stackitv1alpha1.CloudProfileConfig, error) {

@@ -14,6 +14,7 @@ import (
 	oscutils "github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -34,6 +35,10 @@ var logger = log.Log.WithName("stackit-controlplane-webhook")
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
 	fciCodec := oscutils.NewFileContentInlineCodec()
+	serializer := jsonserializer.NewSerializerWithOptions(jsonserializer.DefaultMetaFactory, mgr.GetScheme(), mgr.GetScheme(), jsonserializer.SerializerOptions{
+		Yaml:   true,
+		Pretty: true,
+	})
 	return controlplane.New(mgr, controlplane.Args{
 		Kind:     controlplane.KindShoot,
 		Provider: stackit.Type,
@@ -43,7 +48,7 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionsw
 			{Obj: &extensionsv1alpha1.OperatingSystemConfig{}},
 		},
 		ObjectSelector: &metav1.LabelSelector{MatchLabels: map[string]string{v1beta1constants.LabelExtensionProviderMutatedByControlplaneWebhook: "true"}},
-		Mutator: genericmutator.NewMutator(mgr, NewEnsurer(opts.RegistryCaches, logger), oscutils.NewUnitSerializer(),
+		Mutator: genericmutator.NewMutator(mgr, NewEnsurer(opts.RegistryCaches, logger, serializer), oscutils.NewUnitSerializer(),
 			kubelet.NewConfigCodec(fciCodec), fciCodec, logger),
 	})
 }
