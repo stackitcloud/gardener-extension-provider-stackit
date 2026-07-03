@@ -57,6 +57,8 @@ const (
 	// DNSCABundle is a constant for the key in a DNS secret that holds the Openstack CA Bundle for the KeyStone server.
 	DNSCABundle = "OS_CACERT"
 
+	// CloudProfileCASecretName is the name of the secret containing the CloudPorifle caBundle
+	CloudProfileCASecretName = "cloudprofile-ca-bundle"
 	// CloudProviderConfigName is the name of the secret containing the cloud provider config.
 	CloudProviderConfigName = "cloud-provider-config"
 	// CloudProviderDiskConfigName is the name of the secret containing the cloud provider config for disk/volume handling. It is used by kube-controller-manager.

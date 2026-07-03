@@ -135,7 +135,7 @@ var (
 		Objects: []*chart.Object{
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderConfigName},
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderDiskConfigName},
-			{Type: &corev1.Secret{}, Name: "cloudprofile-ca-bundle"},
+			{Type: &corev1.Secret{}, Name: openstack.CloudProfileCASecretName},
 		},
 	}
 
