@@ -610,9 +610,6 @@ WantedBy=multi-user.target
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127WithSTACKITMCMANDCUSTOMCA, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-stackit", "foo:bar")
 			expectedContainer.Env = []corev1.EnvVar{}
-			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
-				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
-			)
 			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
 				MountPath: "/etc/ssl/certs/stackit-ca.crt",
