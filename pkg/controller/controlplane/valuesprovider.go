@@ -135,7 +135,7 @@ var (
 		Objects: []*chart.Object{
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderConfigName},
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderDiskConfigName},
-			{Type: &corev1.Secret{}, Name: "stackit-ca-bundle"},
+			{Type: &corev1.Secret{}, Name: "cloudprofile-ca-bundle"},
 		},
 	}
 
@@ -682,7 +682,7 @@ func getConfigChartValues(
 		}
 	}
 
-	// Deploy the stackit-ca-bundle when at least one of stackit-mcm, stackit-csi or stackit-ccm is deployed
+	// Deploy the cloudprofile-ca-bundle when at least one of stackit-mcm, stackit-csi or stackit-ccm is deployed
 	if feature.UseStackitMachineControllerManager(cluster) ||
 		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
 		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {

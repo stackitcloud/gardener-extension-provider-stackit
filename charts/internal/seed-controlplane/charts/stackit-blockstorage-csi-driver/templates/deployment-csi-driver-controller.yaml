@@ -347,4 +347,4 @@ spec:
       - name: stackit-ca
         secret:
           optional: true
-          secretName: stackit-ca-bundle
+          secretName: cloudprofile-ca-bundle

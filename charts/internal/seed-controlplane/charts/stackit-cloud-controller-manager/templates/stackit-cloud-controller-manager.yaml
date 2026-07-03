@@ -113,7 +113,7 @@ spec:
               path: "serviceaccount.json"
       - name: stackit-ca
         secret:
-          secretName: stackit-ca-bundle
+          secretName: cloudprofile-ca-bundle
           optional: true
       - name: kubeconfig
         projected:

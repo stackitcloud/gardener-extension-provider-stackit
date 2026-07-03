@@ -605,7 +605,7 @@ WantedBy=multi-user.target
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 
-		It("should add stackit-ca-bundle to Deployment and sidecar when CloudProfile CA Bundle is set", func() {
+		It("should add cloudprofile-ca-bundle to Deployment and sidecar when CloudProfile CA Bundle is set", func() {
 			Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127WithSTACKITMCMANDCUSTOMCA, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-stackit", "foo:bar")
