@@ -999,6 +999,11 @@ func (in *WorkerConfig) DeepCopyInto(out *WorkerConfig) {
 		*out = make([]MachineLabel, len(*in))
 		copy(*out, *in)
 	}
+	if in.ServiceAccountMails != nil {
+		in, out := &in.ServiceAccountMails, &out.ServiceAccountMails
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

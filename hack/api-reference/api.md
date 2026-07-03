@@ -2271,6 +2271,17 @@ WorkerConfig contains configuration data for a worker pool.
 <p>MachineLabels define key value pairs to add to machines.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>ServiceAccountMails</code></br>
+<em>
+string array
+</em>
+</td>
+<td>
+<p>ServiceAccountMails defines which service accounts to attach to the server</p>
+</td>
+</tr>
 
 </tbody>
 </table>

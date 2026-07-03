@@ -165,14 +165,15 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		for zoneIndex, zone := range pool.Zones {
 			zoneIdx := int32(zoneIndex)
 			machineClassSpec := map[string]any{
-				"region":           region,
-				"availabilityZone": zone,
-				"machineType":      pool.MachineType,
-				"keyName":          infrastructureStatus.Node.KeyName,
-				"networkID":        infrastructureStatus.Networks.ID,
-				"podNetworkCIDRs":  extensionscontroller.GetPodNetwork(w.cluster),
-				"securityGroups":   securityGroups,
-				"tags":             tags,
+				"region":              region,
+				"availabilityZone":    zone,
+				"machineType":         pool.MachineType,
+				"keyName":             infrastructureStatus.Node.KeyName,
+				"networkID":           infrastructureStatus.Networks.ID,
+				"podNetworkCIDRs":     extensionscontroller.GetPodNetwork(w.cluster),
+				"securityGroups":      securityGroups,
+				"serviceAccountMails": workerConfig.ServiceAccountMails,
+				"tags":                tags,
 				"credentialsSecretRef": map[string]any{
 					"name":      w.worker.Spec.SecretRef.Name,
 					"namespace": w.worker.Spec.SecretRef.Namespace,

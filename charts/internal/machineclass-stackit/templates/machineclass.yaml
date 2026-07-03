@@ -61,4 +61,5 @@ providerSpec:
   labels:
 {{ toYaml $machineClass.tags | indent 4 }}
   {{- end }}
+  serviceAccountMails: {{ $machineClass.serviceAccountMails }}
 {{- end }}

@@ -21,6 +21,7 @@ machineClasses:
     rootDiskType: standard_hdd
     securityGroups:
       - 836428cd-5f98-1305-af9d-9825d4dfd0ec
+    serviceAccountMails: []
     podNetworkCIDRs:
       - 192.168.0.0/24
     tags:

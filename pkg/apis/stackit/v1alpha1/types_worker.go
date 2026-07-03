@@ -66,6 +66,9 @@ type WorkerConfig struct {
 
 	// MachineLabels define key value pairs to add to machines.
 	MachineLabels []MachineLabel `json:"machineLabels,omitempty"`
+
+	// ServiceAccountMails defines which service accounts to attach to the server
+	ServiceAccountMails []string `json:"ServiceAccountMails,omitempty"`
 }
 
 // MachineLabel define key value pair to label machines.
