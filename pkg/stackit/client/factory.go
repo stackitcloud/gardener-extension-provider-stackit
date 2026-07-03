@@ -91,7 +91,7 @@ func newHTTPClientWithCustomCA(caBundle []byte) (*http.Client, error) {
 	caCertPool, err := x509.SystemCertPool()
 	if err != nil {
 		// we could also fall back here and use an empty pool via x509.NewCertPool()
-		return nil, err
+		return nil, fmt.Errorf("failed to load system cert pool: %w", err)
 	}
 	if ok := caCertPool.AppendCertsFromPEM(caBundle); !ok {
 		return nil, fmt.Errorf("failed to append CA bundle to cert pool")
