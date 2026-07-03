@@ -35,7 +35,6 @@ import (
 )
 
 const (
-	//nolint:gosec // These are not a credentials. Just the name of the kubernetes Secret
 	CASecretName = "cloudprofile-ca-bundle"
 	CAVolumeName = "stackit-ca"
 )
