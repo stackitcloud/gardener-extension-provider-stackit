@@ -13,18 +13,22 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
+	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/nodemanagement/machinecontrollermanager"
+	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	kubeletconfigv1 "k8s.io/kubelet/config/v1"
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 	"k8s.io/utils/ptr"
 
@@ -311,12 +315,39 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 	if err := e.regCacheEnsurer.EnsureCaches(newObj); err != nil {
 		return err
 	}
-	cloudProfileConfig, err := getCloudProfileConfig(ctx, gctx)
+	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return err
 	}
+	cloudProfileConfig, err := getCloudProfileConfig(ctx, cluster)
+	if err != nil {
+		return err
+	}
+
 	e.addAdditionalFilesForResolvConfOptions(getResolveConfOptions(cloudProfileConfig), newObj)
+	if err := e.ensureCredentialProviderFiles(newObj,
+		ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{}).TokenEndpoint,
+		kubeletServiceAccountForCredentialProvidersEnabled(cluster.Shoot),
+	); err != nil {
+		return err
+	}
 	return nil
+}
+
+func kubeletServiceAccountForCredentialProvidersEnabled(shoot *v1beta1.Shoot) bool {
+	featureGate, ok := shoot.Spec.Kubernetes.Kubelet.FeatureGates["KubeletServiceAccountTokenForCredentialProviders"]
+
+	// promoted to beta in 1.34
+	if versionutils.ConstraintK8sLess134.CheckVersion(shoot.Spec.Kubernetes.Version) {
+		return featureGate
+	}
+
+	// feature gate set for clusters > 1.34, must explicity check
+	if ok {
+		return featureGate
+	}
+
+	return true
 }
 
 // addAdditionalFilesForResolvConfOptions writes the script to update `/etc/resolv.conf` from
@@ -374,17 +405,39 @@ mv "$tmp" "$dest" && echo updated "$dest"
 	*newObj = extensionswebhook.EnsureFileWithPath(*newObj, file)
 }
 
-func (e *ensurer) ensureCredentialProviderFiles(newObj *[]extensionsv1alpha1.File) error {
-	cpc := &kubeletconfigv1beta1.CredentialProviderConfig{
-		Providers: []kubeletconfigv1beta1.CredentialProvider{
+func (e *ensurer) ensureCredentialProviderFiles(newObj *[]extensionsv1alpha1.File, customTokenEndpoint *string, serviceAccountTokenForCredentialProviders bool) error {
+	cpc := &kubeletconfigv1.CredentialProviderConfig{
+		Providers: []kubeletconfigv1.CredentialProvider{
 			{
-				Name:        "stackit-credential-provider",
-				MatchImages: []string{"registry.onstackit.cloud"},
+				Name: "stackit-credential-provider",
+				MatchImages: []string{
+					"registry.onstackit.cloud",
+					"registry.qa.onstackit.cloud",
+				},
 				DefaultCacheDuration: &metav1.Duration{
 					Duration: 1 * time.Hour,
 				},
 			},
 		},
+	}
+
+	if serviceAccountTokenForCredentialProviders {
+		cpc.Providers[0].TokenAttributes = &kubeletconfigv1.ServiceAccountTokenAttributes{
+			OptionalServiceAccountAnnotationKeys: []string{
+				"workload-identity.stackit.cloud/service-account-email",
+			},
+			CacheType: kubeletconfigv1.ServiceAccountServiceAccountTokenCacheType,
+			// TODO: make this configurable
+			ServiceAccountTokenAudience: "sts.accounts.stackit.cloud",
+		}
+
+	}
+
+	if customTokenEndpoint != nil {
+		cpc.Providers[0].Env = append(cpc.Providers[0].Env, kubeletconfigv1.ExecEnvVar{
+			Name:  "STACKIT_IDP_TOKEN_ENDPOINT",
+			Value: *customTokenEndpoint,
+		})
 	}
 
 	cpcRaw, err := runtime.Encode(e.encoder, cpc)
@@ -424,11 +477,7 @@ func (e *ensurer) ensureCredentialProviderFiles(newObj *[]extensionsv1alpha1.Fil
 	return nil
 }
 
-func getCloudProfileConfig(ctx context.Context, gctx gcontext.GardenContext) (*stackitv1alpha1.CloudProfileConfig, error) {
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return nil, err
-	}
+func getCloudProfileConfig(ctx context.Context, cluster *controller.Cluster) (*stackitv1alpha1.CloudProfileConfig, error) {
 	cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster)
 	if err != nil {
 		return nil, err
