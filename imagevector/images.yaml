@@ -19,7 +19,12 @@ images:
   sourceRepository: github.com/kubernetes/cloud-provider-openstack
   repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
   tag: "v1.35.0"
-  targetVersion: ">= 1.35"
+  targetVersion: "1.35.x"
+- name: cloud-controller-manager
+  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
+  tag: "v1.36.0"
+  targetVersion: ">= 1.36"
 
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
@@ -40,7 +45,12 @@ images:
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
   tag: "v1.35.4"
-  targetVersion: ">= 1.35"
+  targetVersion: "1.35.x"
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.36.2"
+  targetVersion: ">= 1.36"
 
 - name: machine-controller-manager-provider-openstack
   sourceRepository: github.com/gardener/machine-controller-manager-provider-openstack
@@ -67,10 +77,15 @@ images:
   tag: "v1.34.1-ske-1"
   targetVersion: 1.34.x
 - name: csi-driver-cinder
-  sourceRepository: github.com/kubernetes/cloud-provider-openstack
+  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
   repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
   tag: "v1.35.0-ske-1"
-  targetVersion: '>= 1.35'
+  targetVersion: '1.35.x'
+- name: csi-driver-cinder
+  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
+  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
+  tag: "v1.36.0-ske-1"
+  targetVersion: '>= 1.36'
 
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
@@ -91,7 +106,12 @@ images:
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
   tag: "v1.35.4"
-  targetVersion: ">= 1.35"
+  targetVersion: "1.35.x"
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.36.2"
+  targetVersion: ">= 1.36"
 
 - name: csi-provisioner
   sourceRepository: github.com/kubernetes-csi/external-provisioner
