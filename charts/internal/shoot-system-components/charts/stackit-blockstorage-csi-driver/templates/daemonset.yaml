@@ -17,7 +17,7 @@ spec:
     metadata:
       annotations:
         checksum/configmap-cloud-provider-config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        {{- if eq .Values.csi.enableCompatibilityMode }}
+        {{- if .Values.csi.enableCompatibilityMode }}
         node.gardener.cloud/wait-for-csi-node-openstack: {{ .Values.driverName }}
         {{- else }}
         node.gardener.cloud/wait-for-csi-node-stackit: {{ .Values.driverName }}
