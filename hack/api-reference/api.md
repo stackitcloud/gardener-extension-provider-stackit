@@ -249,7 +249,7 @@ string
 </em>
 </td>
 <td>
-<p></p>
+<p>Name contains the name of the used CSI driver:<br />- "openstack" uses the legacy cinder driver<br />- "stackit" uses the new STACKIT CSI driver</p>
 </td>
 </tr>
 <tr>
@@ -260,7 +260,8 @@ string
 </em>
 </td>
 <td>
-<p></p>
+<em>(Optional)</em>
+<p>CompatibilityMode can be used to enable a compatibility layer for clusters that still uses cinder volumes:<br />- "default" uses only the new STACKIT CSI driver, no compatibility layer is active (default value, can be omitted)<br />- "compat" enables the cinder compatibility layer in addition to the STACKIT CSI driver to allow access to cinder volumes<br />- "compatblock" enables the cinder compatibility layer like "compat", but does not allow to create new cinder volumes</p>
 </td>
 </tr>
 
