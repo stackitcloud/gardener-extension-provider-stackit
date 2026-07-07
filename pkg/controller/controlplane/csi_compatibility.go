@@ -43,23 +43,25 @@ type CompatCSICompatibilityHandler struct {
 
 func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
-	switch compatibilityMode {
-	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
-		blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
-		chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, namespace, version, blockLegacyCreation)
-		if err != nil {
-			return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
-		}
-		err = ch.deploySeedCSICompatibilityMode(ctx, namespace, chart)
-		if err != nil {
-			return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
-		}
-	default:
+	blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
+
+	if compatibilityMode != stackitv1alpha1.COMPAT && compatibilityMode != stackitv1alpha1.COMPATBLOCK {
 		err := ch.deleteSeedCSICompatibilityMode(ctx, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
 		}
+		return nil
 	}
+
+	chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, namespace, version, blockLegacyCreation)
+	if err != nil {
+		return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
+	}
+	err = ch.deploySeedCSICompatibilityMode(ctx, namespace, chart)
+	if err != nil {
+		return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
+	}
+
 	return nil
 }
 
@@ -104,22 +106,23 @@ func (ch *CompatCSICompatibilityHandler) deleteSeedCSICompatibilityMode(ctx cont
 
 func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
 	compatibilityMode := getCSICompatibilityMode(cpConfig)
-	switch compatibilityMode {
-	case stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK:
-		chart, err := ch.renderShootCSICompatibilityMode(values, version)
-		if err != nil {
-			return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
-		}
-		err = ch.deployShootCSICompatibilityMode(ctx, namespace, chart)
-		if err != nil {
-			return fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
-		}
-	default:
+	if compatibilityMode != stackitv1alpha1.COMPAT && compatibilityMode != stackitv1alpha1.COMPATBLOCK {
 		err := ch.deleteShootCSICompatibilityMode(ctx, namespace)
 		if err != nil {
 			return fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
 		}
+		return nil
 	}
+
+	chart, err := ch.renderShootCSICompatibilityMode(values, version)
+	if err != nil {
+		return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
+	}
+	err = ch.deployShootCSICompatibilityMode(ctx, namespace, chart)
+	if err != nil {
+		return fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
+	}
+
 	return nil
 }
 
