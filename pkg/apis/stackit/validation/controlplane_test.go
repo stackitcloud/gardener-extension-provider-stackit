@@ -18,17 +18,15 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 	var (
 		nilPath      *field.Path
 		controlPlane *stackitv1alpha1.ControlPlaneConfig
-		infraConfig  *stackitv1alpha1.InfrastructureConfig
 	)
 
 	BeforeEach(func() {
 		controlPlane = &stackitv1alpha1.ControlPlaneConfig{}
-		infraConfig = &stackitv1alpha1.InfrastructureConfig{}
 	})
 
 	Describe("#ValidateControlPlaneConfig", func() {
 		It("should return no errors for a valid configuration", func() {
-			Expect(ValidateControlPlaneConfig(controlPlane, infraConfig, "", nilPath)).To(BeEmpty())
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(BeEmpty())
 		})
 
 		It("should fail with invalid CCM feature gates", func() {
@@ -39,7 +37,7 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 				},
 			}
 
-			errorList := ValidateControlPlaneConfig(controlPlane, infraConfig, "1.28.2", nilPath)
+			errorList := ValidateControlPlaneConfig(controlPlane, "1.28.2", nilPath)
 
 			Expect(errorList).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
@@ -53,7 +51,7 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 			controlPlane.Storage = &stackitv1alpha1.Storage{
 				CSI: &stackitv1alpha1.CSI{Name: "stackit", CompatibilityMode: "bogus"},
 			}
-			Expect(ValidateControlPlaneConfig(controlPlane, infraConfig, "", nilPath)).To(ConsistOf(
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":  Equal(field.ErrorTypeInvalid),
 					"Field": Equal("storage.csi.compatibilityMode"),

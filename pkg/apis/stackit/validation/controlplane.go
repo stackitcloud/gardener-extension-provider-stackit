@@ -21,13 +21,10 @@ var (
 )
 
 // ValidateControlPlaneConfig validates a ControlPlaneConfig object.
-func ValidateControlPlaneConfig(controlPlaneConfig *stackitv1alpha1.ControlPlaneConfig, infraConfig *stackitv1alpha1.InfrastructureConfig, version string, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
+func ValidateControlPlaneConfig(controlPlaneConfig *stackitv1alpha1.ControlPlaneConfig, version string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{} // nolint:prealloc // size is not known yet
 
-	if controlPlaneConfig.CloudControllerManager != nil {
-		allErrs = append(allErrs, featurevalidation.ValidateFeatureGates(controlPlaneConfig.CloudControllerManager.FeatureGates, version, fldPath.Child("cloudControllerManager", "featureGates"))...)
-		allErrs = append(allErrs, validateCloudController(controlPlaneConfig.CloudControllerManager, fldPath.Child("cloudControllerManager"))...)
-	}
+	allErrs = append(allErrs, validateCloudController(controlPlaneConfig.CloudControllerManager, version, fldPath.Child("cloudControllerManager"))...)
 
 	allErrs = append(allErrs, validateStorage(controlPlaneConfig.Storage, fldPath.Child("storage"))...)
 
@@ -48,7 +45,7 @@ func ValidateControlPlaneConfigAgainstCloudProfile(oldCpConfig, cpConfig *stacki
 	return allErrs
 }
 
-func validateCloudController(cloudcontroller *stackitv1alpha1.CloudControllerManagerConfig, fldPath *field.Path) field.ErrorList {
+func validateCloudController(cloudcontroller *stackitv1alpha1.CloudControllerManagerConfig, version string, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	if cloudcontroller == nil {
 		return allErrs
@@ -56,6 +53,8 @@ func validateCloudController(cloudcontroller *stackitv1alpha1.CloudControllerMan
 	if cloudcontroller.Name != "" && !slices.Contains(validControllers, stackitv1alpha1.ControllerName(cloudcontroller.Name)) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), cloudcontroller.Name, "not supported ccm driver"))
 	}
+	allErrs = append(allErrs, featurevalidation.ValidateFeatureGates(cloudcontroller.FeatureGates, version, fldPath.Child("featureGates"))...)
+
 	return allErrs
 }
 

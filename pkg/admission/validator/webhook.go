@@ -26,6 +26,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Path: "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
 			NewCloudProfileValidator(mgr):           {{Obj: &core.CloudProfile{}}},
+			NewShootValidator(mgr):                  {{Obj: &core.Shoot{}}},
 			NewNamespacedCloudProfileValidator(mgr): {{Obj: &core.NamespacedCloudProfile{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
