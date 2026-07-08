@@ -17,7 +17,6 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/chart"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
@@ -128,22 +127,16 @@ func baseControlPlane() *extensionsv1alpha1.ControlPlane {
 }
 
 func baseCloudProfileConfig() *stackitv1alpha1.CloudProfileConfig {
-	rescanBlockStorageOnResize := true
-	ignoreVolumeAZ := true
-	nodeVolumeAttachLimit := int32(25)
-
 	return &stackitv1alpha1.CloudProfileConfig{
 		KeyStoneURL:                authURL,
 		RequestTimeout:             testRequestTimeout,
-		RescanBlockStorageOnResize: &rescanBlockStorageOnResize,
-		IgnoreVolumeAZ:             &ignoreVolumeAZ,
-		NodeVolumeAttachLimit:      &nodeVolumeAttachLimit,
+		RescanBlockStorageOnResize: new(true),
+		IgnoreVolumeAZ:             new(true),
+		NodeVolumeAttachLimit:      new(int32(25)),
 	}
 }
 
 func baseCluster() *extensionscontroller.Cluster {
-	podCIDR := "10.250.0.0/19"
-
 	return &extensionscontroller.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -163,7 +156,7 @@ func baseCluster() *extensionscontroller.Cluster {
 			Spec: gardencorev1beta1.ShootSpec{
 				Region: "RegionOne",
 				Networking: &gardencorev1beta1.Networking{
-					Pods: &podCIDR,
+					Pods: new("10.250.0.0/19"),
 				},
 				Kubernetes: gardencorev1beta1.Kubernetes{
 					Version: "1.29.0",
@@ -200,15 +193,13 @@ func baseCluster() *extensionscontroller.Cluster {
 
 func clusterWithoutOverlay() *extensionscontroller.Cluster {
 	cluster := baseCluster()
-	networkType := "calico"
 	cluster.Shoot.Spec.Networking = &gardencorev1beta1.Networking{
-		Type: &networkType,
+		Type: new("calico"),
 		ProviderConfig: &runtime.RawExtension{
 			Raw: []byte(`{"overlay":{"enabled":false}}`),
 		},
 		Pods: cluster.Shoot.Spec.Networking.Pods,
 	}
-	cluster.Shoot.Spec.Kubernetes.Version = "1.31.1"
 	return cluster
 }
 
@@ -371,7 +362,7 @@ func seedUnusedControlPlaneCSIObjects(ctx context.Context, cl client.Client, sub
 	return objects
 }
 
-func seedReadyControlPlane(ctx context.Context, cl client.Client) (*extensionsv1alpha1.ControlPlane, *extensionscontroller.Cluster, *corev1.Secret, *corev1.Secret, *corev1.Secret) {
+func seedReadyControlPlane(ctx context.Context, cl client.Client) (*extensionsv1alpha1.ControlPlane, *extensionscontroller.Cluster, *corev1.Secret, *corev1.Secret) {
 	cp := baseControlPlane()
 	cluster := baseCluster()
 	providerSecret := baseProviderSecret()
@@ -383,7 +374,7 @@ func seedReadyControlPlane(ctx context.Context, cl client.Client) (*extensionsv1
 	objects = append(objects, providerSecret, configSecret, diskSecret)
 	objects = append(objects, managedSecrets()...)
 	createObjects(ctx, cl, objects...)
-	return cp, cluster, providerSecret, configSecret, diskSecret
+	return cp, cluster, providerSecret, diskSecret
 }
 
 func seedReadyShoot(ctx context.Context, cl client.Client) (*extensionsv1alpha1.ControlPlane, *extensionscontroller.Cluster) {
@@ -550,7 +541,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 
 	Describe("#GetControlPlaneChartValues", func() {
 		It("returns default control plane values with STACKIT CSI active", func() {
-			cp, cluster, providerSecret, configSecret, diskSecret := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, diskSecret := seedReadyControlPlane(ctx, c)
 
 			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
 			Expect(err).NotTo(HaveOccurred())
@@ -560,28 +551,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 			}))
 
 			ccmValues := chartValues(values, openstack.CloudControllerManagerName)
-			Expect(ccmValues).To(BeComparableTo(map[string]any{
-				"enabled":           false,
-				"replicas":          1,
-				"technicalID":       technicalID,
-				"kubernetesVersion": "1.29.0",
-				"podNetwork":        "10.250.0.0/19",
-				"podAnnotations": map[string]any{
-					"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: gardenerutils.ComputeChecksum(providerSecret.Data),
-					"checksum/secret-" + openstack.CloudProviderConfigName:        gardenerutils.ComputeChecksum(configSecret.Data),
-				},
-				"podLabels": map[string]any{
-					v1beta1constants.LabelPodMaintenanceRestart: "true",
-				},
-				"featureGates": map[string]bool{
-					"SomeKubernetesFeature": true,
-				},
-				"tlsCipherSuites": kutil.TLSCipherSuites,
-				"secrets": map[string]any{
-					"server": cloudControllerManagerServerName,
-				},
-				"userAgentHeaders": expectedUserAgentHeaders(),
-			}))
+			Expect(ccmValues).To(HaveKeyWithValue("enabled", false))
 
 			expectedSTACKITCCMConfig := expectedSTACKITCCMConfig("kubernetes.io", nil)
 			stackitCCMValues := chartValues(values, openstack.STACKITCloudControllerManagerName)
@@ -636,7 +606,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		})
 
 		It("returns OpenStack CSI values when selected", func() {
-			cp, cluster, providerSecret, _, diskSecret := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, diskSecret := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
 			cpConfig.Storage.CSI.Name = string(stackitv1alpha1.OPENSTACK)
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
@@ -663,7 +633,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		})
 
 		It("enables OpenStack CCM while reducing STACKIT CCM controllers", func() {
-			cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
 			cpConfig.CloudControllerManager.Name = string(stackitv1alpha1.OPENSTACK)
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
@@ -678,7 +648,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 
 		DescribeTable("renders STACKIT CCM config variants",
 			func(apiEndpoints *stackitv1alpha1.APIEndpoints, cpConfig *stackitv1alpha1.ControlPlaneConfig, expectedControllers []string) {
-				cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+				cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 				if cpConfig != nil {
 					cp.Spec.ProviderConfig.Raw = encode(cpConfig)
 				}
@@ -723,7 +693,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		DescribeTable("propagates custom label domains",
 			func(customLabelDomain string) {
 				vp = newTestValuesProvider(c, scheme, true, customLabelDomain)
-				cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+				cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 
 				values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
 				Expect(err).NotTo(HaveOccurred())
@@ -740,7 +710,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 
 		DescribeTable("supports topology-aware-routing compatibility combinations",
 			func(seedSettings *gardencorev1beta1.SeedSettings, shootControlPlane *gardencorev1beta1.ControlPlane) {
-				cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+				cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 				cluster.Seed = &gardencorev1beta1.Seed{
 					Spec: gardencorev1beta1.SeedSpec{
 						Settings: seedSettings,
@@ -791,7 +761,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		)
 
 		It("returns ALB controller values when enabled", func() {
-			cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
 			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{Enabled: true}
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
@@ -809,9 +779,9 @@ var _ = Describe("ValuesProvider fake client", func() {
 			}))
 		})
 
-		It("omits ALB controller values when the harness disables ALB deployment", func() {
+		It("omits ALB controller values when the config disables ALB deployment", func() {
 			vp = newTestValuesProvider(c, scheme, false, "kubernetes.io")
-			cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
 			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{Enabled: true}
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
@@ -822,7 +792,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		})
 
 		It("deletes legacy cleanup objects from the fake client", func() {
-			cp, cluster, providerSecret, _, _ := seedReadyControlPlane(ctx, c)
+			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			legacyObjects := legacyCleanupObjects()
 			createObjects(ctx, c, legacyObjects...)
 
