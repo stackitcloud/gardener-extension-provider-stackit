@@ -7,6 +7,6 @@ metadata:
 type: Opaque
 data:
   {{- if .Values.CABundle }}
-  stackit-ca.crt: {{ .Values.CABundle | b64enc }}
+  cloudprofile-ca.crt: {{ .Values.CABundle | b64enc }}
   {{- end }}
 {{- end }}

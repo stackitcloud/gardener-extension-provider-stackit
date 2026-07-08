@@ -89,9 +89,9 @@ spec:
           mountPath: {{ .Values.socketPath }}
         - name: cloud-provider-config
           mountPath: /etc/config
-        - mountPath: /etc/ssl/certs/stackit-ca.crt
-          name: stackit-ca
-          subPath: stackit-ca.crt
+        - mountPath: /etc/ssl/certs/cloudprofile-ca.crt
+          name: cloudprofile-ca
+          subPath: cloudprofile-ca.crt
           readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
@@ -344,7 +344,7 @@ spec:
         configMap:
           defaultMode: 420
           name: {{ .Values.prefix }}-cloud-provider-config
-      - name: stackit-ca
+      - name: cloudprofile-ca
         secret:
           optional: true
           secretName: cloudprofile-ca-bundle

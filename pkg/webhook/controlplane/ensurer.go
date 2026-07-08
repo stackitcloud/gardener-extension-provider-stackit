@@ -36,7 +36,7 @@ import (
 
 const (
 	CASecretName = "cloudprofile-ca-bundle"
-	CAVolumeName = "stackit-ca"
+	CAVolumeName = "cloudprofile-ca"
 )
 
 // NewEnsurer creates a new controlplane ensurer.
@@ -99,8 +99,8 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 			})
 			sidecarContainer.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(sidecarContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
-				MountPath: "/etc/ssl/certs/stackit-ca.crt",
-				SubPath:   "stackit-ca.crt",
+				MountPath: "/etc/ssl/certs/cloudprofile-ca.crt",
+				SubPath:   "cloudprofile-ca.crt",
 				ReadOnly:  true,
 			})
 		}

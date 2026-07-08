@@ -612,8 +612,8 @@ WantedBy=multi-user.target
 			expectedContainer.Env = []corev1.EnvVar{}
 			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
-				MountPath: "/etc/ssl/certs/stackit-ca.crt",
-				SubPath:   "stackit-ca.crt",
+				MountPath: "/etc/ssl/certs/cloudprofile-ca.crt",
+				SubPath:   "cloudprofile-ca.crt",
 				ReadOnly:  true,
 			})
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))

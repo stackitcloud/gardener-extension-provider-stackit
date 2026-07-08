@@ -89,9 +89,9 @@ spec:
           name: config-volume
         - mountPath: /etc/serviceaccount
           name: sa-secret
-        - mountPath: /etc/ssl/certs/stackit-ca.crt
-          name: stackit-ca
-          subPath: stackit-ca.crt
+        - mountPath: /etc/ssl/certs/cloudprofile-ca.crt
+          name: cloudprofile-ca
+          subPath: cloudprofile-ca.crt
           readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
@@ -111,7 +111,7 @@ spec:
           items:
             - key: "serviceaccount.json"
               path: "serviceaccount.json"
-      - name: stackit-ca
+      - name: cloudprofile-ca
         secret:
           secretName: cloudprofile-ca-bundle
           optional: true
