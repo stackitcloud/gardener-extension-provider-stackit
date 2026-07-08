@@ -132,7 +132,7 @@ var _ = BeforeSuite(func() {
 	// TODO: Consider creating manual STACKIT NLB to ensure stackit NLB deletion works
 	DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.EnsureSTACKITLBDeletion, false))
 
-	iaasClient, err = stackitclient.NewIaaSClient(*region, endpoints, credentials)
+	iaasClient, err = stackitclient.NewIaaSClient(*region, endpoints, credentials, "")
 	Expect(err).NotTo(HaveOccurred())
 
 	repoRoot := filepath.Join("..", "..", "..", "..")

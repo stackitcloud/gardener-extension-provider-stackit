@@ -75,9 +75,6 @@ config:
       capacity: 25Gi
       provisioner: block-storage.csi.stackit.cloud
       volumeBindingMode: WaitForFirstConsumer
-  stackitAPIEndpoints:
-    # Must be base64 encoded
-    caBundle: ""
   registryCaches:
   # - server: reg.example.com
   #   cache: reg-cache.example.com

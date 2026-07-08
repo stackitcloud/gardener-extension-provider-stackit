@@ -89,13 +89,9 @@ spec:
           mountPath: {{ .Values.socketPath }}
         - name: cloud-provider-config
           mountPath: /etc/config
-        # Host certificates are mounted to accommodate OpenStack endpoints that might be served with a certificate
-        # signed by a CA that is not globally trusted.
-        - mountPath: /usr/share/ca-certificates
-          name: usr-share-ca-certificates
-          readOnly: true
-        - mountPath: /etc/ssl
-          name: etc-ssl
+        - mountPath: /etc/ssl/certs/cloudprofile-ca.crt
+          name: cloudprofile-ca
+          subPath: cloudprofile-ca.crt
           readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
@@ -344,15 +340,11 @@ spec:
                 path: token
               name: shoot-access-csi-resizer
               optional: false
-      - name: usr-share-ca-certificates
-        hostPath:
-          path: /usr/share/ca-certificates
       - name: cloud-provider-config
         configMap:
           defaultMode: 420
           name: {{ .Values.prefix }}-cloud-provider-config
-      # Host certificates are mounted to accommodate OpenStack endpoints that might be served with a certificate
-      # signed by a CA that is not globally trusted.
-      - name: etc-ssl
-        hostPath:
-          path: /etc/ssl
+      - name: cloudprofile-ca
+        secret:
+          optional: true
+          secretName: cloudprofile-ca-bundle

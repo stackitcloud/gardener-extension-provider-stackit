@@ -6,9 +6,16 @@ package controlplane
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
+	"math/big"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
@@ -100,6 +107,27 @@ var _ = Describe("Ensurer", func() {
 		)
 		eContextK8s127WithSTACKITMCM = gcontext.NewInternalGardenContext(
 			&extensionscontroller.Cluster{
+				Shoot: &gardencorev1beta1.Shoot{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							feature.ShootUseSTACKITMachineControllerManager: "true",
+						},
+					},
+					Spec: gardencorev1beta1.ShootSpec{
+						Kubernetes: gardencorev1beta1.Kubernetes{
+							Version: "1.27.1",
+						},
+					},
+				},
+			},
+		)
+		eContextK8s127WithSTACKITMCMANDCUSTOMCA = gcontext.NewInternalGardenContext(
+			&extensionscontroller.Cluster{
+				CloudProfile: &gardencorev1beta1.CloudProfile{
+					Spec: gardencorev1beta1.CloudProfileSpec{
+						CABundle: new(generateRootCA()),
+					},
+				},
 				Shoot: &gardencorev1beta1.Shoot{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
@@ -576,6 +604,28 @@ WantedBy=multi-user.target
 			expectedContainer.Env = []corev1.EnvVar{}
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
+
+		It("should add cloudprofile-ca-bundle to Deployment and sidecar when CloudProfile CA Bundle is set", func() {
+			Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
+			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127WithSTACKITMCMANDCUSTOMCA, deployment, nil)).To(Succeed())
+			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-stackit", "foo:bar")
+			expectedContainer.Env = []corev1.EnvVar{}
+			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
+				Name:      CAVolumeName,
+				MountPath: "/etc/ssl/certs/cloudprofile-ca.crt",
+				SubPath:   "cloudprofile-ca.crt",
+				ReadOnly:  true,
+			})
+			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
+			Expect(deployment.Spec.Template.Spec.Volumes).To(ConsistOf(corev1.Volume{
+				Name: CAVolumeName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: CASecretName,
+					},
+				},
+			}))
+		})
 	})
 
 	Describe("#EnsureMachineControllerManagerDeployment with stackit and custom env vars", func() {
@@ -687,4 +737,35 @@ func checkKubeControllerManagerDeployment(dep *appsv1.Deployment, _ string) {
 func encode(obj runtime.Object) []byte {
 	data, _ := json.Marshal(obj)
 	return data
+}
+
+func generateRootCA() string {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return ""
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: "Minimalist Root CA",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+	}
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
+	if err != nil {
+		return ""
+	}
+
+	pemBlock := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certBytes,
+	})
+
+	return string(pemBlock)
 }

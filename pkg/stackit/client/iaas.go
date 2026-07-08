@@ -126,9 +126,11 @@ func (c iaasClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.N
 	return filteredNetworks, nil
 }
 
-func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (IaaSClient, error) {
-	options := clientOptions(endpoints, credentials)
-
+func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (IaaSClient, error) {
+	options, err := clientOptions(endpoints, credentials, caBundle)
+	if err != nil {
+		return nil, err
+	}
 	if endpoints.IaaS != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.IaaS))
 	}
@@ -141,6 +143,7 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 	if err != nil {
 		return nil, err
 	}
+
 	return &iaasClient{
 		Client:    apiClient.DefaultAPI,
 		projectID: credentials.ProjectID,

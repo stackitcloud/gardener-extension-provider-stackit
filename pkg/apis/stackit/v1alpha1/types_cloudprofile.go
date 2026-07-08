@@ -33,6 +33,8 @@ type CloudProfileConfig struct {
 	APIEndpoints *APIEndpoints `json:"apiEndpoints,omitempty"`
 	// CABundle is the CA certificate bundle for API endpoints.
 	// This field is currently ignored and reserved for future use.
+	//
+	// Deprecated: Will be removed soon. This field is not used anymore
 	// +optional
 	CABundle *string `json:"caBundle,omitempty"`
 	// Bastion are the bastion options for configuring the bastion server

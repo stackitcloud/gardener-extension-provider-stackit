@@ -34,6 +34,11 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/webhook/controlplane/registrycache"
 )
 
+const (
+	CASecretName = "cloudprofile-ca-bundle"
+	CAVolumeName = "cloudprofile-ca"
+)
+
 // NewEnsurer creates a new controlplane ensurer.
 func NewEnsurer(regCaches []config.RegistryCacheConfiguration, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
@@ -83,15 +88,32 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 
 		apiEndpoints := ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
 
+		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+			newObj.Spec.Template.Spec.Volumes = extensionswebhook.EnsureVolumeWithName(newObj.Spec.Template.Spec.Volumes, corev1.Volume{
+				Name: CAVolumeName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: CASecretName,
+					},
+				},
+			})
+			sidecarContainer.VolumeMounts = extensionswebhook.EnsureVolumeMountWithName(sidecarContainer.VolumeMounts, corev1.VolumeMount{
+				Name:      CAVolumeName,
+				MountPath: "/etc/ssl/certs/cloudprofile-ca.crt",
+				SubPath:   "cloudprofile-ca.crt",
+				ReadOnly:  true,
+			})
+		}
+
 		sidecarContainer.Env = []corev1.EnvVar{}
 		if apiEndpoints.IaaS != nil {
-			sidecarContainer.Env = append(sidecarContainer.Env, corev1.EnvVar{
+			sidecarContainer.Env = extensionswebhook.EnsureEnvVarWithName(sidecarContainer.Env, corev1.EnvVar{
 				Name:  "STACKIT_IAAS_ENDPOINT",
 				Value: *apiEndpoints.IaaS,
 			})
 		}
 		if apiEndpoints.TokenEndpoint != nil {
-			sidecarContainer.Env = append(sidecarContainer.Env, corev1.EnvVar{
+			sidecarContainer.Env = extensionswebhook.EnsureEnvVarWithName(sidecarContainer.Env, corev1.EnvVar{
 				Name:  "STACKIT_TOKEN_BASEURL",
 				Value: *apiEndpoints.TokenEndpoint,
 			})

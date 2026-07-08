@@ -281,7 +281,7 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(field.ErrorTypeForbidden),
 				"Field":  Equal("spec.providerConfig"),
-				"Detail": Equal("must only set machineImages, stackitAPIEndpoints, and stackitCABundle"),
+				"Detail": Equal("must only set machineImages and stackitAPIEndpoints"),
 			}))))
 		})
 
@@ -297,24 +297,11 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			Expect(namespacedCloudProfileValidator.Validate(ctx, namespacedCloudProfile, nil)).To(Succeed())
 		})
 
-		It("should succeed for NamespacedCloudProfile specifying only caBundle", func() {
-			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
-"kind":"CloudProfileConfig",
-"caBundle":"-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----"
-}`)}
-
-			Expect(fakeClient.Create(ctx, cloudProfile)).To(Succeed())
-
-			Expect(namespacedCloudProfileValidator.Validate(ctx, namespacedCloudProfile, nil)).To(Succeed())
-		})
-
-		It("should succeed for NamespacedCloudProfile specifying apiEndpoints, caBundle, and machineImages together", func() {
+		It("should succeed for NamespacedCloudProfile specifying apiEndpoints, and machineImages together", func() {
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
 "apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "apiEndpoints":{"iaas":"https://custom-iaas.example.com"},
-"caBundle":"-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.0","image":"image-name-1","regions":[{"name":"image-region-1","id":"id-img-reg-1"}]}]}
 ]

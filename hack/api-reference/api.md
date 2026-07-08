@@ -430,7 +430,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>CABundle is the CA certificate bundle for API endpoints.<br />This field is currently ignored and reserved for future use.</p>
+<p>CABundle is the CA certificate bundle for API endpoints.<br />This field is currently ignored and reserved for future use.<br />Deprecated: Will be removed soon. This field is not used anymore</p>
 </td>
 </tr>
 <tr>

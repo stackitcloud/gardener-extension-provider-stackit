@@ -76,12 +76,11 @@ func (p *namespacedCloudProfile) validateNamespacedCloudProfileProviderConfig(pr
 		},
 		MachineImages: providerConfig.MachineImages,
 		APIEndpoints:  providerConfig.APIEndpoints,
-		CABundle:      providerConfig.CABundle,
 	}
 	if !equality.Semantic.DeepEqual(validationProviderConfig, providerConfig) {
 		allErrs = append(allErrs, field.Forbidden(
 			field.NewPath("spec.providerConfig"),
-			"must only set machineImages, stackitAPIEndpoints, and stackitCABundle",
+			"must only set machineImages and stackitAPIEndpoints",
 		))
 	}
 

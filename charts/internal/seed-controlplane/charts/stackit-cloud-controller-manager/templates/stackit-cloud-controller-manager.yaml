@@ -89,9 +89,9 @@ spec:
           name: config-volume
         - mountPath: /etc/serviceaccount
           name: sa-secret
-        - mountPath: /etc/ssl/certs/keystone-ca.crt
-          name: cloud-config-ca
-          subPath: keystone-ca.crt
+        - mountPath: /etc/ssl/certs/cloudprofile-ca.crt
+          name: cloudprofile-ca
+          subPath: cloudprofile-ca.crt
           readOnly: true
         securityContext:
           allowPrivilegeEscalation: false
@@ -111,9 +111,9 @@ spec:
           items:
             - key: "serviceaccount.json"
               path: "serviceaccount.json"
-      - name: cloud-config-ca
+      - name: cloudprofile-ca
         secret:
-          secretName: cloud-provider-config
+          secretName: cloudprofile-ca-bundle
           optional: true
       - name: kubeconfig
         projected:

@@ -5,9 +5,10 @@ config:
   stackitProjectID: foo
   stackitNetworkID: foo
   stackitRegion: foo
-  #loadBalancerApiUrl: foo.bar.example.com/v1
-  #iaasApiUrl: foo.bar.example.com/v1
-  #tokenUrl: foo.bar.example.com/v1
+  loadBalancerApiUrl: ""
+  iaasApiUrl: ""
+  tokenUrl: ""
+  loadBalancerEmergencyToken: ""
   port: 10258
   metricsPort: 9090
 podAnnotations: {}

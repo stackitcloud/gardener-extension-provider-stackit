@@ -135,6 +135,7 @@ var (
 		Objects: []*chart.Object{
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderConfigName},
 			{Type: &corev1.Secret{}, Name: openstack.CloudProviderDiskConfigName},
+			{Type: &corev1.Secret{}, Name: openstack.CloudProfileCASecretName},
 		},
 	}
 
@@ -681,6 +682,16 @@ func getConfigChartValues(
 		}
 	}
 
+	// Deploy the cloudprofile-ca-bundle when at least one of stackit-mcm, stackit-csi or stackit-ccm is deployed
+	if feature.UseStackitMachineControllerManager(cluster) ||
+		getCSIDriver(controlPlaneConfig) == stackitv1alpha1.STACKIT ||
+		getCCMController(controlPlaneConfig) == stackitv1alpha1.STACKIT {
+		if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+			caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+			values["CABundle"] = caBundle
+		}
+	}
+
 	return values, nil
 }
 
@@ -900,6 +911,13 @@ func getSTACKITCCMChartValues(
 		values["featureGates"] = cpConfig.CloudControllerManager.FeatureGates
 	}
 
+	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+		caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+		annotations := values["podAnnotations"].(map[string]any)
+		annotations["checksum/secret-"+openstack.CloudProfileCASecretName] = gardenerutils.ComputeChecksum(caBundle)
+		values["podAnnotations"] = annotations
+	}
+
 	return values, nil
 }
 
@@ -980,6 +998,12 @@ func getCSISTACKITControllerChartValues(cluster *extensionscontroller.Cluster, c
 	}
 	if userAgentHeaders != nil {
 		values["userAgentHeaders"] = userAgentHeaders
+	}
+	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+		caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+		annotations := values["podAnnotations"].(map[string]any)
+		annotations["checksum/secret-"+openstack.CloudProfileCASecretName] = gardenerutils.ComputeChecksum(caBundle)
+		values["podAnnotations"] = annotations
 	}
 	return values
 }

@@ -26,9 +26,11 @@ type loadBalancingClient struct {
 	region    string
 }
 
-func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials) (LoadBalancingClient, error) {
-	options := clientOptions(endpoints, credentials)
-
+func NewLoadBalancingClient(_ context.Context, region string, endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.Credentials, caBundle string) (LoadBalancingClient, error) {
+	options, err := clientOptions(endpoints, credentials, caBundle)
+	if err != nil {
+		return nil, err
+	}
 	if endpoints.LoadBalancer != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.LoadBalancer))
 	}

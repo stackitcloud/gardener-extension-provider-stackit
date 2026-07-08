@@ -110,10 +110,10 @@ var _ = BeforeSuite(func() {
 	Expect(*region).NotTo(BeEmpty())
 	Expect(validateEnvs()).To(Succeed())
 
-	iaasClient, err = stackitclient.NewIaaSClient(*region, endpoints, credentials)
+	iaasClient, err = stackitclient.NewIaaSClient(*region, endpoints, credentials, "")
 	Expect(err).NotTo(HaveOccurred())
 
-	lbClient, err = stackitclient.NewLoadBalancingClient(ctx, *region, endpoints, credentials)
+	lbClient, err = stackitclient.NewLoadBalancingClient(ctx, *region, endpoints, credentials, "")
 	Expect(err).NotTo(HaveOccurred())
 
 	repoRoot := filepath.Join("..", "..", "..")
