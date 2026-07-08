@@ -23,18 +23,9 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 		allErrs = append(allErrs, field.Required(fldPath.Child("floatingPoolName"), "must provide the name of a floating pool"))
 	}
 
-	networkingPath := field.NewPath("networking")
-	var nodes cidrvalidation.CIDR
-	if nodesCIDR != nil {
-		nodes = cidrvalidation.NewCIDR(*nodesCIDR, networkingPath.Child("nodes"))
-	}
-
 	networksPath := fldPath.Child("networks")
-	//nolint:staticcheck // SA1019: needed for migration purposes
-	if len(infra.Networks.Worker) == 0 && len(infra.Networks.Workers) == 0 {
-		allErrs = append(allErrs, field.Required(networksPath.Child("workers"), "must specify the network range for the worker network"))
-	}
 
+	// check InfrastructureConfig.networks.worker(s) is a valid cidr and not be set if a network id is provided.
 	var workerCIDR cidrvalidation.CIDR
 	//nolint:staticcheck // SA1019: needed for migration purposes
 	if infra.Networks.Worker != "" {
@@ -43,21 +34,36 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRParse(workerCIDR)...)
 		//nolint:staticcheck // SA1019: needed for migration purposes
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRIsCanonical(networksPath.Child("worker"), infra.Networks.Worker)...)
+		if infra.Networks.ID != nil {
+			allErrs = append(allErrs, field.Forbidden(networksPath.Child("worker"), "cant be set if a network id is provided"))
+		}
 	}
 	if infra.Networks.Workers != "" {
 		workerCIDR = cidrvalidation.NewCIDR(infra.Networks.Workers, networksPath.Child("workers"))
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRParse(workerCIDR)...)
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRIsCanonical(networksPath.Child("workers"), infra.Networks.Workers)...)
+		if infra.Networks.ID != nil {
+			allErrs = append(allErrs, field.Forbidden(networksPath.Child("workers"), "cant be set if a network id is provided"))
+		}
 	}
 
-	if nodes != nil {
+	// check if InfrastructureConfig.networks.worker(s) is a subset of spec.networking.nodes
+	var nodes cidrvalidation.CIDR
+	if nodesCIDR != nil {
+		nodes = cidrvalidation.NewCIDR(*nodesCIDR, field.NewPath("spec").Child("networking").Child("nodes"))
 		allErrs = append(allErrs, nodes.ValidateSubset(workerCIDR)...)
 	}
 
+	// validate that InfrastructureConfig.networks.id is a valid uuid
 	if infra.Networks.ID != nil {
 		if _, err := uuid.Parse(*infra.Networks.ID); err != nil {
-			allErrs = append(allErrs, field.Invalid(networksPath.Child("id"), infra.Networks.ID, "if network ID is provided it must be a valid OpenStack UUID"))
+			allErrs = append(allErrs, field.Invalid(networksPath.Child("id"), infra.Networks.ID, "if network ID is provided it must be a valid STACKIT Network ID"))
 		}
+	}
+
+	// eather InfrastructureConfig.networks.id or InfrastructureConfig.networks.worker(s) has to be set
+	if workerCIDR == nil && infra.Networks.ID == nil {
+		allErrs = append(allErrs, field.Required(networksPath.Child("workers"), "must specify the network range for the worker network or provide a network ID for the network"))
 	}
 
 	if infra.Networks.SubnetID != nil {
