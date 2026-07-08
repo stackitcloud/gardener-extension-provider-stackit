@@ -537,6 +537,21 @@ var _ = Describe("ValuesProvider fake client", func() {
 			expectedValues["caCert"] = "custom-cert"
 			Expect(values).To(Equal(expectedValues))
 		})
+
+		It("returns stackit-only config values without OpenStack credentials", func() {
+			cp := baseControlPlane()
+			cluster := baseCluster()
+			cluster.Shoot.Annotations = map[string]string{
+				feature.ShootUseSTACKITAPIInfrastructureController: "true",
+				feature.ShootUseSTACKITMachineControllerManager:    "true",
+			}
+
+			values, err := vp.GetConfigChartValues(ctx, cp, cluster)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(values).To(Equal(map[string]any{
+				"stackitonly": true,
+			}))
+		})
 	})
 
 	Describe("#GetControlPlaneChartValues", func() {
