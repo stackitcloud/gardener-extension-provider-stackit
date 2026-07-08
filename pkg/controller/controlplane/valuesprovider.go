@@ -911,6 +911,13 @@ func getSTACKITCCMChartValues(
 		values["featureGates"] = cpConfig.CloudControllerManager.FeatureGates
 	}
 
+	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+		caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+		annotations := values["podAnnotations"].(map[string]any)
+		annotations["checksum/secret-"+openstack.CloudProfileCASecretName] = gardenerutils.ComputeChecksum(caBundle)
+		values["podAnnotations"] = annotations
+	}
+
 	return values, nil
 }
 
@@ -991,6 +998,12 @@ func getCSISTACKITControllerChartValues(cluster *extensionscontroller.Cluster, c
 	}
 	if userAgentHeaders != nil {
 		values["userAgentHeaders"] = userAgentHeaders
+	}
+	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+		caBundle := ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
+		annotations := values["podAnnotations"].(map[string]any)
+		annotations["checksum/secret-"+openstack.CloudProfileCASecretName] = gardenerutils.ComputeChecksum(caBundle)
+		values["podAnnotations"] = annotations
 	}
 	return values
 }
