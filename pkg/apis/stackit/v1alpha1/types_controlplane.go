@@ -33,7 +33,21 @@ type ControlPlaneConfig struct {
 	ApplicationLoadBalancer *ApplicationLoadBalancerConfig `json:"applicationLoadBalancer,omitempty"`
 }
 
+// ApplicationLoadBalancerConfig defines the configuration for the
+// Application Load Balancer (ALB) integration.
 type ApplicationLoadBalancerConfig struct {
+	// Enabled specifies whether the Application Load Balancer is activated.
+	Enabled bool `json:"enabled"`
+
+	// Ingress contains the configuration specific to the ALB's Ingress controller.
+	Ingress *ApplicationLoadBalancerConfigIngress `json:"ingress,omitempty"`
+}
+
+// ApplicationLoadBalancerConfigIngress defines the settings for the
+// Application Load Balancer Ingress resources.
+type ApplicationLoadBalancerConfigIngress struct {
+	// Enabled specifies whether the Ingress controller functionality
+	// for the ALB is activated to manage external access to services.
 	Enabled bool `json:"enabled"`
 }
 

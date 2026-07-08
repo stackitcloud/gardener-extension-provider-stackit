@@ -15,10 +15,10 @@ dependencies:
   version: 0.1.0
   repository: http://localhost:10191
   condition: stackit-blockstorage-csi-driver.enabled
-- name: stackit-alb-controller-manager
+- name: stackit-application-load-balancer-controller
   repository: http://localhost:10191
   version: 0.1.0
-  condition: stackit-alb-controller-manager.enabled
+  condition: stackit-application-load-balancer-controller.enabled
 - name: stackit-pod-identity-webhook
   repository: http://localhost:10191
   version: 0.1.0

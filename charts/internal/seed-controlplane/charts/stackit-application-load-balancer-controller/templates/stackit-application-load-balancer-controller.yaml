@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stackit-alb-controller-manager
+  name: stackit-application-load-balancer-controller
   namespace: {{ .Release.Namespace }}
   labels:
     app: kubernetes
-    role: stackit-alb-controller-manager
+    role: stackit-application-load-balancer-controller
     high-availability-config.resources.gardener.cloud/type: controller
 spec:
   replicas: {{ .Values.replicas }}
@@ -13,7 +13,7 @@ spec:
   selector:
     matchLabels:
       app: kubernetes
-      role: stackit-alb-controller-manager
+      role: stackit-application-load-balancer-controller
   template:
     metadata:
 {{- if .Values.podAnnotations }}
@@ -23,7 +23,7 @@ spec:
       labels:
         gardener.cloud/role: controlplane
         app: kubernetes
-        role: stackit-alb-controller-manager
+        role: stackit-application-load-balancer-controller
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-public-networks: allowed
         networking.gardener.cloud/to-private-networks: allowed
@@ -36,35 +36,26 @@ spec:
       automountServiceAccountToken: false
       priorityClassName: gardener-system-300
       containers:
-      - name: stackit-alb-controller-manager
-        image: {{ index .Values.images "stackit-alb-controller-manager" }}
+      - name: stackit-application-load-balancer-controller
+        image: {{ index .Values.images "stackit-application-load-balancer-controller" }}
         args:
         - --kubeconfig=/var/run/secrets/gardener.cloud/shoot/generic-kubeconfig/kubeconfig
         - --leader-elect=true
+        - --metrics-bind-address=:{{ .Values.metricsPort }}
         - --leader-election-namespace=kube-system
-        - --leader-election-id=stackit-alb-controller-manager
+        - --leader-election-id=stackit-application-load-balancer-controller
+        - --cloud-config=/etc/config/cloud.yaml
         env:
         - name: STACKIT_SERVICE_ACCOUNT_KEY_PATH
           value: /etc/serviceaccount/serviceaccount.json
-        - name: STACKIT_REGION
-          value: {{ .Values.config.region }}
-        - name: PROJECT_ID
-          value: {{ .Values.config.stackitProjectID }}
-        - name: NETWORK_ID
-          value: {{ .Values.config.stackitNetworkID }}
-
-{{- if .Values.config.tokenUrl }}
+{{- if .Values.tokenEndpoint }}
         - name: STACKIT_TOKEN_BASEURL
-          value: {{ .Values.config.tokenUrl }}
+          value: {{ .Values.tokenEndpoint }}
 {{- end }}
-{{- if .Values.config.applicationLBApiUrl }}
-        - name: STACKIT_LOAD_BALANCER_API_ALB_URL
-          value: {{ .Values.config.applicationLBApiUrl }}
-{{- end }}
-{{- if .Values.config.certificateApiUrl }}
-        - name: STACKIT_LOAD_BALANCER_API_CERT_URL
-          value: {{ .Values.config.certificateApiUrl }}
-{{- end }}
+        ports:
+        - containerPort: {{ .Values.metricsPort }}
+          name: metrics
+          protocol: TCP
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}
@@ -73,6 +64,8 @@ spec:
         - mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
           name: kubeconfig
           readOnly: true
+        - mountPath: /etc/config
+          name: config-volume
         - mountPath: /etc/serviceaccount
           name: sa-secret
         - mountPath: /etc/ssl/certs/keystone-ca.crt
@@ -80,6 +73,10 @@ spec:
           subPath: keystone-ca.crt
           readOnly: true
       volumes:
+      - name: config-volume
+        configMap:
+          defaultMode: 420
+          name: stackit-application-load-balancer-controller
       - name: sa-secret
         secret:
           defaultMode: 420

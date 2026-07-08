@@ -1,0 +1,21 @@
+replicas: 1
+config:
+  global:
+    region: ""
+    projectId: ""
+    # apiEndpoints:
+    #  applicationLoadBalancerApi: "foo"
+    #  applicationLoadBalancerCertificateApi: "foo"
+  applicationLoadBalancer:
+    networkId: ""
+#tokenEndpoint: "foo"
+metricsPort: 9090
+podAnnotations: {}
+podLabels: {}
+images:
+  stackit-alb-controller-manager: image:tag
+vpa:
+  resourcePolicy:
+    maxAllowed:
+      cpu: 1
+      memory: 512Mi

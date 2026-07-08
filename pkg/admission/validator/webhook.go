@@ -15,6 +15,17 @@ const (
 	Name = "validator"
 )
 
+var (
+	// DefaultAddOptions are the default AddOptions for configuring the validator.
+	DefaultAddOptions = AddOptions{}
+)
+
+// AddOptions are options to apply when adding the STACKIT admission webhook to the manager.
+type AddOptions struct {
+	// AllowApplicationLoadBalancerController configures if the application load balancer controller can be used in the ControlPlaneConfig.
+	AllowApplicationLoadBalancerController bool
+}
+
 var logger = log.Log.WithName("stackit-validator-webhook")
 
 // New creates a new webhook that validates Shoot, CloudProfile, NamespacedCloudProfile, SecretBinding and CredentialsBinding resources.
@@ -25,9 +36,9 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Name: Name,
 		Path: "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewCloudProfileValidator(mgr):           {{Obj: &core.CloudProfile{}}},
-			NewShootValidator(mgr):                  {{Obj: &core.Shoot{}}},
-			NewNamespacedCloudProfileValidator(mgr): {{Obj: &core.NamespacedCloudProfile{}}},
+			NewCloudProfileValidator(mgr): {{Obj: &core.CloudProfile{}}},
+			NewShootValidator(mgr, DefaultAddOptions.AllowApplicationLoadBalancerController): {{Obj: &core.Shoot{}}},
+			NewNamespacedCloudProfileValidator(mgr):                                          {{Obj: &core.NamespacedCloudProfile{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{

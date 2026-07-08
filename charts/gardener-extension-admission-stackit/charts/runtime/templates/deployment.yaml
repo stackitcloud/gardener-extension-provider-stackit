@@ -63,6 +63,9 @@ spec:
         {{- if .Values.flatcarImageVersion }}
         - --flatcar-image-version={{ .Values.flatcarImageVersion }}
         {{- end }}
+        {{- if .Values.allowApplicationLoadBalancerController }}
+        - --allow-application-load-balancer-controller={{ .Values.allowApplicationLoadBalancerController }}
+        {{- end }}
         - --health-bind-address=:{{ .Values.healthPort }}
         - --leader-election-id=gardener-extension-admission-stackit
         securityContext:

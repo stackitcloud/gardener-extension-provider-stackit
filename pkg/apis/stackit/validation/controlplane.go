@@ -21,10 +21,12 @@ var (
 )
 
 // ValidateControlPlaneConfig validates a ControlPlaneConfig object.
-func ValidateControlPlaneConfig(controlPlaneConfig *stackitv1alpha1.ControlPlaneConfig, version string, fldPath *field.Path) field.ErrorList {
+func ValidateControlPlaneConfig(controlPlaneConfig *stackitv1alpha1.ControlPlaneConfig, version string, allowApplicationLoadBalancerController bool, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{} // nolint:prealloc // size is not known yet
 
 	allErrs = append(allErrs, validateCloudController(controlPlaneConfig.CloudControllerManager, version, fldPath.Child("cloudControllerManager"))...)
+
+	allErrs = append(allErrs, validateApplicationLoadBalancer(controlPlaneConfig.ApplicationLoadBalancer, allowApplicationLoadBalancerController, fldPath.Child("applicationLoadBalancer"))...)
 
 	allErrs = append(allErrs, validateStorage(controlPlaneConfig.Storage, fldPath.Child("storage"))...)
 
@@ -54,6 +56,32 @@ func validateCloudController(cloudcontroller *stackitv1alpha1.CloudControllerMan
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), cloudcontroller.Name, "not supported ccm driver"))
 	}
 	allErrs = append(allErrs, featurevalidation.ValidateFeatureGates(cloudcontroller.FeatureGates, version, fldPath.Child("featureGates"))...)
+
+	return allErrs
+}
+
+func validateApplicationLoadBalancer(applicationLoadBalancerConfig *stackitv1alpha1.ApplicationLoadBalancerConfig, allowApplicationLoadBalancerController bool, fldPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	if applicationLoadBalancerConfig == nil {
+		return allErrs
+	}
+	if !applicationLoadBalancerConfig.Enabled {
+		return allErrs
+	}
+
+	if !allowApplicationLoadBalancerController {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("enabled"), applicationLoadBalancerConfig.Enabled, "application load balancer support is disabled and cannot be enabled on a shoot"))
+	}
+
+	var controllerEnabled bool
+
+	if applicationLoadBalancerConfig.Ingress != nil && applicationLoadBalancerConfig.Ingress.Enabled {
+		controllerEnabled = true
+	}
+
+	if !controllerEnabled {
+		allErrs = append(allErrs, field.Invalid(fldPath.Root(), applicationLoadBalancerConfig, "at least one controller has to be enabled is required"))
+	}
 
 	return allErrs
 }
