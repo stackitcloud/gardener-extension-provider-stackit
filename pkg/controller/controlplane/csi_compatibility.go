@@ -1,0 +1,190 @@
+package controlplane
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+
+	"github.com/gardener/gardener/pkg/chartrenderer"
+	gardenerutils "github.com/gardener/gardener/pkg/utils"
+	imagevectorutils "github.com/gardener/gardener/pkg/utils/imagevector"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/imagevector"
+	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+)
+
+const (
+	csiDriverChartName      = "stackit-blockstorage-csi-driver"
+	csiCompatibilityPrefix  = "stackit-compatibility"
+	csiCompatSeedChartName  = csiCompatibilityPrefix + "-chart"
+	csiCompatShootChartName = csiCompatibilityPrefix + "-shoot-chart"
+)
+
+func NewCompatCSICompatibilityHandler(client client.Client, config *rest.Config) (*CompatCSICompatibilityHandler, error) {
+	renderer, err := chartrenderer.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return &CompatCSICompatibilityHandler{
+		client:   client,
+		renderer: renderer,
+	}, nil
+}
+
+type CompatCSICompatibilityHandler struct {
+	client   client.Client
+	renderer chartrenderer.Interface
+}
+
+func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, controlPlaneValues map[string]any) error {
+	compatibilityMode := getCSICompatibilityMode(cpConfig)
+	blockLegacyCreation := compatibilityMode == stackitv1alpha1.COMPATBLOCK
+
+	if compatibilityMode != stackitv1alpha1.COMPAT && compatibilityMode != stackitv1alpha1.COMPATBLOCK {
+		err := ch.deleteSeedCSICompatibilityMode(ctx, namespace)
+		if err != nil {
+			return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
+		}
+		return nil
+	}
+
+	chart, err := ch.renderSeedCSICompatibilityMode(controlPlaneValues, namespace, version, blockLegacyCreation)
+	if err != nil {
+		return fmt.Errorf("failed to render seed CSI compatibility mode: %w", err)
+	}
+	err = ch.deploySeedCSICompatibilityMode(ctx, namespace, chart)
+	if err != nil {
+		return fmt.Errorf("failed to deploy seed CSI compatibility mode: %w", err)
+	}
+
+	return nil
+}
+
+func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any, namespace string, version string, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
+	chartValues := composeCompatibilityChartValues(values, openstack.CSISTACKITControllerName)
+
+	// Override chart values
+	chartValues["prefix"] = csiCompatibilityPrefix
+
+	imageMap, err := findImages(version, "csi-driver-stackit", "csi-provisioner", "csi-attacher", "csi-snapshotter", "csi-resizer", "csi-liveness-probe", "csi-snapshot-controller")
+	if err != nil {
+		return nil, err
+	}
+	chartValues["images"] = imageMap
+
+	chartValues["healthzPort"] = 9809
+	csiValues := map[string]any{
+		"enableCompatibilityMode": true,
+	}
+	if blockLegacyCreation {
+		csiValues["blockLegacyCreation"] = true
+	}
+	chartValues["csi"] = csiValues
+
+	return ch.renderer.RenderEmbeddedFS(
+		charts.InternalChart,
+		filepath.Join(charts.InternalChartsPath, "seed-controlplane/charts/stackit-blockstorage-csi-driver"),
+		csiDriverChartName,
+		namespace,
+		chartValues,
+	)
+}
+
+func (ch *CompatCSICompatibilityHandler) deploySeedCSICompatibilityMode(ctx context.Context, namespace string, renderedChart *chartrenderer.RenderedChart) error {
+	data := renderedChart.AsSecretData()
+	return managedresources.CreateForSeed(ctx, ch.client, namespace, csiCompatSeedChartName, false, data)
+}
+
+func (ch *CompatCSICompatibilityHandler) deleteSeedCSICompatibilityMode(ctx context.Context, namespace string) error {
+	return client.IgnoreNotFound(managedresources.DeleteForSeed(ctx, ch.client, namespace, csiCompatSeedChartName))
+}
+
+func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context.Context, namespace string, version string, cpConfig *stackitv1alpha1.ControlPlaneConfig, values map[string]any) error {
+	compatibilityMode := getCSICompatibilityMode(cpConfig)
+	if compatibilityMode != stackitv1alpha1.COMPAT && compatibilityMode != stackitv1alpha1.COMPATBLOCK {
+		err := ch.deleteShootCSICompatibilityMode(ctx, namespace)
+		if err != nil {
+			return fmt.Errorf("delete shoot CSI compatibility mode: %w", err)
+		}
+		return nil
+	}
+
+	chart, err := ch.renderShootCSICompatibilityMode(values, version)
+	if err != nil {
+		return fmt.Errorf("render shoot CSI compatibility mode: %w", err)
+	}
+	err = ch.deployShootCSICompatibilityMode(ctx, namespace, chart)
+	if err != nil {
+		return fmt.Errorf("deploy shoot CSI compatibility mode: %w", err)
+	}
+
+	return nil
+}
+
+func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, version string) (*chartrenderer.RenderedChart, error) {
+	chartValues := composeCompatibilityChartValues(values, openstack.CSISTACKITNodeName)
+
+	// Override chart values
+	chartValues["prefix"] = csiCompatibilityPrefix
+
+	imageMap, err := findImages(version, "csi-driver-stackit", "csi-node-driver-registrar", "csi-liveness-probe")
+	if err != nil {
+		return nil, err
+	}
+	chartValues["images"] = imageMap
+
+	chartValues["healthzPort"] = 9909
+	chartValues["driverName"] = openstack.CSIStorageProvisioner
+	csiValues := map[string]any{
+		"enableCompatibilityMode": true,
+	}
+	chartValues["csi"] = csiValues
+
+	return ch.renderer.RenderEmbeddedFS(
+		charts.InternalChart,
+		filepath.Join(charts.InternalChartsPath, "shoot-system-components/charts/stackit-blockstorage-csi-driver"),
+		csiDriverChartName,
+		"kube-system",
+		chartValues,
+	)
+}
+
+func (ch *CompatCSICompatibilityHandler) deployShootCSICompatibilityMode(ctx context.Context, namespace string, renderedChart *chartrenderer.RenderedChart) error {
+	data := renderedChart.AsSecretData()
+	return managedresources.CreateForShoot(ctx, ch.client, namespace, csiCompatShootChartName, "gardener-extension-provider-stackit", false, data)
+}
+
+func (ch *CompatCSICompatibilityHandler) deleteShootCSICompatibilityMode(ctx context.Context, namespace string) error {
+	return client.IgnoreNotFound(managedresources.DeleteForShoot(ctx, ch.client, namespace, csiCompatShootChartName))
+}
+
+// composeCompatibilityChartValues returns a copy of the given values map merged with the csiStackitValues on topLevel.
+// Basically moves the contents of the csiSTACKITChartName key into the configuration's root level.
+func composeCompatibilityChartValues(values map[string]any, csiSTACKITChartName string) map[string]any {
+	if values == nil {
+		return map[string]any{}
+	}
+	csiStackitValues, ok := values[csiSTACKITChartName].(map[string]any)
+	if !ok {
+		csiStackitValues = nil
+	}
+	return gardenerutils.MergeMaps(values, csiStackitValues)
+}
+
+func findImages(version string, imagesToFind ...string) (map[string]any, error) {
+	images := imagevector.ImageVector()
+	result := make(map[string]any)
+	for _, image := range imagesToFind {
+		foundImage, err := images.FindImage(image, imagevectorutils.TargetVersion(version))
+		if err != nil {
+			return nil, err
+		}
+		result[image] = foundImage.String()
+	}
+	return result, nil
+}

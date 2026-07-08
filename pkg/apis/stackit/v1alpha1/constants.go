@@ -5,6 +5,8 @@ package v1alpha1
 const (
 	// DefaultCSIName defines the default CSI (Container Storage Interface) name for STACKIT
 	DefaultCSIName = "stackit"
+	// DefaultCSICompatibilityMode defines the default CSI driver's compatibility mode.
+	DefaultCSICompatibilityMode = "default"
 	// DefaultCCMName defines the default CCM (Cloud Controller Manager) controller to use
 	DefaultCCMName = "stackit"
 )
@@ -14,4 +16,12 @@ type ControllerName string
 const (
 	STACKIT   ControllerName = "stackit"
 	OPENSTACK ControllerName = "openstack"
+)
+
+type CSICompatibilityMode string
+
+const (
+	DEFAULT     CSICompatibilityMode = "default"
+	COMPAT      CSICompatibilityMode = "compat"
+	COMPATBLOCK CSICompatibilityMode = "compatblock"
 )

@@ -14,7 +14,10 @@ import (
 )
 
 var (
-	validControllers = []stackitv1alpha1.ControllerName{stackitv1alpha1.STACKIT, stackitv1alpha1.OPENSTACK}
+	validControllers           = []stackitv1alpha1.ControllerName{stackitv1alpha1.STACKIT, stackitv1alpha1.OPENSTACK}
+	validCSICompatibilityModes = []stackitv1alpha1.CSICompatibilityMode{
+		stackitv1alpha1.DEFAULT, stackitv1alpha1.COMPAT, stackitv1alpha1.COMPATBLOCK,
+	}
 )
 
 // ValidateControlPlaneConfig validates a ControlPlaneConfig object.
@@ -58,11 +61,20 @@ func validateCloudController(cloudcontroller *stackitv1alpha1.CloudControllerMan
 
 func validateStorage(storage *stackitv1alpha1.Storage, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if storage == nil {
+	if storage == nil || storage.CSI == nil {
 		return allErrs
 	}
-	if storage.CSI != nil && !slices.Contains(validControllers, stackitv1alpha1.ControllerName(storage.CSI.Name)) {
+	if !slices.Contains(validControllers, stackitv1alpha1.ControllerName(storage.CSI.Name)) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("csi", "name"), storage.CSI.Name, "not supported csi driver"))
+	}
+	// CompatibilityMode is optional; empty is accepted (defaulting sets it to "default").
+	if storage.CSI.CompatibilityMode != "" &&
+		!slices.Contains(validCSICompatibilityModes, stackitv1alpha1.CSICompatibilityMode(storage.CSI.CompatibilityMode)) {
+		allErrs = append(allErrs, field.Invalid(
+			fldPath.Child("csi", "compatibilityMode"),
+			storage.CSI.CompatibilityMode,
+			"not supported CSI compatibility mode",
+		))
 	}
 	return allErrs
 }

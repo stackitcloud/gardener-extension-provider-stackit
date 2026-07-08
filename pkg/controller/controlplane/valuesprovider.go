@@ -43,6 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -356,13 +357,19 @@ var (
 	}
 )
 
+type CSICompatibilityHandler interface {
+	HandleSeedCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+	HandleShootCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error
+}
+
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string) genericactuator.ValuesProvider {
+func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string, csiCompatibilityHandler CSICompatibilityHandler) genericactuator.ValuesProvider {
 	return &valuesProvider{
 		client:                     mgr.GetClient(),
 		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
 		deployALBIngressController: deployALBIngressController,
 		customLabelDomain:          customLabelDomain,
+		csiCompatibilityHandler:    csiCompatibilityHandler,
 	}
 }
 
@@ -370,9 +377,11 @@ func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, cus
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
 	client                     k8sclient.Client
+	config                     *rest.Config
 	decoder                    runtime.Decoder
 	deployALBIngressController bool
 	customLabelDomain          string
+	csiCompatibilityHandler    CSICompatibilityHandler
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -747,6 +756,15 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		return nil, err
 	}
 
+	maps.Copy(controlPlaneValues, map[string]any{
+		"global": map[string]any{
+			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
+		},
+		openstack.CloudControllerManagerName:        ccm,
+		openstack.STACKITCloudControllerManagerName: stackitccm,
+		stackit.PodIdentityWebhookName:              podIdentityWebhook,
+	})
+
 	storageCSIDriver := getCSIDriver(cpConfig)
 	switch storageCSIDriver {
 	case stackitv1alpha1.OPENSTACK:
@@ -761,18 +779,13 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		controlPlaneValues[openstack.CSIControllerName] = map[string]any{
 			"enabled": false,
 		}
+		err := vp.csiCompatibilityHandler.HandleSeedCSICompatibility(ctx, cp.Namespace, cluster.Shoot.Spec.Kubernetes.Version, cpConfig, controlPlaneValues)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unsupported storage CSI Driver: %s", storageCSIDriver)
 	}
-
-	maps.Copy(controlPlaneValues, map[string]any{
-		"global": map[string]any{
-			"genericTokenKubeconfigSecretName": extensionscontroller.GenericTokenKubeconfigSecretNameFromCluster(cluster),
-		},
-		openstack.CloudControllerManagerName:        ccm,
-		openstack.STACKITCloudControllerManagerName: stackitccm,
-		stackit.PodIdentityWebhookName:              podIdentityWebhook,
-	})
 
 	if vp.deployALBIngressController {
 		fmt.Println("deploying ALB Ingress Controller")
@@ -1094,12 +1107,16 @@ func (vp *valuesProvider) getControlPlaneShootChartValues(ctx context.Context, c
 
 	csiDriverInUse := getCSIDriver(cpConfig)
 	switch csiDriverInUse {
-	case stackitv1alpha1.STACKIT:
-		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
-		values[openstack.CSINodeName] = map[string]any{"enabled": false}
 	case stackitv1alpha1.OPENSTACK:
 		values[openstack.CSINodeName] = csiNodeDriverValues
 		values[openstack.CSISTACKITNodeName] = map[string]any{"enabled": false}
+	case stackitv1alpha1.STACKIT:
+		values[openstack.CSISTACKITNodeName] = csiDriverSTACKITValues
+		values[openstack.CSINodeName] = map[string]any{"enabled": false}
+		err := vp.csiCompatibilityHandler.HandleShootCSICompatibility(ctx, cp.Namespace, cluster.Shoot.Spec.Kubernetes.Version, cpConfig, values)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unsupported CSI driver type: %s", csiDriverInUse)
 	}
@@ -1238,6 +1255,10 @@ func marshallNetworkProviderConfig(network *v1beta1.Networking) ([]byte, error) 
 
 func getCSIDriver(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.ControllerName {
 	return stackitv1alpha1.ControllerName(cpConfig.Storage.CSI.Name)
+}
+
+func getCSICompatibilityMode(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.CSICompatibilityMode {
+	return stackitv1alpha1.CSICompatibilityMode(cpConfig.Storage.CSI.CompatibilityMode)
 }
 
 func getCCMController(cpConfig *stackitv1alpha1.ControlPlaneConfig) stackitv1alpha1.ControllerName {

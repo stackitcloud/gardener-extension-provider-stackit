@@ -17,7 +17,11 @@ spec:
     metadata:
       annotations:
         checksum/configmap-cloud-provider-config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        node.gardener.cloud/wait-for-csi-node-stackit: block-storage.csi.stackit.cloud
+        {{- if .Values.csi.enableCompatibilityMode }}
+        node.gardener.cloud/wait-for-csi-node-openstack: {{ .Values.driverName }}
+        {{- else }}
+        node.gardener.cloud/wait-for-csi-node-stackit: {{ .Values.driverName }}
+        {{- end }}
       labels:
         node.gardener.cloud/critical-component: "true"
         app: {{ .Values.prefix }}-csi
@@ -48,6 +52,9 @@ spec:
         {{- end }}
         - --v=2
         - --provide-controller-service=false
+        {{- if .Values.csi.enableCompatibilityMode }}
+        - --legacy-storage-mode=true
+        {{- end }}
         env:
         - name: CSI_ENDPOINT
           value: unix://{{ .Values.socketPath }}
@@ -62,7 +69,7 @@ spec:
           allowPrivilegeEscalation: true
         ports:
         - name: healthz
-          containerPort: 9908
+          containerPort: {{ .Values.healthzPort }}
           protocol: TCP
         livenessProbe:
           httpGet:
@@ -94,7 +101,7 @@ spec:
         - name: ADDRESS
           value: {{ .Values.socketPath }}
         - name: DRIVER_REG_SOCK_PATH
-          value: /var/lib/kubelet/plugins/block-storage.csi.stackit.cloud/csi.sock
+          value: /var/lib/kubelet/plugins/{{ .Values.driverName }}/csi.sock
 {{- if .Values.resources.nodeDriverRegistrar }}
         resources:
 {{ toYaml .Values.resources.nodeDriverRegistrar | indent 10 }}
@@ -112,7 +119,7 @@ spec:
         args:
         - --probe-timeout=3m
         - --csi-address={{ .Values.socketPath }}
-        - --health-port=9908
+        - --health-port={{ .Values.healthzPort }}
 {{- if .Values.resources.livenessProbe }}
         resources:
 {{ toYaml .Values.resources.livenessProbe | indent 10 }}
@@ -130,7 +137,7 @@ spec:
           type: Directory
       - name: plugin-dir
         hostPath:
-          path: /var/lib/kubelet/plugins/block-storage.csi.stackit.cloud/
+          path: /var/lib/kubelet/plugins/{{ .Values.driverName }}/
           type: DirectoryOrCreate
       - name: registration-dir
         hostPath:

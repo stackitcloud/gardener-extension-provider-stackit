@@ -4,6 +4,12 @@ kubernetesVersion: 1.30.0
 prefix: stackit-blockstorage
 projectID: ""
 
+healthzPort: 9808
+
+csi:
+  enableCompatibilityMode: false
+  blockLegacyCreation: false
+
 images:
   csi-driver-stackit: image-repository:image-tag
   csi-provisioner: image-repository:image-tag
@@ -12,7 +18,6 @@ images:
   csi-resizer: image-repository:image-tag
   csi-liveness-probe: image-repository:image-tag
   csi-snapshot-controller: image-repository:image-tag
-  csi-snapshot-validation-webhook: image-repository:image-tag
 
 socketPath: /var/lib/csi/sockets/pluginproxy
 region: ""

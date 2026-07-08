@@ -67,7 +67,7 @@ func newTestScheme() *runtime.Scheme {
 
 func newTestValuesProvider(cl client.Client, scheme *runtime.Scheme, deployALB bool, customLabelDomain string) *valuesProvider {
 	mgr := &testutils.FakeManager{Scheme: scheme, Client: cl}
-	return NewValuesProvider(mgr, deployALB, customLabelDomain).(*valuesProvider)
+	return NewValuesProvider(mgr, deployALB, customLabelDomain, new(noopCSICompatibilityHandler)).(*valuesProvider)
 }
 
 func baseControlPlaneConfig() *stackitv1alpha1.ControlPlaneConfig {
@@ -995,3 +995,12 @@ var _ = Describe("ValuesProvider fake client", func() {
 		),
 	)
 })
+
+type noopCSICompatibilityHandler struct{}
+
+func (*noopCSICompatibilityHandler) HandleSeedCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
+	return nil
+}
+func (*noopCSICompatibilityHandler) HandleShootCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
+	return nil
+}

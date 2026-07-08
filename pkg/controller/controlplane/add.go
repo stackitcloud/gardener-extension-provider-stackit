@@ -43,10 +43,15 @@ type AddOptions struct {
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
+	csiCompatibilityHandler, err := NewCompatCSICompatibilityHandler(mgr.GetClient(), mgr.GetConfig())
+	if err != nil {
+		return err
+	}
 	genericActuator, err := genericactuator.NewActuator(mgr, stackit.Name,
 		secretConfigsFunc, shootAccessSecretsFunc,
 		configChart, controlPlaneChart, controlPlaneShootChart, controlPlaneShootCRDsChart, storageClassChart,
-		NewValuesProvider(mgr, DeployALBIngressController, opts.CustomLabelDomain), extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
+		NewValuesProvider(mgr, DeployALBIngressController, opts.CustomLabelDomain, csiCompatibilityHandler),
+		extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 		imagevector.ImageVector(), "", nil, opts.WebhookServerNamespace)
 	if err != nil {
 		return err

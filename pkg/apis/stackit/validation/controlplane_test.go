@@ -48,6 +48,18 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 				})),
 			))
 		})
+
+		It("should fail with an unsupported CSI compatibility mode", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: "stackit", CompatibilityMode: "bogus"},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, infraConfig, "", nilPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("storage.csi.compatibilityMode"),
+				})),
+			))
+		})
 	})
 
 	Describe("#ValidateControlPlaneConfigUpdate", func() {

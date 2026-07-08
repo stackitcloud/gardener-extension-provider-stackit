@@ -43,4 +43,7 @@ func SetDefaults_ControlPlaneConfig(obj *ControlPlaneConfig) {
 	if obj.Storage.CSI.Name == "" {
 		obj.Storage.CSI.Name = DefaultCSIName
 	}
+	if obj.Storage.CSI.CompatibilityMode == "" {
+		obj.Storage.CSI.CompatibilityMode = DefaultCSICompatibilityMode
+	}
 }

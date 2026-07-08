@@ -58,7 +58,16 @@ type Storage struct {
 }
 
 type CSI struct {
+	// Name contains the name of the used CSI driver:
+	// - "openstack" uses the legacy cinder driver
+	// - "stackit" uses the new STACKIT CSI driver
 	Name string `json:"name"`
+	// CompatibilityMode can be used to enable a compatibility layer for clusters that still uses cinder volumes:
+	// - "default" uses only the new STACKIT CSI driver, no compatibility layer is active (default value, can be omitted)
+	// - "compat" enables the cinder compatibility layer in addition to the STACKIT CSI driver to allow access to cinder volumes
+	// - "compatblock" enables the cinder compatibility layer like "compat", but does not allow to create new cinder volumes
+	// +optional
+	CompatibilityMode string `json:"compatibilityMode,omitempty"`
 }
 
 // CSIManila contains configuration for CSI Manila driver (support for NFS volumes)

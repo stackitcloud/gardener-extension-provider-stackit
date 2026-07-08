@@ -1,3 +1,4 @@
+{{- if not .Values.csi.enableCompatibilityMode }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -13,3 +14,4 @@ spec:
       app: {{.Values.prefix}}-csi-snapshot-controller
       role: controller
   unhealthyPodEvictionPolicy: AlwaysAllow
+{{- end }}
