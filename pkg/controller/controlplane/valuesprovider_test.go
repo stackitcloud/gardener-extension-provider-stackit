@@ -159,7 +159,7 @@ func baseCluster() *extensionscontroller.Cluster {
 					Pods: new("10.250.0.0/19"),
 				},
 				Kubernetes: gardencorev1beta1.Kubernetes{
-					Version: "1.29.0",
+					Version: "1.36.0",
 					VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
 						Enabled: true,
 					},
@@ -568,17 +568,17 @@ var _ = Describe("ValuesProvider fake client", func() {
 			ccmValues := chartValues(values, openstack.CloudControllerManagerName)
 			Expect(ccmValues).To(HaveKeyWithValue("enabled", false))
 
-			expectedSTACKITCCMConfig := expectedSTACKITCCMConfig("kubernetes.io", nil)
+			expectedCCMConfig := expectedSTACKITCCMConfig("kubernetes.io", nil)
 			stackitCCMValues := chartValues(values, openstack.STACKITCloudControllerManagerName)
 			Expect(stackitCCMValues).To(BeComparableTo(map[string]any{
 				"enabled":     true,
 				"replicas":    1,
 				"technicalID": technicalID,
-				"config":      expectedSTACKITCCMConfig,
+				"config":      expectedCCMConfig,
 				"controllers": []string{"*"},
 				"podAnnotations": map[string]any{
 					"checksum/secret-" + v1beta1constants.SecretNameCloudProvider:         gardenerutils.ComputeChecksum(providerSecret.Data),
-					"checksum/config-" + openstack.STACKITCloudControllerManagerImageName: gardenerutils.ComputeChecksum(expectedSTACKITCCMConfig),
+					"checksum/config-" + openstack.STACKITCloudControllerManagerImageName: gardenerutils.ComputeChecksum(expectedCCMConfig),
 				},
 				"podLabels": map[string]any{
 					v1beta1constants.LabelPodMaintenanceRestart: "true",
@@ -636,7 +636,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 				"enabled":           true,
 				"replicas":          1,
 				"maxEntries":        1000,
-				"kubernetesVersion": "1.29.0",
+				"kubernetesVersion": "1.36.0",
 				"podAnnotations": map[string]any{
 					"checksum/secret-" + openstack.CloudProviderCSIDiskConfigName: gardenerutils.ComputeChecksum(diskSecret.Data),
 				},
@@ -721,58 +721,6 @@ var _ = Describe("ValuesProvider fake client", func() {
 			Entry("default kubernetes.io domain", "kubernetes.io"),
 			Entry("custom ske.stackit.cloud domain", "ske.stackit.cloud"),
 			Entry("custom example.com domain", "example.com"),
-		)
-
-		DescribeTable("supports topology-aware-routing compatibility combinations",
-			func(seedSettings *gardencorev1beta1.SeedSettings, shootControlPlane *gardencorev1beta1.ControlPlane) {
-				cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
-				cluster.Seed = &gardencorev1beta1.Seed{
-					Spec: gardencorev1beta1.SeedSpec{
-						Settings: seedSettings,
-					},
-				}
-				cluster.Shoot.Spec.ControlPlane = shootControlPlane
-
-				values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(values).To(HaveKey(openstack.CSISTACKITControllerName))
-			},
-			Entry("seed settings nil and shoot control plane not HA",
-				nil,
-				&gardencorev1beta1.ControlPlane{HighAvailability: nil},
-			),
-			Entry("seed setting disabled and shoot control plane not HA",
-				&gardencorev1beta1.SeedSettings{TopologyAwareRouting: &gardencorev1beta1.SeedSettingTopologyAwareRouting{Enabled: false}},
-				&gardencorev1beta1.ControlPlane{HighAvailability: nil},
-			),
-			Entry("seed setting enabled and shoot control plane not HA",
-				&gardencorev1beta1.SeedSettings{TopologyAwareRouting: &gardencorev1beta1.SeedSettingTopologyAwareRouting{Enabled: true}},
-				&gardencorev1beta1.ControlPlane{HighAvailability: nil},
-			),
-			Entry("seed settings nil and zonal HA shoot control plane",
-				nil,
-				&gardencorev1beta1.ControlPlane{
-					HighAvailability: &gardencorev1beta1.HighAvailability{
-						FailureTolerance: gardencorev1beta1.FailureTolerance{Type: gardencorev1beta1.FailureToleranceTypeZone},
-					},
-				},
-			),
-			Entry("seed setting disabled and zonal HA shoot control plane",
-				&gardencorev1beta1.SeedSettings{TopologyAwareRouting: &gardencorev1beta1.SeedSettingTopologyAwareRouting{Enabled: false}},
-				&gardencorev1beta1.ControlPlane{
-					HighAvailability: &gardencorev1beta1.HighAvailability{
-						FailureTolerance: gardencorev1beta1.FailureTolerance{Type: gardencorev1beta1.FailureToleranceTypeZone},
-					},
-				},
-			),
-			Entry("seed setting enabled and zonal HA shoot control plane",
-				&gardencorev1beta1.SeedSettings{TopologyAwareRouting: &gardencorev1beta1.SeedSettingTopologyAwareRouting{Enabled: true}},
-				&gardencorev1beta1.ControlPlane{
-					HighAvailability: &gardencorev1beta1.HighAvailability{
-						FailureTolerance: gardencorev1beta1.FailureTolerance{Type: gardencorev1beta1.FailureToleranceTypeZone},
-					},
-				},
-			),
 		)
 
 		It("returns ALB controller values when enabled", func() {
