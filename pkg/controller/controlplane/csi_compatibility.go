@@ -66,7 +66,7 @@ func (ch *CompatCSICompatibilityHandler) HandleSeedCSICompatibility(ctx context.
 }
 
 func (ch *CompatCSICompatibilityHandler) renderSeedCSICompatibilityMode(values map[string]any, namespace string, version string, blockLegacyCreation bool) (*chartrenderer.RenderedChart, error) {
-	chartValues := composeCompatibilityChartValues(values)
+	chartValues := composeCompatibilityChartValues(values, openstack.CSISTACKITControllerName)
 
 	// Override chart values
 	chartValues["prefix"] = csiCompatibilityPrefix
@@ -127,7 +127,7 @@ func (ch *CompatCSICompatibilityHandler) HandleShootCSICompatibility(ctx context
 }
 
 func (ch *CompatCSICompatibilityHandler) renderShootCSICompatibilityMode(values map[string]any, version string) (*chartrenderer.RenderedChart, error) {
-	chartValues := composeCompatibilityChartValues(values)
+	chartValues := composeCompatibilityChartValues(values, openstack.CSISTACKITNodeName)
 
 	// Override chart values
 	chartValues["prefix"] = csiCompatibilityPrefix
@@ -164,12 +164,12 @@ func (ch *CompatCSICompatibilityHandler) deleteShootCSICompatibilityMode(ctx con
 }
 
 // composeCompatibilityChartValues returns a copy of the given values map merged with the csiStackitValues on topLevel.
-// Basically removes the openstack.CSISTACKITControllerName key
-func composeCompatibilityChartValues(values map[string]any) map[string]any {
+// Basically moves the contents of the csiSTACKITChartName key into the configuration's root level.
+func composeCompatibilityChartValues(values map[string]any, csiSTACKITChartName string) map[string]any {
 	if values == nil {
 		return map[string]any{}
 	}
-	csiStackitValues, ok := values[openstack.CSISTACKITControllerName].(map[string]any)
+	csiStackitValues, ok := values[csiSTACKITChartName].(map[string]any)
 	if !ok {
 		csiStackitValues = nil
 	}
