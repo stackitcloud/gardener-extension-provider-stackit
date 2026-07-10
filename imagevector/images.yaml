@@ -3,11 +3,6 @@ images:
 - name: cloud-controller-manager
   sourceRepository: github.com/kubernetes/cloud-provider-openstack
   repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
-  tag: "v1.32.1"
-  targetVersion: "1.32.x"
-- name: cloud-controller-manager
-  sourceRepository: github.com/kubernetes/cloud-provider-openstack
-  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
   tag: "v1.33.1"
   targetVersion: "1.33.x"
 - name: cloud-controller-manager
@@ -27,6 +22,11 @@ images:
   targetVersion: ">= 1.36"
 
 
+- name: stackit-cloud-controller-manager
+  sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
+  tag: "v1.33.17"
+  targetVersion: "1.33.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
@@ -55,11 +55,6 @@ images:
 - name: csi-driver-cinder
   sourceRepository: github.com/stackitcloud/cloud-provider-openstack
   repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
-  tag: "v1.32.4-ske-1"
-  targetVersion: "1.32.x"
-- name: csi-driver-cinder
-  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
-  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
   tag: "v1.33.0-ske-1"
   targetVersion: "1.33.x"
 - name: csi-driver-cinder
@@ -78,6 +73,11 @@ images:
   tag: "v1.36.0-ske-1"
   targetVersion: '>= 1.36'
 
+- name: csi-driver-stackit
+  sourceRepository: github.com/stackitcloud/cloud-provider-stackit
+  repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
+  tag: "v1.33.17"
+  targetVersion: "1.33.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
