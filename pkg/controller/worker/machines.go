@@ -18,6 +18,7 @@ import (
 	genericworkeractuator "github.com/gardener/gardener/extensions/pkg/controller/worker/genericactuator"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	extensionsv1alpha1helper "github.com/gardener/gardener/pkg/api/extensions/v1alpha1/helper"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -109,12 +110,18 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		// nolint:gosec // check above ensures no overflow can occur
 		zoneLen := int32(len(pool.Zones))
 
+		var machineCapabilities gardencorev1beta1.Capabilities
+		if machineTypeFromCloudProfile := gardencorev1beta1helper.FindMachineTypeByName(w.cluster.CloudProfile.Spec.MachineTypes, pool.MachineType); machineTypeFromCloudProfile != nil {
+			machineCapabilities = machineTypeFromCloudProfile.Capabilities
+		}
+
 		architecture := ptr.Deref(pool.Architecture, v1beta1constants.ArchitectureAMD64)
-		machineImage, err := w.findMachineImage(pool.MachineImage.Name, pool.MachineImage.Version, architecture)
+		machineImage, err := w.selectMachineImageForWorkerPool(pool.MachineImage.Name, pool.MachineImage.Version, w.worker.Spec.Region, &architecture, machineCapabilities)
 		if err != nil {
 			return err
 		}
-		machineImages = appendMachineImage(machineImages, *machineImage)
+		machineImages = EnsureUniformMachineImages(machineImages, w.cluster.CloudProfile.Spec.MachineCapabilities)
+		machineImages = appendMachineImage(machineImages, *machineImage, w.cluster.CloudProfile.Spec.MachineCapabilities)
 
 		var volumeSize int
 		if pool.Volume != nil {
@@ -330,4 +337,49 @@ func addTopologyLabel(labels map[string]string, zone string) map[string]string {
 		openstack.CSIDiskDriverTopologyKey:    zone,
 		openstack.CSISTACKITDriverTopologyKey: zone,
 	})
+}
+
+// EnsureUniformMachineImages ensures that all machine images use the same legacy or capability-based format.
+func EnsureUniformMachineImages(images []stackitv1alpha1.MachineImage, definitions []gardencorev1beta1.CapabilityDefinition) []stackitv1alpha1.MachineImage {
+	var uniformMachineImages []stackitv1alpha1.MachineImage
+
+	if len(definitions) == 0 {
+		for _, img := range images {
+			if len(img.Capabilities) == 0 {
+				uniformMachineImages = appendMachineImage(uniformMachineImages, img, definitions)
+				continue
+			}
+			var architecture *string
+			if len(img.Capabilities[v1beta1constants.ArchitectureName]) > 0 {
+				architecture = &img.Capabilities[v1beta1constants.ArchitectureName][0]
+			}
+			uniformMachineImages = appendMachineImage(uniformMachineImages, stackitv1alpha1.MachineImage{
+				Name:         img.Name,
+				Version:      img.Version,
+				Image:        img.Image,
+				ID:           img.ID,
+				Architecture: architecture,
+			}, definitions)
+		}
+		return uniformMachineImages
+	}
+
+	for _, img := range images {
+		if len(img.Capabilities) > 0 {
+			uniformMachineImages = appendMachineImage(uniformMachineImages, img, definitions)
+			continue
+		}
+
+		architecture := ptr.Deref(img.Architecture, v1beta1constants.ArchitectureAMD64)
+		uniformMachineImages = appendMachineImage(uniformMachineImages, stackitv1alpha1.MachineImage{
+			Name:    img.Name,
+			Version: img.Version,
+			Image:   img.Image,
+			ID:      img.ID,
+			Capabilities: gardencorev1beta1.Capabilities{
+				v1beta1constants.ArchitectureName: []string{architecture},
+			},
+		}, definitions)
+	}
+	return uniformMachineImages
 }
