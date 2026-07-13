@@ -61,7 +61,7 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 		}
 	}
 
-	// eather InfrastructureConfig.networks.id or InfrastructureConfig.networks.worker(s) has to be set
+	// either InfrastructureConfig.networks.id or InfrastructureConfig.networks.worker(s) has to be set
 	if workerCIDR == nil && infra.Networks.ID == nil {
 		allErrs = append(allErrs, field.Required(networksPath.Child("workers"), "must specify the network range for the worker network or provide a network ID for the network"))
 	}

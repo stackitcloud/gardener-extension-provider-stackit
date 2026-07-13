@@ -48,9 +48,9 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 
 	allErrs := field.ErrorList{}
 
-	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, field.NewPath("spec").Child("providerConfig"))...)
+	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 
-	allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfig(infraConfig, shoot.Spec.Networking.Nodes, field.NewPath("spec").Child("providerConfig").Child("infrastructureConfig"))...)
+	allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfig(infraConfig, shoot.Spec.Networking.Nodes, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 
 	if oldObj != nil {
 		oldShoot, ok := oldObj.(*core.Shoot)
@@ -61,7 +61,7 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 		if err != nil {
 			return err
 		}
-		allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("providerConfig").Child("infrastructureConfig"))...)
+		allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 	}
 
 	return allErrs.ToAggregate()
