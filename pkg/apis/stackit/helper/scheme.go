@@ -86,6 +86,16 @@ func CloudProfileConfigFromCluster(cluster *controller.Cluster) (*stackitv1alpha
 	return cloudProfileConfig, nil
 }
 
+func ControlPlaneConfigFromRawExtension(raw *runtime.RawExtension) (*stackitv1alpha1.ControlPlaneConfig, error) {
+	cpConfig := &stackitv1alpha1.ControlPlaneConfig{}
+	setGVK(cpConfig)
+
+	if err := decode(raw, cpConfig); err != nil {
+		return nil, err
+	}
+	return cpConfig, nil
+}
+
 func CloudProfileConfigFromRawExtension(raw *runtime.RawExtension) (*stackitv1alpha1.CloudProfileConfig, error) {
 	cpConfig := &stackitv1alpha1.CloudProfileConfig{}
 	setGVK(cpConfig)

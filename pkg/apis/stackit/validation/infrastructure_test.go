@@ -32,9 +32,6 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		infrastructureConfig = &stackitv1alpha1.InfrastructureConfig{
 			FloatingPoolName: floatingPoolName1,
 			Networks: stackitv1alpha1.Networks{
-				Router: &stackitv1alpha1.Router{
-					ID: "hugo",
-				},
 				Workers: "10.250.0.0/16",
 			},
 		}
@@ -88,6 +85,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should forbid an invalid subnet id", func() {
+			infrastructureConfig.Networks.Workers = ""
 			infrastructureConfig.Networks.ID = new(uuid.NewString())
 			infrastructureConfig.Networks.SubnetID = new("thisiswrong")
 
@@ -101,6 +99,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should allow an valid OpenStack UUID as subnet ID", func() {
+			infrastructureConfig.Networks.Workers = ""
 			infrastructureConfig.Networks.ID = new(uuid.NewString())
 			infrastructureConfig.Networks.SubnetID = new(uuid.NewString())
 
@@ -111,7 +110,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 	})
 
 	Context("CIDR", func() {
-		It("should forbid empty workers CIDR", func() {
+		It("should forbid empty workers CIDR and no network id", func() {
 			infrastructureConfig.Networks.Workers = ""
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
@@ -119,7 +118,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 			Expect(errorList).To(ConsistOfFields(Fields{
 				"Type":   Equal(field.ErrorTypeRequired),
 				"Field":  Equal("networks.workers"),
-				"Detail": Equal("must specify the network range for the worker network"),
+				"Detail": Equal("must specify the network range for the worker network or provide a network ID for the network"),
 			}))
 		})
 
@@ -143,7 +142,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 			Expect(errorList).To(ConsistOfFields(Fields{
 				"Type":   Equal(field.ErrorTypeInvalid),
 				"Field":  Equal("networks.workers"),
-				"Detail": Equal(`must be a subset of "networking.nodes" ("10.250.0.0/16")`),
+				"Detail": Equal(`must be a subset of "spec.networking.nodes" ("10.250.0.0/16")`),
 			}))
 		})
 
@@ -163,6 +162,7 @@ var _ = Describe("InfrastructureConfig validation", func() {
 		})
 
 		It("should forbid an invalid network id configuration", func() {
+			infrastructureConfig.Networks.Workers = ""
 			invalidID := "thisiswrong"
 			infrastructureConfig.Networks.ID = &invalidID
 
@@ -174,7 +174,21 @@ var _ = Describe("InfrastructureConfig validation", func() {
 			}))
 		})
 
-		It("should allow an valid OpenStack UUID as network ID", func() {
+		It("should forbid an valid UUID as network ID when workers is also set", func() {
+			id, err := uuid.NewUUID()
+			Expect(err).NotTo(HaveOccurred())
+			infrastructureConfig.Networks.ID = new(id.String())
+
+			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
+
+			Expect(errorList).To(ConsistOfFields(Fields{
+				"Type":  Equal(field.ErrorTypeForbidden),
+				"Field": Equal("networks.workers"),
+			}))
+		})
+
+		It("should allow empty workers CIDR and when valid network id is set", func() {
+			infrastructureConfig.Networks.Workers = ""
 			id, err := uuid.NewUUID()
 			Expect(err).NotTo(HaveOccurred())
 			infrastructureConfig.Networks.ID = new(id.String())
