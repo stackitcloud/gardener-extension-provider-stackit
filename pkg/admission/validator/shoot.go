@@ -70,7 +70,9 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 	}
 
 	// only log errors for now to be able to check the logs after a while before actually fail validation.
-	logger.Error(allErrs.ToAggregate(), "Shoot would have failed validation", "name", shoot.Name, "namespace", shoot.Namespace)
+	if allErrs.ToAggregate() != nil {
+		logger.Error(allErrs.ToAggregate(), "Shoot would have failed validation", "name", shoot.Name, "namespace", shoot.Namespace)
+	}
 
 	return nil
 }
