@@ -94,7 +94,8 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			infrastructureConfig.Networks.Workers = ""
 			shoot.Spec.Provider.InfrastructureConfig = &runtime.RawExtension{Raw: encode(&infrastructureConfig)}
 
-			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Not(Succeed()))
+			// Enable test after validation is not in log only mode
+			// Expect(shootValidator.Validate(ctx, shoot, nil)).To(Not(Succeed()))
 		})
 		It("should fail for with invalid ControlPlaneConfig", func() {
 			shoot.Spec.Provider.ControlPlaneConfig = &runtime.RawExtension{Raw: []byte(`{"foo": "bar"}`)}
@@ -117,7 +118,8 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 
 			shoot.Spec.Provider.ControlPlaneConfig = &runtime.RawExtension{Raw: encode(&controlPlaneConfig)}
 
-			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Not(Succeed()))
+			// Enable test after validation is not in log only mode
+			// Expect(shootValidator.Validate(ctx, shoot, nil)).To(Not(Succeed()))
 		})
 
 		It("should fail for immutable field", func() {
@@ -125,7 +127,8 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			newShoot := shoot.DeepCopy()
 			newShoot.Spec.Provider.InfrastructureConfig = &runtime.RawExtension{Raw: encode(&infrastructureConfig)}
 
-			Expect(shootValidator.Validate(ctx, newShoot, shoot)).To(Not(Succeed()))
+			// Enable test after validation is not in log only mode
+			// Expect(shootValidator.Validate(ctx, newShoot, shoot)).To(Not(Succeed()))
 		})
 	})
 })
