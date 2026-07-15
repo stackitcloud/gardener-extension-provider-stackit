@@ -68,11 +68,6 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 		allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 		allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfigUpdate(oldCpConfig, cpConfig, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 	}
-
-	// only log errors for now to be able to check the logs after a while before actually fail validation.
-	if allErrs.ToAggregate() != nil {
-		logger.Error(allErrs.ToAggregate(), "Shoot would have failed validation", "name", shoot.Name, "namespace", shoot.Namespace)
-	}
-
-	return nil
+	
+	return allErrs.ToAggregate()
 }
