@@ -49,7 +49,7 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 
 	allErrs := field.ErrorList{}
 
-	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, s.allowApplicationLoadBalancerController, field.NewPath("spec").Child("provider").Child("controlPlaneConfig").Child("controlPlaneConfig"))...)
+	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, s.allowApplicationLoadBalancerController, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 
 	allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfig(infraConfig, ptr.Deref(shoot.Spec.Networking, core.Networking{}).Nodes, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 

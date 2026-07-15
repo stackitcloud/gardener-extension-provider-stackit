@@ -13,7 +13,7 @@ metricsPort: 9090
 podAnnotations: {}
 podLabels: {}
 images:
-  stackit-alb-controller-manager: image:tag
+  stackit-application-load-balancer-controller: image:tag
 vpa:
   resourcePolicy:
     maxAllowed:
