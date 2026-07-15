@@ -68,6 +68,6 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 		allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 		allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfigUpdate(oldCpConfig, cpConfig, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 	}
-	
+
 	return allErrs.ToAggregate()
 }
