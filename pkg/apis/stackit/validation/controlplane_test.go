@@ -47,9 +47,44 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 			))
 		})
 
+		It("should succeed with stackit CCM", func() {
+			controlPlane.CloudControllerManager = &stackitv1alpha1.CloudControllerManagerConfig{
+				Name: string(stackitv1alpha1.STACKIT),
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath).ToAggregate()).To(Succeed())
+		})
+
+		It("should succeed with openstack CCM", func() {
+			controlPlane.CloudControllerManager = &stackitv1alpha1.CloudControllerManagerConfig{
+				Name: string(stackitv1alpha1.OPENSTACK),
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath).ToAggregate()).To(Succeed())
+		})
+
+		It("should succeed with stackit CSI driver", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: string(stackitv1alpha1.STACKIT)},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath).ToAggregate()).To(Succeed())
+		})
+
+		It("should succeed with openstack CSI driver", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: string(stackitv1alpha1.OPENSTACK)},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath).ToAggregate()).To(Succeed())
+		})
+
+		It("should succeed with supported CSI compatibility mode", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: string(stackitv1alpha1.STACKIT), CompatibilityMode: string(stackitv1alpha1.COMPAT)},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath).ToAggregate()).To(Succeed())
+		})
+
 		It("should fail with an unsupported CSI compatibility mode", func() {
 			controlPlane.Storage = &stackitv1alpha1.Storage{
-				CSI: &stackitv1alpha1.CSI{Name: "stackit", CompatibilityMode: "bogus"},
+				CSI: &stackitv1alpha1.CSI{Name: string(stackitv1alpha1.STACKIT), CompatibilityMode: "bogus"},
 			}
 			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
@@ -58,6 +93,43 @@ var _ = Describe("ControlPlaneConfig validation", func() {
 				})),
 			))
 		})
+
+		It("should fail with an CSI compatibility mode and openstack CSI", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: string(stackitv1alpha1.OPENSTACK), CompatibilityMode: string(stackitv1alpha1.COMPAT)},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("storage.csi.compatibilityMode"),
+				})),
+			))
+		})
+
+		It("should fail with an unsupported CSI driver", func() {
+			controlPlane.Storage = &stackitv1alpha1.Storage{
+				CSI: &stackitv1alpha1.CSI{Name: "foobar"},
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("storage.csi.name"),
+				})),
+			))
+		})
+
+		It("should fail with an unsupported ccm", func() {
+			controlPlane.CloudControllerManager = &stackitv1alpha1.CloudControllerManagerConfig{
+				Name: "foobar",
+			}
+			Expect(ValidateControlPlaneConfig(controlPlane, "", nilPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeInvalid),
+					"Field": Equal("cloudControllerManager.name"),
+				})),
+			))
+		})
+
 	})
 
 	Describe("#ValidateControlPlaneConfigUpdate", func() {

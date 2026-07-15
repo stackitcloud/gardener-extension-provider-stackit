@@ -67,13 +67,22 @@ func validateStorage(storage *stackitv1alpha1.Storage, fldPath *field.Path) fiel
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("csi", "name"), storage.CSI.Name, "not supported csi driver"))
 	}
 	// CompatibilityMode is optional; empty is accepted (defaulting sets it to "default").
-	if storage.CSI.CompatibilityMode != "" &&
-		!slices.Contains(validCSICompatibilityModes, stackitv1alpha1.CSICompatibilityMode(storage.CSI.CompatibilityMode)) {
-		allErrs = append(allErrs, field.Invalid(
-			fldPath.Child("csi", "compatibilityMode"),
-			storage.CSI.CompatibilityMode,
-			"not supported CSI compatibility mode",
-		))
+	if storage.CSI.CompatibilityMode != "" {
+		if !slices.Contains(validCSICompatibilityModes, stackitv1alpha1.CSICompatibilityMode(storage.CSI.CompatibilityMode)) {
+			allErrs = append(allErrs, field.Invalid(
+				fldPath.Child("csi", "compatibilityMode"),
+				storage.CSI.CompatibilityMode,
+				"not supported CSI compatibility mode",
+			))
+		}
+		if stackitv1alpha1.CSICompatibilityMode(storage.CSI.CompatibilityMode) != stackitv1alpha1.DEFAULT &&
+			stackitv1alpha1.ControllerName(storage.CSI.Name) != stackitv1alpha1.STACKIT {
+			allErrs = append(allErrs, field.Invalid(
+				fldPath.Child("csi", "compatibilityMode"),
+				storage.CSI.CompatibilityMode,
+				"can only be set when CSI driver stackit is in use",
+			))
+		}
 	}
 	return allErrs
 }
