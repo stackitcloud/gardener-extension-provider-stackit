@@ -209,6 +209,8 @@ var (
 					// stackit-application-load-balancer-controller
 					{Type: &appsv1.Deployment{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
 					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
+					{Type: &policyv1.PodDisruptionBudget{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
+					{Type: &corev1.ConfigMap{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
 				},
 			},
 			{
