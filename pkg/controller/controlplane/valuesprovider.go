@@ -31,7 +31,6 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -457,19 +456,6 @@ func (vp *valuesProvider) GetControlPlaneChartValues(
 		if _, _, err := vp.decoder.Decode(cp.Spec.ProviderConfig.Raw, nil, cpConfig); err != nil {
 			return nil, fmt.Errorf("could not decode providerConfig of controlplane '%s': %w", k8sclient.ObjectKeyFromObject(cp), err)
 		}
-	}
-
-	// TODO(timuthy): Delete this in a future release.
-	if err := kutil.DeleteObject(ctx, vp.client, &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-kube-apiserver-to-csi-snapshot-validation", Namespace: cp.Namespace}}); err != nil {
-		return nil, fmt.Errorf("failed deleting legacy csi-snapshot-validation network policy: %w", err)
-	}
-
-	// TODO: rm in future release.
-	if err := cleanupSeedLegacyCSISnapshotValidation(ctx, vp.client, cp.Namespace); err != nil {
-		return nil, err
-	}
-	if err := cleanupCloudProviderConfigSecret(ctx, vp.client, cp.Namespace); err != nil {
-		return nil, err
 	}
 
 	cpConfigSecret := &corev1.Secret{}
@@ -1304,48 +1290,6 @@ func (vp *valuesProvider) getControlPlaneShootChartCSISTACKITValues(ctx context.
 	}
 
 	return values
-}
-
-func cleanupSeedLegacyCSISnapshotValidation(ctx context.Context, client k8sclient.Client, namespace string) error {
-	stackitSnapShotName := fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CSISnapshotValidationName)
-
-	if err := kutil.DeleteObjects(
-		ctx,
-		client,
-		&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-		&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-		&vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: "csi-snapshot-webhook-vpa", Namespace: namespace}},
-		&policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-	); err != nil {
-		return fmt.Errorf("failed to delete legacy csi-snapshot-validation resources: %w", err)
-	}
-
-	if err := kutil.DeleteObjects(
-		ctx,
-		client,
-		&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapShotName, Namespace: namespace}},
-		&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapShotName, Namespace: namespace}},
-		&vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-csi-snapshot-webhook-vpa", CSIStackitPrefix), Namespace: namespace}},
-		&policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapShotName, Namespace: namespace}},
-	); err != nil {
-		return fmt.Errorf("failed to delete legacy STACKIT snapshot-validation resources: %w", err)
-	}
-
-	return nil
-}
-
-func cleanupCloudProviderConfigSecret(ctx context.Context, client k8sclient.Client, namespace string) error {
-	secretName := fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CloudProviderConfigName)
-
-	if err := kutil.DeleteObjects(
-		ctx,
-		client,
-		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: namespace}},
-	); err != nil {
-		return fmt.Errorf("failed to delete legacy cloud-provider-config secret: %w", err)
-	}
-
-	return nil
 }
 
 // shouldEnablePodIdentityWebhook returns true if the pod identity webhook should be enabled for the given cluster.
