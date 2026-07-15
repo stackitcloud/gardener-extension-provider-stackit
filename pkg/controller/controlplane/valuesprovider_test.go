@@ -23,10 +23,7 @@ import (
 	testutils "github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
-	policyv1 "k8s.io/api/policy/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -271,23 +268,6 @@ func managedSecrets() []client.Object {
 				Namespace: namespace,
 			},
 		},
-	}
-}
-
-func legacyCleanupObjects() []client.Object {
-	stackitSnapshotName := fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CSISnapshotValidationName)
-
-	return []client.Object{
-		&networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "allow-kube-apiserver-to-csi-snapshot-validation", Namespace: namespace}},
-		&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-		&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-		&vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: "csi-snapshot-webhook-vpa", Namespace: namespace}},
-		&policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: openstack.CSISnapshotValidationName, Namespace: namespace}},
-		&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapshotName, Namespace: namespace}},
-		&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapshotName, Namespace: namespace}},
-		&vpaautoscalingv1.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-csi-snapshot-webhook-vpa", CSIStackitPrefix), Namespace: namespace}},
-		&policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: stackitSnapshotName, Namespace: namespace}},
-		&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s", CSIStackitPrefix, openstack.CloudProviderConfigName), Namespace: namespace}},
 	}
 }
 
@@ -752,16 +732,6 @@ var _ = Describe("ValuesProvider fake client", func() {
 			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(values[openstack.STACKITALBControllerManagerName]).To(BeNil())
-		})
-
-		It("deletes legacy cleanup objects from the fake client", func() {
-			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
-			legacyObjects := legacyCleanupObjects()
-			createObjects(ctx, c, legacyObjects...)
-
-			_, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
-			Expect(err).NotTo(HaveOccurred())
-			expectObjectsDeleted(ctx, c, legacyObjects...)
 		})
 	})
 
