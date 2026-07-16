@@ -135,8 +135,8 @@ images:
 
 - name: stackit-application-load-balancer-controller
   sourceRepository: github.com/stackitcloud/application-load-balancer-controller
-  repository: ghcr.io/stackitcloud/application-load-balancer-controller-dev
-  tag: "albc"
+  repository: ghcr.io/stackitcloud/application-load-balancer-controller
+  tag: "v0.1.0"
 
 - name: stackit-pod-identity-webhook
   sourceRepository: github.com/stackitcloud/stackit-pod-identity-webhook
