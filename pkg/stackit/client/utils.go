@@ -1,9 +1,14 @@
 package client
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"strings"
 
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
+	"github.com/stackitcloud/stackit-sdk-go/core/runtime"
+	sdkWait "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api/wait"
 	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -28,4 +33,33 @@ func BuildResourceName(technicalID, resourceNameInfix, resourceName string) stri
 	// strings.TrimRight strips trailing hyphens after truncation to keep the result DNS-1123 compliant.
 	truncated := strings.TrimRight(resourceName[:budget], "-")
 	return technicalID + resourceNameInfix + truncated + "-" + hash
+}
+
+// wrapErrorWithResponseID wraps the error with the X-Request-Id but only if the error is not nil
+func wrapErrorWithResponseID(err error, reqID string) error {
+	if err == nil {
+		return nil
+	}
+	// if the request id is empty we don't wrap the error
+	if reqID == "" {
+		return err
+	}
+	return fmt.Errorf("[%s:%s]: %w", sdkWait.XRequestIDHeader, reqID, err)
+}
+
+func WithResponseID[T any](ctx context.Context, call func(context.Context) (T, error)) (T, error) {
+	var httpResp *http.Response
+	ctx = runtime.WithCaptureHTTPResponse(ctx, &httpResp)
+
+	resp, err := call(ctx)
+	if err != nil {
+		var zero T
+		if httpResp != nil {
+			reqID := httpResp.Header.Get(sdkWait.XRequestIDHeader)
+			return zero, wrapErrorWithResponseID(err, reqID)
+		}
+		return zero, err
+	}
+
+	return resp, nil
 }
