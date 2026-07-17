@@ -27,6 +27,7 @@ import (
 
 	admissioncmd "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/cmd"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/mutator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
 	stackitinstall "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	providerstackit "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -64,9 +65,12 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			webhookSwitches,
 		)
 
+		admissionOpts = &admissioncmd.ConfigOptions{}
+
 		aggOption = controllercmd.NewOptionAggregator(
 			restOpts,
 			mgrOpts,
+			admissionOpts,
 			webhookOptions,
 		)
 	)
@@ -92,6 +96,9 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			}, restOpts.Completed().Config)
 
 			managerOptions := mgrOpts.Completed().Options()
+
+			admissionConfig := admissionOpts.Completed()
+			admissionConfig.ApplyAllowApplicationLoadBalancerController(&validator.DefaultAddOptions.AllowApplicationLoadBalancerController)
 
 			// Operators can enable the source cluster option via SOURCE_CLUSTER environment variable.
 			// In-cluster config will be used if no SOURCE_KUBECONFIG is specified.

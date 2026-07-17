@@ -20,11 +20,15 @@ import (
 )
 
 // NewShootValidator returns a new instance of a shoot validator.
-func NewShootValidator(mgr manager.Manager) extensionswebhook.Validator {
-	return &shoot{}
+func NewShootValidator(mgr manager.Manager, allowApplicationLoadBalancerController bool) extensionswebhook.Validator {
+	return &shoot{
+		allowApplicationLoadBalancerController: allowApplicationLoadBalancerController,
+	}
 }
 
-type shoot struct{}
+type shoot struct {
+	allowApplicationLoadBalancerController bool
+}
 
 // Validate validates the given shoot objects.
 func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error {
@@ -45,7 +49,7 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 
 	allErrs := field.ErrorList{}
 
-	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
+	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, s.allowApplicationLoadBalancerController, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 
 	allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfig(infraConfig, ptr.Deref(shoot.Spec.Networking, core.Networking{}).Nodes, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 

@@ -76,17 +76,6 @@ ControllerConfiguration defines the configuration for the STACKIT provider.
 </tr>
 <tr>
 <td>
-<code>deployALBIngressController</code></br>
-<em>
-boolean
-</em>
-</td>
-<td>
-<p>DeployALBIngressController</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>customLabelDomain</code></br>
 <em>
 string

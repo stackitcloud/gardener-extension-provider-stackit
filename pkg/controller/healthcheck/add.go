@@ -31,20 +31,28 @@ import (
 var (
 	defaultSyncPeriod = time.Second * 30
 	// DefaultAddOptions are the default DefaultAddArgs for AddToManager.
-	DefaultAddOptions = healthcheck.DefaultAddArgs{
-		HealthCheckConfig: healthcheckconfig.HealthCheckConfig{
-			SyncPeriod: metav1.Duration{Duration: defaultSyncPeriod},
-			ShootRESTOptions: &healthcheckconfig.RESTOptions{
-				QPS:   new(float32(100)),
-				Burst: new(130),
+	DefaultAddOptions = AddOptions{
+		DefaultAddArgs: healthcheck.DefaultAddArgs{
+			HealthCheckConfig: healthcheckconfig.HealthCheckConfig{
+				SyncPeriod: metav1.Duration{Duration: defaultSyncPeriod},
+				ShootRESTOptions: &healthcheckconfig.RESTOptions{
+					QPS:   new(float32(100)),
+					Burst: new(130),
+				},
 			},
 		},
 	}
 )
 
+// AddOptions are options to apply when adding the STACKIT healthcheck controller to the manager.
+type AddOptions struct {
+	// DefaultAddArgs
+	healthcheck.DefaultAddArgs
+}
+
 // RegisterHealthChecks registers health checks for each extension resource
 // HealthChecks are grouped by extension (e.g worker), extension.type (e.g aws) and  Health Check Type (e.g ShootControlPlaneHealthy)
-func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthcheck.DefaultAddArgs) error {
+func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
 	healthchecks := []healthcheck.ConditionTypeToHealthCheck{
 		{
 			ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
@@ -75,16 +83,11 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 			HealthCheck:   general.NewSeedDeploymentHealthChecker(controlplane.CSIStackitPrefix + "-" + openstack.CSISnapshotControllerName),
 			PreCheckFunc:  checkCSISTACKIT,
 		},
-	}
-
-	if controlplane.DeployALBIngressController {
-		healthchecks = append(healthchecks,
-			healthcheck.ConditionTypeToHealthCheck{
-				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
-				HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITALBControllerManagerName),
-				PreCheckFunc:  checkALB,
-			},
-		)
+		{
+			ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
+			HealthCheck:   general.NewSeedDeploymentHealthChecker(openstack.STACKITApplicationLoadBalancerControllerName),
+			PreCheckFunc:  checkALB,
+		},
 	}
 
 	if err := healthcheck.DefaultRegistration(
@@ -93,7 +96,7 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 		func() client.ObjectList { return &extensionsv1alpha1.ControlPlaneList{} },
 		func() extensionsv1alpha1.Object { return &extensionsv1alpha1.ControlPlane{} },
 		mgr,
-		opts,
+		opts.DefaultAddArgs,
 		nil,
 		healthchecks,
 		sets.New[gardencorev1beta1.ConditionType](),
@@ -107,7 +110,7 @@ func RegisterHealthChecks(ctx context.Context, mgr manager.Manager, opts healthc
 		func() client.ObjectList { return &extensionsv1alpha1.WorkerList{} },
 		func() extensionsv1alpha1.Object { return &extensionsv1alpha1.Worker{} },
 		mgr,
-		opts,
+		opts.DefaultAddArgs,
 		nil,
 		[]healthcheck.ConditionTypeToHealthCheck{{
 			ConditionType: string(gardencorev1beta1.ShootEveryNodeReady),
@@ -173,7 +176,7 @@ func checkALB(_ context.Context, client client.Client, _ client.Object, clusterO
 		return false
 	}
 
-	return controlplane.DeploySTACKITALB(cpConfig)
+	return controlplane.DeploySTACKITApplicationLoadBalancer(cpConfig)
 }
 
 // AddToManager adds a controller with the default Options.

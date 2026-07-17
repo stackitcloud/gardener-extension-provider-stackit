@@ -85,7 +85,6 @@ func autoConvert_v1alpha1_ControllerConfiguration_To_config_ControllerConfigurat
 	}
 	out.HealthCheckConfig = (*apisconfigv1alpha1.HealthCheckConfig)(unsafe.Pointer(in.HealthCheckConfig))
 	out.RegistryCaches = *(*[]config.RegistryCacheConfiguration)(unsafe.Pointer(&in.RegistryCaches))
-	out.DeployALBIngressController = in.DeployALBIngressController
 	out.CustomLabelDomain = in.CustomLabelDomain
 	return nil
 }
@@ -102,7 +101,6 @@ func autoConvert_config_ControllerConfiguration_To_v1alpha1_ControllerConfigurat
 	}
 	out.HealthCheckConfig = (*apisconfigv1alpha1.HealthCheckConfig)(unsafe.Pointer(in.HealthCheckConfig))
 	out.RegistryCaches = *(*[]RegistryCacheConfiguration)(unsafe.Pointer(&in.RegistryCaches))
-	out.DeployALBIngressController = in.DeployALBIngressController
 	out.CustomLabelDomain = in.CustomLabelDomain
 	return nil
 }

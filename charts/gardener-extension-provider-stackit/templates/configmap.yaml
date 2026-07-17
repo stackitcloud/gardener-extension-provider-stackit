@@ -29,6 +29,3 @@ data:
     registryCaches:
       {{- toYaml . | nindent 6 }}
   {{- end }}
-{{- if .Values.config.deployALBIngressController }}
-    deployALBIngressController: {{ .Values.config.deployALBIngressController }}
-{{- end }}

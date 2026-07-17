@@ -81,14 +81,14 @@ string
 </tr>
 <tr>
 <td>
-<code>loadbalancerCertificate</code></br>
+<code>applicationLoadBalancerCertificate</code></br>
 <em>
 string
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>LoadbalancerCertificate is the Endpoint of the LoadBalancerCertificate API.</p>
+<p>ApplicationLoadBalancerCertificate is the Endpoint of the ApplicationLoadBalancerCertificate API.</p>
 </td>
 </tr>
 <tr>
@@ -155,7 +155,8 @@ string array
 </p>
 
 <p>
-
+ApplicationLoadBalancerConfig defines the configuration for the
+Application Load Balancer (ALB) integration.
 </p>
 
 <table>
@@ -175,7 +176,56 @@ boolean
 </em>
 </td>
 <td>
-<p></p>
+<p>Enabled specifies whether the Application Load Balancer is activated.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>ingress</code></br>
+<em>
+<a href="#applicationloadbalancerconfigingress">ApplicationLoadBalancerConfigIngress</a>
+</em>
+</td>
+<td>
+<p>Ingress contains the configuration specific to the ALB's Ingress controller.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="applicationloadbalancerconfigingress">ApplicationLoadBalancerConfigIngress
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#applicationloadbalancerconfig">ApplicationLoadBalancerConfig</a>)
+</p>
+
+<p>
+ApplicationLoadBalancerConfigIngress defines the settings for the
+Application Load Balancer Ingress resources.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>enabled</code></br>
+<em>
+boolean
+</em>
+</td>
+<td>
+<p>Enabled specifies whether the Ingress controller functionality<br />for the ALB is activated to manage external access to services.</p>
 </td>
 </tr>
 

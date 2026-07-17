@@ -22,8 +22,6 @@ import (
 var (
 	// DefaultAddOptions are the default AddOptions for AddToManager.
 	DefaultAddOptions = AddOptions{}
-
-	DeployALBIngressController bool
 )
 
 // AddOptions are options to apply when adding the OpenStack controlplane controller to the manager.
@@ -50,7 +48,7 @@ func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddO
 	genericActuator, err := genericactuator.NewActuator(mgr, stackit.Name,
 		secretConfigsFunc, shootAccessSecretsFunc,
 		configChart, controlPlaneChart, controlPlaneShootChart, controlPlaneShootCRDsChart, storageClassChart,
-		NewValuesProvider(mgr, DeployALBIngressController, opts.CustomLabelDomain, csiCompatibilityHandler),
+		NewValuesProvider(mgr, opts.CustomLabelDomain, csiCompatibilityHandler),
 		extensionscontroller.ChartRendererFactoryFunc(util.NewChartRendererForShoot),
 		imagevector.ImageVector(), "", nil, opts.WebhookServerNamespace)
 	if err != nil {

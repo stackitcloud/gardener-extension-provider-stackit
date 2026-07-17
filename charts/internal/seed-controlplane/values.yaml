@@ -6,7 +6,7 @@ stackit-cloud-controller-manager:
   enabled: false
 csi-driver-controller:
   enabled: true
-stackit-alb-controller-manager:
+stackit-application-load-balancer-controller:
   enabled: false
 stackit-pod-identity-webhook:
   enabled: false

@@ -203,12 +203,14 @@ var (
 				},
 			},
 			{
-				Name:   openstack.STACKITALBControllerManagerName,
-				Images: []string{imagevector.ImageNameStackitAlbControllerManager},
+				Name:   openstack.STACKITApplicationLoadBalancerControllerName,
+				Images: []string{imagevector.ImageNameStackitApplicationLoadBalancerController},
 				Objects: []*chart.Object{
-					// stackit-alb-controller-manager
-					{Type: &appsv1.Deployment{}, Name: openstack.STACKITALBControllerManagerName},
-					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITALBControllerManagerName},
+					// stackit-application-load-balancer-controller
+					{Type: &appsv1.Deployment{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
+					{Type: &vpaautoscalingv1.VerticalPodAutoscaler{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
+					{Type: &policyv1.PodDisruptionBudget{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
+					{Type: &corev1.ConfigMap{}, Name: openstack.STACKITApplicationLoadBalancerControllerName},
 				},
 			},
 			{
@@ -361,25 +363,23 @@ type CSICompatibilityHandler interface {
 }
 
 // NewValuesProvider creates a new ValuesProvider for the generic actuator.
-func NewValuesProvider(mgr manager.Manager, deployALBIngressController bool, customLabelDomain string, csiCompatibilityHandler CSICompatibilityHandler) genericactuator.ValuesProvider {
+func NewValuesProvider(mgr manager.Manager, customLabelDomain string, csiCompatibilityHandler CSICompatibilityHandler) genericactuator.ValuesProvider {
 	return &valuesProvider{
-		client:                     mgr.GetClient(),
-		decoder:                    serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		deployALBIngressController: deployALBIngressController,
-		customLabelDomain:          customLabelDomain,
-		csiCompatibilityHandler:    csiCompatibilityHandler,
+		client:                  mgr.GetClient(),
+		decoder:                 serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		customLabelDomain:       customLabelDomain,
+		csiCompatibilityHandler: csiCompatibilityHandler,
 	}
 }
 
 // valuesProvider is a ValuesProvider that provides OpenStack-specific values for the 2 charts applied by the generic actuator.
 type valuesProvider struct {
 	genericactuator.NoopValuesProvider
-	client                     k8sclient.Client
-	config                     *rest.Config
-	decoder                    runtime.Decoder
-	deployALBIngressController bool
-	customLabelDomain          string
-	csiCompatibilityHandler    CSICompatibilityHandler
+	client                  k8sclient.Client
+	config                  *rest.Config
+	decoder                 runtime.Decoder
+	customLabelDomain       string
+	csiCompatibilityHandler CSICompatibilityHandler
 }
 
 // GetConfigChartValues returns the values for the config chart applied by the generic actuator.
@@ -772,17 +772,18 @@ func (vp *valuesProvider) getControlPlaneChartValues(ctx context.Context, cpConf
 		return nil, fmt.Errorf("unsupported storage CSI Driver: %s", storageCSIDriver)
 	}
 
-	if vp.deployALBIngressController {
-		fmt.Println("deploying ALB Ingress Controller")
-		albcm, err := getSTACKITALBCMChartValues(cpConfig, cluster, infra, stackitCredentialsConfig, apiEndpoints, scaledDown, stackitRegion)
+	if DeploySTACKITApplicationLoadBalancer(cpConfig) {
+		// Currently only the ingress source is allowed and the validation does not allow to enable the ALB controller of no source is enabled.
+		// When adding support for GatewayAPI it is required to adopt the configuration of the ALB controller here.
+		albcm, err := getSTACKITApplicationLoadBalancerCMChartValues(cpConfig, cluster, infra, stackitCredentialsConfig, apiEndpoints, checksums, scaledDown, stackitRegion)
 		if err != nil {
 			return nil, err
 		}
 
-		controlPlaneValues[openstack.STACKITALBControllerManagerName] = albcm
+		controlPlaneValues[openstack.STACKITApplicationLoadBalancerControllerName] = albcm
 	} else {
 		// NOTE: ensure deletion of ALB deployment, if disabled
-		if err := vp.deleteControlPlaneComponentsForGivenChart(ctx, cp.Namespace, openstack.STACKITALBControllerManagerName); err != nil {
+		if err := vp.deleteControlPlaneComponentsForGivenChart(ctx, cp.Namespace, openstack.STACKITApplicationLoadBalancerControllerName); err != nil {
 			return nil, err
 		}
 	}
@@ -1026,56 +1027,68 @@ func getCSIControllerChartValues(cluster *extensionscontroller.Cluster, userAgen
 	return values
 }
 
-func getSTACKITALBCMChartValues(
-	cpConfig *stackitv1alpha1.ControlPlaneConfig,
+func getSTACKITApplicationLoadBalancerCMChartValues(
+	_ *stackitv1alpha1.ControlPlaneConfig,
 	cluster *extensionscontroller.Cluster,
 	infra *stackitv1alpha1.InfrastructureStatus,
 	credentials *stackit.Credentials,
 	apiEndpoints *stackitv1alpha1.APIEndpoints,
+	checksums map[string]string,
 	scaledDown bool,
 	stackitRegion string,
 ) (map[string]any, error) {
-	if !DeploySTACKITALB(cpConfig) {
-		return nil, nil
-	}
-
 	if credentials == nil {
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
-
-	config := map[string]any{
-		"region":           stackitRegion,
-		"stackitProjectID": credentials.ProjectID,
+	if infra == nil {
+		return map[string]any{}, fmt.Errorf("can't determine networkID from as InfrastructureStatus is nil in cluster %s", cluster.Shoot.Name)
 	}
 
-	if infra != nil {
-		config["stackitNetworkID"] = infra.Networks.ID
+	globalSettings := map[string]any{
+		"region":    stackitRegion,
+		"projectId": credentials.ProjectID,
 	}
 
 	if apiEndpoints != nil {
+		endpoints := map[string]any{}
 		if apiEndpoints.ApplicationLoadBalancer != nil {
-			config["applicationLBApiUrl"] = apiEndpoints.ApplicationLoadBalancer
+			endpoints["applicationLoadBalancerApi"] = apiEndpoints.ApplicationLoadBalancer
 		}
 
-		if apiEndpoints.LoadBalancerCertificate != nil {
-			config["certificateApiUrl"] = *apiEndpoints.LoadBalancerCertificate
+		if apiEndpoints.ApplicationLoadBalancerCertificate != nil {
+			endpoints["applicationLoadBalancerCertificateApi"] = *apiEndpoints.ApplicationLoadBalancerCertificate
 		}
 
-		if apiEndpoints.TokenEndpoint != nil {
-			config["tokenUrl"] = *apiEndpoints.TokenEndpoint
+		if len(endpoints) > 0 {
+			globalSettings["apiEndpoints"] = endpoints
 		}
+	}
+
+	config := map[string]any{
+		"global": globalSettings,
+		"applicationLoadBalancer": map[string]any{
+			"networkId": infra.Networks.ID,
+		},
 	}
 
 	values := map[string]any{
 		"enabled":  true,
 		"replicas": extensionscontroller.GetControlPlaneReplicas(cluster, scaledDown, 1),
 		"config":   config,
+		"podAnnotations": map[string]any{
+			"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: checksums[v1beta1constants.SecretNameCloudProvider],
+			"checksum/application-load-balancer-config":                   gardenerutils.ComputeChecksum(config),
+		},
+	}
+
+	if apiEndpoints != nil && apiEndpoints.TokenEndpoint != nil {
+		values["tokenEndpoint"] = *apiEndpoints.TokenEndpoint
 	}
 
 	return values, nil
 }
 
-func DeploySTACKITALB(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
+func DeploySTACKITApplicationLoadBalancer(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
 	return ptr.Deref(cpConfig.ApplicationLoadBalancer, stackitv1alpha1.ApplicationLoadBalancerConfig{}).Enabled
 }
 

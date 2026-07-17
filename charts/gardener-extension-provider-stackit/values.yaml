@@ -76,11 +76,10 @@ config:
       provisioner: block-storage.csi.stackit.cloud
       volumeBindingMode: WaitForFirstConsumer
   registryCaches:
-  # - server: reg.example.com
-  #   cache: reg-cache.example.com
-  #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
-  #   capabilities: ["pull", "resolve"]
-  # deployALBIngressController: true
+    # - server: reg.example.com
+    #   cache: reg-cache.example.com
+    #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
+    #   capabilities: ["pull", "resolve"]
 gardener:
   version: ""
   gardenlet:

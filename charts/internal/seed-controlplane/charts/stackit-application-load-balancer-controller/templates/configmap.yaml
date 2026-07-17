@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stackit-application-load-balancer-controller
+  namespace: {{ .Release.Namespace }}
+data:
+  cloud.yaml: |-
+    global:
+      region: {{ .Values.config.global.region }}
+      projectId: {{ .Values.config.global.projectId }}
+      {{- with .Values.config.global.apiEndpoints }}
+      apiEndpoints:
+        {{- if .applicationLoadBalancerApi }}
+        applicationLoadBalancerApi: {{ .applicationLoadBalancerApi }}
+        {{- end }}
+        {{- if .applicationLoadBalancerCertificateApi }}
+        applicationLoadBalancerCertificateApi: {{ .applicationLoadBalancerCertificateApi }}
+        {{- end }}
+      {{- end }}
+    applicationLoadBalancer:
+      networkId: {{ .Values.config.applicationLoadBalancer.networkId }}

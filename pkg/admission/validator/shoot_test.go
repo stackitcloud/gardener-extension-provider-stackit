@@ -49,7 +49,7 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			Client: fakeClient,
 			Scheme: scheme,
 		}
-		shootValidator = validator.NewShootValidator(fakeManager)
+		shootValidator = validator.NewShootValidator(fakeManager, true)
 
 		infrastructureConfig = v1alpha1.InfrastructureConfig{
 			FloatingPoolName: "floating-pool",

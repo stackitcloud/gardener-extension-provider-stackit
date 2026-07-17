@@ -33,9 +33,6 @@ type ControllerConfiguration struct {
 	// +optional
 	RegistryCaches []RegistryCacheConfiguration `json:"registryCaches,omitempty"`
 
-	// DeployALBIngressController
-	DeployALBIngressController bool `json:"deployALBIngressController"`
-
 	// CustomLabelDomain is the domain prefix for custom labels applied to STACKIT infrastructure resources.
 	// For example, cluster labels will use "<domain>/cluster" (default: "kubernetes.io").
 	// +optional

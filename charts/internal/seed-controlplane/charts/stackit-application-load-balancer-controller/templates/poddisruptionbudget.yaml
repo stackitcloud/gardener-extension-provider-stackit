@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: stackit-application-load-balancer-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kubernetes
+    role: stackit-application-load-balancer-controller
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: kubernetes
+      role: stackit-application-load-balancer-controller
+  unhealthyPodEvictionPolicy: AlwaysAllow

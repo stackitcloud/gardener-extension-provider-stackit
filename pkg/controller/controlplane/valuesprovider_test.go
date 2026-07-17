@@ -62,9 +62,9 @@ func newTestScheme() *runtime.Scheme {
 	return scheme
 }
 
-func newTestValuesProvider(cl client.Client, scheme *runtime.Scheme, deployALB bool, customLabelDomain string) *valuesProvider {
+func newTestValuesProvider(cl client.Client, scheme *runtime.Scheme, customLabelDomain string) *valuesProvider {
 	mgr := &testutils.FakeManager{Scheme: scheme, Client: cl}
-	return NewValuesProvider(mgr, deployALB, customLabelDomain, new(noopCSICompatibilityHandler)).(*valuesProvider)
+	return NewValuesProvider(mgr, customLabelDomain, new(noopCSICompatibilityHandler)).(*valuesProvider)
 }
 
 func baseControlPlaneConfig() *stackitv1alpha1.ControlPlaneConfig {
@@ -416,7 +416,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 		scheme = newTestScheme()
 		c = fake.NewClientBuilder().WithScheme(scheme).Build()
 		secretsManager = fakesecretsmanager.New(c, namespace)
-		vp = newTestValuesProvider(c, scheme, true, "kubernetes.io")
+		vp = newTestValuesProvider(c, scheme, "kubernetes.io")
 	})
 
 	Describe("#GetConfigChartValues", func() {
@@ -597,7 +597,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 					"tlsSecretName": stackitPodIdentityWebhookServerName,
 				},
 			}))
-			Expect(values[openstack.STACKITALBControllerManagerName]).To(BeNil())
+			Expect(values[openstack.STACKITApplicationLoadBalancerControllerName]).To(BeNil())
 		})
 
 		It("returns OpenStack CSI values when selected", func() {
@@ -687,7 +687,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 
 		DescribeTable("propagates custom label domains",
 			func(customLabelDomain string) {
-				vp = newTestValuesProvider(c, scheme, true, customLabelDomain)
+				vp = newTestValuesProvider(c, scheme, customLabelDomain)
 				cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 
 				values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
@@ -706,32 +706,47 @@ var _ = Describe("ValuesProvider fake client", func() {
 		It("returns ALB controller values when enabled", func() {
 			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
-			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{Enabled: true}
+			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{
+				Enabled: true,
+				Ingress: &stackitv1alpha1.ApplicationLoadBalancerConfigIngress{
+					Enabled: false,
+				},
+			}
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
 
 			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chartValues(values, openstack.STACKITALBControllerManagerName)).To(BeComparableTo(map[string]any{
+			config := map[string]any{
+				"global": map[string]any{
+					"region":    "eu01",
+					"projectId": "foo",
+				},
+				"applicationLoadBalancer": map[string]any{
+					"networkId": "network-acbd1234",
+				},
+			}
+
+			Expect(chartValues(values, openstack.STACKITApplicationLoadBalancerControllerName)).To(BeComparableTo(map[string]any{
 				"enabled":  true,
 				"replicas": 1,
-				"config": map[string]any{
-					"region":           "eu01",
-					"stackitProjectID": "foo",
-					"stackitNetworkID": "network-acbd1234",
+				"podAnnotations": map[string]any{
+					"checksum/application-load-balancer-config":                   gardenerutils.ComputeChecksum(config),
+					"checksum/secret-" + v1beta1constants.SecretNameCloudProvider: gardenerutils.ComputeChecksum(providerSecret.Data),
 				},
+				"config": config,
 			}))
 		})
 
-		It("omits ALB controller values when the config disables ALB deployment", func() {
-			vp = newTestValuesProvider(c, scheme, false, "kubernetes.io")
+		It("omits ALB controller values when the alb is ALB deployment", func() {
+			vp = newTestValuesProvider(c, scheme, "kubernetes.io")
 			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
 			cpConfig := baseControlPlaneConfig()
-			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{Enabled: true}
+			cpConfig.ApplicationLoadBalancer = &stackitv1alpha1.ApplicationLoadBalancerConfig{Enabled: false}
 			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
 
 			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(values[openstack.STACKITALBControllerManagerName]).To(BeNil())
+			Expect(values[openstack.STACKITApplicationLoadBalancerControllerName]).To(BeNil())
 		})
 	})
 
@@ -828,7 +843,7 @@ var _ = Describe("ValuesProvider fake client", func() {
 					},
 				}).
 				Build()
-			interceptedProvider := newTestValuesProvider(interceptedClient, scheme, true, "kubernetes.io")
+			interceptedProvider := newTestValuesProvider(interceptedClient, scheme, "kubernetes.io")
 
 			apiURL, apiToken, err := interceptedProvider.checkEmergencyLoadBalancerAccess(ctx, secretKey)
 			Expect(err).To(MatchError(expectedErr))
