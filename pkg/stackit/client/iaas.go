@@ -152,7 +152,9 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 }
 
 func (c iaasClient) CreateIsolatedNetwork(ctx context.Context, payload iaas.CreateIsolatedNetworkPayload) (*iaas.Network, error) {
-	return c.Client.CreateIsolatedNetwork(ctx, c.projectID, c.region).CreateIsolatedNetworkPayload(payload).Execute()
+	return WithResponseID(ctx, func(ctx context.Context) (*iaas.Network, error) {
+		return c.Client.CreateIsolatedNetwork(ctx, c.projectID, c.region).CreateIsolatedNetworkPayload(payload).Execute()
+	})
 }
 
 func (c iaasClient) DeleteNetwork(ctx context.Context, networkID string) error {

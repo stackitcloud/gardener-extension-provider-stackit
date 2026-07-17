@@ -262,9 +262,7 @@ func testInfrastructure(reconciler *string) {
 
 		networkName := namespace + "-network"
 
-		networkID, err := stackitclient.WithResponseID(ctx, func(ctx context.Context) (*string, error) {
-			return prepareIsolatedNetwork(log, networkName)
-		})
+		networkID, err := prepareIsolatedNetwork(log, networkName)
 		Expect(err).NotTo(HaveOccurred())
 
 		var cleanupHandle framework.CleanupActionHandle
@@ -289,9 +287,7 @@ func testInfrastructure(reconciler *string) {
 
 		networkName := namespace + "-network"
 
-		networkID, err := stackitclient.WithResponseID(ctx, func(ctx context.Context) (*string, error) {
-			return prepareIsolatedNetwork(log, networkName)
-		})
+		networkID, err := prepareIsolatedNetwork(log, networkName)
 		Expect(err).NotTo(HaveOccurred())
 
 		var cleanupHandle framework.CleanupActionHandle
