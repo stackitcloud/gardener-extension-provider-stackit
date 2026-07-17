@@ -52,6 +52,7 @@ spec:
         {{- end }}
         - --v=3
         - --provide-node-service=false
+        - --metrics-address=:{{ .Values.config.metricsPort }}
         {{- if .Values.csi.enableCompatibilityMode }}
         - --legacy-storage-mode=true
         {{- end }}
@@ -79,6 +80,9 @@ spec:
         ports:
         - name: healthz
           containerPort: {{ .Values.healthzPort }}
+          protocol: TCP
+        - containerPort: {{ .Values.config.metricsPort }}
+          name: metrics
           protocol: TCP
         livenessProbe:
           httpGet:

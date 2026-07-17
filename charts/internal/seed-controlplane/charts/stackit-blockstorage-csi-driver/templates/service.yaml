@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"port":{{ .Values.config.metricsPort }},"protocol":"TCP"}]'
+  labels:
+    app: {{ .Values.prefix }}-csi
+    role: controller
+  name: {{ .Values.prefix }}-csi-driver-controller
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: metrics
+    port: {{ .Values.config.metricsPort }}
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app: {{ .Values.prefix }}-csi
+    role: controller
+  type: ClusterIP
