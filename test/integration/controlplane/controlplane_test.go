@@ -162,7 +162,7 @@ var _ = Describe("ControlPlane CSI compatibility mode", func() {
 			ObjectMeta: metav1.ObjectMeta{Name: namespace},
 			Spec: extensionsv1alpha1.ClusterSpec{
 				CloudProfile: runtime.RawExtension{Raw: []byte(`{}`)},
-				Seed:         runtime.RawExtension{Raw: []byte(`{}`)},
+				Seed:         &runtime.RawExtension{Raw: []byte(`{}`)},
 				Shoot:        runtime.RawExtension{Raw: shootBytes.Bytes()},
 			},
 		}
