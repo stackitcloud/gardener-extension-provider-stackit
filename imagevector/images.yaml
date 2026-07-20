@@ -25,7 +25,7 @@ images:
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.33.17"
+  tag: "v1.33.18"
   targetVersion: "1.33.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
@@ -76,7 +76,7 @@ images:
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.33.17"
+  tag: "v1.33.18"
   targetVersion: "1.33.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
