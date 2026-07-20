@@ -62,8 +62,8 @@ func retryOnError(log logr.Logger, err error) bool {
 }
 
 func decodeNeutronError(err error) (*neutronError, error) {
-	var codeError gophercloud.ErrUnexpectedResponseCode
-	if errors.As(err, &codeError) {
+	codeError, ok := errors.AsType[gophercloud.ErrUnexpectedResponseCode](err)
+	if ok {
 		e := &neutronErrorWrap{}
 		if err := json.Unmarshal(codeError.Body, e); err != nil {
 			return nil, err

@@ -1,4 +1,5 @@
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+ENSURE_GARDENER_TOOLS_MOD   := $(shell go get github.com/gardener/gardener/hack/tools@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener/hack/tools))
 GARDENER_DIR                := $(shell go list -mod=mod -m -f "{{.Dir}}" github.com/gardener/gardener)
 GARDENER_HACK_DIR           := $(GARDENER_DIR)/hack
 
