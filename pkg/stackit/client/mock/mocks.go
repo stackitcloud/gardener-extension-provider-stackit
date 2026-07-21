@@ -43,6 +43,36 @@ func (m *MockFactory) EXPECT() *MockFactoryMockRecorder {
 	return m.recorder
 }
 
+// ApplicationLoadBalancer mocks base method.
+func (m *MockFactory) ApplicationLoadBalancer(arg0 context.Context, arg1 client0.Client, arg2 v1.SecretReference) (client.ApplicationLoadBalancingClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplicationLoadBalancer", arg0, arg1, arg2)
+	ret0, _ := ret[0].(client.ApplicationLoadBalancingClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ApplicationLoadBalancer indicates an expected call of ApplicationLoadBalancer.
+func (mr *MockFactoryMockRecorder) ApplicationLoadBalancer(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplicationLoadBalancer", reflect.TypeOf((*MockFactory)(nil).ApplicationLoadBalancer), arg0, arg1, arg2)
+}
+
+// ApplicationLoadBalancerCertificate mocks base method.
+func (m *MockFactory) ApplicationLoadBalancerCertificate(arg0 context.Context, arg1 client0.Client, arg2 v1.SecretReference) (client.ApplicationLoadBalancerCertificateClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplicationLoadBalancerCertificate", arg0, arg1, arg2)
+	ret0, _ := ret[0].(client.ApplicationLoadBalancerCertificateClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ApplicationLoadBalancerCertificate indicates an expected call of ApplicationLoadBalancerCertificate.
+func (mr *MockFactoryMockRecorder) ApplicationLoadBalancerCertificate(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplicationLoadBalancerCertificate", reflect.TypeOf((*MockFactory)(nil).ApplicationLoadBalancerCertificate), arg0, arg1, arg2)
+}
+
 // DNS mocks base method.
 func (m *MockFactory) DNS(arg0 context.Context, arg1 client0.Client, arg2 v1.SecretReference) (client.DNSClient, error) {
 	m.ctrl.T.Helper()

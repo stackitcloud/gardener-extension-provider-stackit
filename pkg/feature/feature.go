@@ -18,6 +18,8 @@ const (
 	MutateDisableNTP featuregate.Feature = "MutateDisableNTP"
 	// EnsureSTACKITLBDeletion enables the STACKIT LB deletion cleanup. The function checks for dangling/zombied LB's and then tries to delete them.
 	EnsureSTACKITLBDeletion featuregate.Feature = "EnsureSTACKITLBDeletion"
+	// EnsureSTACKITALBDeletion enables the STACKIT ALB deletion cleanup. The function checks for dangling/zombied ALB's and then tries to delete them.
+	EnsureSTACKITALBDeletion featuregate.Feature = "EnsureSTACKITALBDeletion"
 	// UseSTACKITAPIInfrastructureController Uses the STACKIT API to create the shoot resources instead of OpenStack.
 	UseSTACKITAPIInfrastructureController featuregate.Feature = "UseSTACKITAPIInfrastructureController"
 	// UseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes.
@@ -46,6 +48,7 @@ var (
 	allGates = map[featuregate.Feature]featuregate.FeatureSpec{
 		MutateDisableNTP:                      {Default: true, PreRelease: featuregate.Alpha},
 		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
+		EnsureSTACKITALBDeletion:              {Default: false, PreRelease: featuregate.Alpha},
 		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
 		UseSTACKITMachineControllerManager:    {Default: true, PreRelease: featuregate.Alpha},
 		EnableSTACKITWorkloadIdentity:         {Default: false, PreRelease: featuregate.Alpha},

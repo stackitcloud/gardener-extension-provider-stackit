@@ -19,3 +19,7 @@ data:
       {{- end }}
     applicationLoadBalancer:
       networkId: {{ .Values.config.applicationLoadBalancer.networkId }}
+      {{- if .Values.config.applicationLoadBalancer.extraLabels }}
+      extraLabels:
+        {{- toYaml .Values.config.applicationLoadBalancer.extraLabels | nindent 8 }}
+      {{- end }}

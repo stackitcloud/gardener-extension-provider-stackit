@@ -56,6 +56,8 @@ type Opts struct {
 	State              *stackitv1alpha1.InfrastructureState
 	Client             client.Client
 	StackitLB          stackitclient.LoadBalancingClient
+	StackitALB         stackitclient.ApplicationLoadBalancingClient
+	StackitALBCert     stackitclient.ApplicationLoadBalancerCertificateClient
 	IaaSClient         stackitclient.IaaSClient
 	UseOpenStackClient bool
 	CustomLabelDomain  string
@@ -77,6 +79,8 @@ type FlowContext struct {
 	nodesCIDR               *string
 	dnsNameservers          *[]string
 	stackitLB               stackitclient.LoadBalancingClient
+	stackitALB              stackitclient.ApplicationLoadBalancingClient
+	stackitALBCert          stackitclient.ApplicationLoadBalancerCertificateClient
 	iaasClient              stackitclient.IaaSClient
 	hasStackitMCM           bool
 	hasOpenStackCredentials bool
@@ -120,6 +124,8 @@ func NewFlowContext(ctx context.Context, opts Opts) (*FlowContext, error) {
 		client:                  opts.Client,
 		cluster:                 opts.Cluster,
 		stackitLB:               opts.StackitLB,
+		stackitALB:              opts.StackitALB,
+		stackitALBCert:          opts.StackitALBCert,
 		iaasClient:              opts.IaaSClient,
 		hasStackitMCM:           feature.UseStackitMachineControllerManager(opts.Cluster),
 		hasOpenStackCredentials: opts.UseOpenStackClient,

@@ -70,7 +70,8 @@ const (
 
 	STACKITCCMServiceLoadbalancerController = "service-lb-controller"
 	// TODO: migrate to utils.BuildLabelKey
-	STACKITLBClusterLabelKey = "cluster.stackit.cloud"
+	STACKITLBClusterLabelKey  = "cluster.stackit.cloud"
+	STACKITALBClusterLabelKey = "cluster.stackit.cloud"
 )
 
 var constraintK8sEquals129 *semver.Constraints
@@ -1068,6 +1069,13 @@ func getSTACKITApplicationLoadBalancerCMChartValues(
 		"global": globalSettings,
 		"applicationLoadBalancer": map[string]any{
 			"networkId": infra.Networks.ID,
+			"extraLabels": map[string]string{
+				// TODO: migrate away from the old key
+				STACKITALBClusterLabelKey: cluster.Shoot.Status.TechnicalID,
+				// Disabled as the application load balancer API is currently not accepting `/` in the label
+				// TODO: enable this as soon as the load balancer API supports this
+				// utils.ClusterLabelKey(customLabelDomain): cluster.Shoot.Status.TechnicalID,
+			},
 		},
 	}
 

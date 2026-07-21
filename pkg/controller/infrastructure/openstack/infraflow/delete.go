@@ -50,6 +50,12 @@ func (fctx *FlowContext) buildDeleteGraph() *flow.Graph {
 		shared.DoIf(feature.Gate.Enabled(feature.EnsureSTACKITLBDeletion)),
 	)
 
+	_ = fctx.AddTask(g, "ensure STACKIT ALB deletion",
+		fctx.ensureSTACKIALBDeletion,
+		shared.Timeout(defaultTimeout),
+		shared.DoIf(feature.Gate.Enabled(feature.EnsureSTACKITALBDeletion)),
+	)
+
 	// NOTE(Felix Breuer, 12.1.26):
 	// the deletion task is currently only active in the feature gate due to a race condition of deleting the service accounts when a stackit project is deleted
 	// if a shoot has the stackit MCM feature enabled, this also deletes the ssh keypair
@@ -249,6 +255,42 @@ func (fctx *FlowContext) ensureSTACKITLBDeletion(ctx context.Context) error {
 		if val, ok := lb[i].GetLabels()[controlplane.STACKITLBClusterLabelKey]; ok && val == fctx.technicalID {
 			log.Info("deleting...", "load balancer", lb[i].GetName())
 			err = fctx.stackitLB.DeleteLoadBalancer(ctx, lb[i].GetName())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (fctx *FlowContext) ensureSTACKIALBDeletion(ctx context.Context) error {
+	log := shared.LogFromContext(ctx)
+	alb, err := fctx.stackitALB.ListLoadBalancers(ctx)
+	if err != nil {
+		return err
+	}
+	for i := range alb {
+		// Filter out all other ALB's that are in the project but do not long belong to this shoot
+		// TODO: migrate to utils.BuildLabelKey
+		if val, ok := alb[i].GetLabels()[controlplane.STACKITLBClusterLabelKey]; ok && val == fctx.technicalID {
+			log.Info("deleting...", "application load balancer", alb[i].GetName())
+			err = fctx.stackitALB.DeleteLoadBalancer(ctx, alb[i].GetName())
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	albCerts, err := fctx.stackitALBCert.ListApplicationLoadBalancerCertificates(ctx)
+	if err != nil {
+		return err
+	}
+	for i := range albCerts {
+		// Filter out all other ALB's that are in the project but do not long belong to this shoot
+		// TODO: migrate to utils.BuildLabelKey
+		if val, ok := albCerts[i].GetLabels()[controlplane.STACKITLBClusterLabelKey]; ok && val == fctx.technicalID {
+			log.Info("deleting...", "application load balancer certificate", albCerts[i].GetName())
+			err = fctx.stackitALBCert.DeleteApplicationLoadBalancerCertificates(ctx, albCerts[i].GetId())
 			if err != nil {
 				return err
 			}
