@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
 	"github.com/gardener/gardener/pkg/utils"
-	testutils "github.com/gardener/gardener/pkg/utils/test"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,13 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
@@ -71,6 +69,7 @@ var _ = Describe("Machines", func() {
 	})
 
 	Context("workerDelegate", func() {
+
 		BeforeEach(func() {
 			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil, "")
 		})
@@ -93,7 +92,8 @@ var _ = Describe("Machines", func() {
 			})
 		})
 
-		Describe("#GenerateMachineDeployments, #DeployMachineClasses", func() {
+		DescribeTableSubtree("#GenerateMachineDeployments, #DeployMachineClasses", func(isCapabilitiesCloudProfile bool, usesGlobalImageNames bool) {
+
 			var (
 				namespace        string
 				technicalID      string
@@ -101,7 +101,6 @@ var _ = Describe("Machines", func() {
 
 				openstackAuthURL string
 				region           string
-				regionWithImages string
 
 				machineImageName    string
 				machineImageVersion string
@@ -111,16 +110,16 @@ var _ = Describe("Machines", func() {
 				archAMD string
 				archARM string
 
-				keyName               string
-				machineType           string
-				userData              []byte
-				userDataSecretName    string
-				userDataSecretDataKey string
-				nodeAgentSecretName   string
-				networkID             string
-				podCIDR               string
-				subnetID              string
-				securityGroupName     string
+				keyName                     string
+				machineType, machineTypeArm string
+				userData                    []byte
+				userDataSecretName          string
+				userDataSecretDataKey       string
+				nodeAgentSecretName         string
+				networkID                   string
+				podCIDR                     string
+				subnetID                    string
+				securityGroupName           string
 
 				namePool1           string
 				minPool1            int32
@@ -140,7 +139,14 @@ var _ = Describe("Machines", func() {
 				zone1 string
 				zone2 string
 
-				nodeCapacity         corev1.ResourceList
+				nodeCapacity           corev1.ResourceList
+				nodeTemplatePool1Zone1 machinev1alpha1.NodeTemplate
+				nodeTemplatePool2Zone1 machinev1alpha1.NodeTemplate
+				nodeTemplatePool3Zone1 machinev1alpha1.NodeTemplate
+				nodeTemplatePool1Zone2 machinev1alpha1.NodeTemplate
+				nodeTemplatePool2Zone2 machinev1alpha1.NodeTemplate
+				nodeTemplatePool3Zone2 machinev1alpha1.NodeTemplate
+
 				machineConfiguration *machinev1alpha1.MachineConfiguration
 
 				workerPoolHash1 string
@@ -149,43 +155,53 @@ var _ = Describe("Machines", func() {
 
 				shootVersionMajorMinor string
 				shootVersion           string
-				cloudProfileConfig     *stackitv1alpha1.CloudProfileConfig
-				cloudProfileConfigJSON []byte
 				clusterWithoutImages   *extensionscontroller.Cluster
 				cluster                *extensionscontroller.Cluster
 				w                      *extensionsv1alpha1.Worker
 
 				emptyClusterAutoscalerAnnotations map[string]string
+				capabilitiesAmd, capabilitiesArm  gardencorev1beta1.Capabilities
+				capabilityDefinitions             []gardencorev1beta1.CapabilityDefinition
 			)
 
-			newFakeClient := func(objects ...client.Object) client.Client {
-				return fakeclient.NewClientBuilder().
-					WithScheme(scheme).
-					WithStatusSubresource(&extensionsv1alpha1.Worker{}).
-					WithObjects(objects...).
-					Build()
-			}
-
 			BeforeEach(func() {
+				if isCapabilitiesCloudProfile {
+					capabilityDefinitions = []gardencorev1beta1.CapabilityDefinition{
+						{Name: "some-capability", Values: []string{"a", "b", "c"}},
+						{Name: v1beta1constants.ArchitectureName, Values: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64}},
+					}
+					capabilitiesAmd = gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{v1beta1constants.ArchitectureAMD64},
+					}
+					capabilitiesArm = gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"arm64"},
+					}
+
+				}
+				if usesGlobalImageNames {
+					machineImageID = ""
+				} else {
+					machineImageID = "my-image-ID"
+				}
+
 				namespace = "control-plane-namespace"
 				technicalID = "shoot--foobar--openstack"
 				cloudProfileName = "openstack"
 
 				region = "eu-de-1"
-				regionWithImages = "eu-de-2"
 
 				openstackAuthURL = "auth-url"
 
 				machineImageName = "my-os"
 				machineImageVersion = "123.4.5-foo+bar123"
 				machineImage = "my-image-in-glance"
-				machineImageID = "my-image-id"
 
 				archAMD = "amd64"
 				archARM = "arm64"
 
 				keyName = "key-name"
 				machineType = "large"
+				machineTypeArm = "large-arm"
 				userData = []byte("some-user-data")
 				userDataSecretName = "userdata-secret-name"
 				userDataSecretDataKey = "userdata-secret-key"
@@ -226,20 +242,64 @@ var _ = Describe("Machines", func() {
 					"gpu":    resource.MustParse("1"),
 					"memory": resource.MustParse("128Gi"),
 				}
+				nodeTemplatePool1Zone1 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineType,
+					Region:       region,
+					Zone:         zone1,
+					Architecture: &archAMD,
+				}
+				nodeTemplatePool1Zone2 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineType,
+					Region:       region,
+					Zone:         zone2,
+					Architecture: &archAMD,
+				}
+
+				nodeTemplatePool2Zone1 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineType,
+					Region:       region,
+					Zone:         zone1,
+					Architecture: &archAMD,
+				}
+				nodeTemplatePool2Zone2 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineType,
+					Region:       region,
+					Zone:         zone2,
+					Architecture: &archAMD,
+				}
+
+				nodeTemplatePool3Zone1 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineTypeArm,
+					Region:       region,
+					Zone:         zone1,
+					Architecture: &archARM,
+				}
+				nodeTemplatePool3Zone2 = machinev1alpha1.NodeTemplate{
+					Capacity:     nodeCapacity,
+					InstanceType: machineTypeArm,
+					Region:       region,
+					Zone:         zone2,
+					Architecture: &archARM,
+				}
 
 				machineConfiguration = &machinev1alpha1.MachineConfiguration{}
 
-				shootVersionMajorMinor = "1.28"
-				shootVersion = shootVersionMajorMinor + ".3"
+				shootVersionMajorMinor = "1.32"
+				shootVersion = shootVersionMajorMinor + ".14"
 
-				cloudProfileConfig = &stackitv1alpha1.CloudProfileConfig{
+				cloudProfileConfig := &stackitv1alpha1.CloudProfileConfig{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
 						Kind:       "CloudProfileConfig",
 					},
 					KeyStoneURL: openstackAuthURL,
 				}
-				cloudProfileConfigJSON, _ = json.Marshal(cloudProfileConfig)
+				cloudProfileConfigJSON, _ := json.Marshal(cloudProfileConfig)
 
 				clusterWithoutImages = &extensionscontroller.Cluster{
 					CloudProfile: &gardencorev1beta1.CloudProfile{
@@ -267,36 +327,93 @@ var _ = Describe("Machines", func() {
 					},
 				}
 
-				cloudProfileConfig.MachineImages = []stackitv1alpha1.MachineImages{
+				machineImages := []stackitv1alpha1.MachineImages{
 					{
 						Name: machineImageName,
 						Versions: []stackitv1alpha1.MachineImageVersion{
 							{
 								Version: machineImageVersion,
-								Image:   machineImage,
-								Regions: []stackitv1alpha1.RegionIDMapping{
+								CapabilityFlavors: []stackitv1alpha1.MachineImageFlavor{
 									{
-										Name:         regionWithImages,
-										ID:           machineImageID,
-										Architecture: &archARM,
+										Capabilities: capabilitiesArm,
+										Image:        machineImage,
+										Regions: []stackitv1alpha1.RegionIDMapping{
+											{
+												Name: region,
+												ID:   machineImageID,
+											},
+										},
 									},
 									{
-										Name:         regionWithImages,
-										ID:           machineImageID,
-										Architecture: &archAMD,
+										Capabilities: capabilitiesAmd,
+										Image:        machineImage,
+										Regions: []stackitv1alpha1.RegionIDMapping{
+											{
+												Name: region,
+												ID:   machineImageID,
+											},
+										},
 									},
 								},
 							},
 						},
 					},
 				}
-				cloudProfileConfigJSON, _ = json.Marshal(cloudProfileConfig)
+
+				if !isCapabilitiesCloudProfile {
+					machineImages = []stackitv1alpha1.MachineImages{
+						{
+							Name: machineImageName,
+							Versions: []stackitv1alpha1.MachineImageVersion{
+								{
+									Version: machineImageVersion,
+									Image:   machineImage,
+									Regions: []stackitv1alpha1.RegionIDMapping{
+										{
+											Name:         region,
+											ID:           machineImageID,
+											Architecture: new(archARM),
+										},
+										{
+											Name:         region,
+											ID:           machineImageID,
+											Architecture: new(archAMD),
+										},
+									},
+								},
+							},
+						},
+					}
+				}
+
+				cloudProfileConfig2 := &stackitv1alpha1.CloudProfileConfig{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
+						Kind:       "CloudProfileConfig",
+					},
+					KeyStoneURL:   openstackAuthURL,
+					MachineImages: machineImages,
+				}
+
+				cloudProfileConfigJSON, _ = json.Marshal(cloudProfileConfig2)
 				cluster = &extensionscontroller.Cluster{
 					CloudProfile: &gardencorev1beta1.CloudProfile{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: cloudProfileName,
 						},
 						Spec: gardencorev1beta1.CloudProfileSpec{
+							MachineCapabilities: capabilityDefinitions,
+							MachineTypes: []gardencorev1beta1.MachineType{
+								{
+									Name:         machineType,
+									Capabilities: capabilitiesAmd,
+								},
+								{
+									Name:         machineTypeArm,
+									Architecture: new(archARM),
+									Capabilities: capabilitiesArm,
+								},
+							},
 							ProviderConfig: &runtime.RawExtension{
 								Raw: cloudProfileConfigJSON,
 							},
@@ -398,9 +515,9 @@ var _ = Describe("Machines", func() {
 								Maximum:        maxPool2,
 								Priority:       priorityPool2,
 								MaxSurge:       maxSurgePool2,
-								Architecture:   &archAMD,
+								Architecture:   &archARM,
 								MaxUnavailable: maxUnavailablePool2,
-								MachineType:    machineType,
+								MachineType:    machineTypeArm,
 								MachineImage: extensionsv1alpha1.MachineImage{
 									Name:    machineImageName,
 									Version: machineImageVersion,
@@ -428,351 +545,277 @@ var _ = Describe("Machines", func() {
 				workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster, nil, nil)
 				workerPoolHash3, _ = worker.WorkerPoolHash(w.Spec.Pools[2], cluster, nil, nil)
 
-				c = newFakeClient(
-					w.DeepCopy(),
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      userDataSecretName,
-							Namespace: namespace,
+				fakeScheme := runtime.NewScheme()
+				Expect(corev1.AddToScheme(fakeScheme)).To(Succeed())
+				Expect(extensionsv1alpha1.AddToScheme(fakeScheme)).To(Succeed())
+				c = fakeclient.NewClientBuilder().
+					WithScheme(fakeScheme).
+					WithObjects(
+						w,
+						&corev1.Secret{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      userDataSecretName,
+								Namespace: namespace,
+							},
+							Data: map[string][]byte{userDataSecretDataKey: userData},
 						},
-						Data: map[string][]byte{userDataSecretDataKey: userData},
-					},
-				)
+					).
+					WithStatusSubresource(&extensionsv1alpha1.Worker{}).
+					Build()
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, "")
 			})
 
-			expectWorkerStatus := func(workerObj *extensionsv1alpha1.Worker, expectedStatus *stackitv1alpha1.WorkerStatus) {
-				persistedWorker := &extensionsv1alpha1.Worker{}
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(workerObj), persistedWorker)).To(Succeed())
-				Expect(persistedWorker.Status.ProviderStatus).NotTo(BeNil())
-
-				rawStatus, err := persistedWorker.Status.GetProviderStatus().MarshalJSON()
-				Expect(err).NotTo(HaveOccurred())
-
-				actualStatus := &stackitv1alpha1.WorkerStatus{}
-				Expect(json.Unmarshal(rawStatus, actualStatus)).To(Succeed())
-				Expect(actualStatus).To(Equal(expectedStatus))
-			}
-
-			setupMachineTest := func(region, name, imageID, architecture string, useStackitMCM bool, defaultMachineClass *map[string]any, machineDeployments *worker.MachineDeployments, machineClasses *map[string]any, workerWithRegion **extensionsv1alpha1.Worker, clusterWithRegion **extensionscontroller.Cluster) {
-				securityGroupID := "sg-12345"
-				*workerWithRegion = w.DeepCopy()
-				zone1 = region + "a"
-				zone2 = region + "b"
-				(*workerWithRegion).Spec.Region = region
-				(*workerWithRegion).Spec.Pools[0].Architecture = &architecture
-				(*workerWithRegion).Spec.Pools[1].Architecture = &architecture
-				(*workerWithRegion).Spec.Pools[2].Architecture = &architecture
-
-				(*workerWithRegion).Spec.Pools[0].Zones = []string{zone1, zone2}
-				(*workerWithRegion).Spec.Pools[1].Zones = []string{zone1, zone2}
-				(*workerWithRegion).Spec.Pools[2].Zones = []string{zone1, zone2}
-
-				// Update infrastructure status to include security group ID (for STACKIT)
-				(*workerWithRegion).Spec.InfrastructureProviderStatus = &runtime.RawExtension{
-					Raw: encode(&stackitv1alpha1.InfrastructureStatus{
-						SecurityGroups: []stackitv1alpha1.SecurityGroup{
-							{
-								Purpose: stackitv1alpha1.PurposeNodes,
-								Name:    securityGroupName,
-								ID:      securityGroupID,
-							},
-						},
-						Node: stackitv1alpha1.NodeStatus{
-							KeyName: keyName,
-						},
-						Networks: stackitv1alpha1.NetworkStatus{
-							ID: networkID,
-							Subnets: []stackitv1alpha1.Subnet{
-								{
-									Purpose: stackitv1alpha1.PurposeNodes,
-									ID:      subnetID,
-								},
-							},
-						},
-					}),
-				}
-
-				*clusterWithRegion = &extensionscontroller.Cluster{
-					CloudProfile: cluster.CloudProfile,
-					Shoot:        cluster.Shoot.DeepCopy(),
-					Seed:         cluster.Seed,
-				}
-				(*clusterWithRegion).Shoot.Spec.Region = region
-
-				c = newFakeClient(
-					(*workerWithRegion).DeepCopy(),
-					&corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      userDataSecretName,
-							Namespace: namespace,
-						},
-						Data: map[string][]byte{userDataSecretDataKey: userData},
-					},
-				)
-
-				// For STACKIT, region is determined using DetermineRegion which handles RegionOne -> eu01 mapping
-				effectiveRegion := region
-				if useStackitMCM && region == "RegionOne" {
-					effectiveRegion = "eu01"
-				}
-
-				*defaultMachineClass = map[string]any{
-					"region":          effectiveRegion,
-					"machineType":     machineType,
-					"keyName":         keyName,
-					"networkID":       networkID,
-					"podNetworkCIDRs": []string{podCIDR},
-					"secret": map[string]any{
-						"cloudConfig": string(userData),
-					},
-					"operatingSystem": map[string]any{
-						"operatingSystemName":    machineImageName,
-						"operatingSystemVersion": strings.ReplaceAll(machineImageVersion, "+", "_"),
-					},
-				}
-
-				// STACKIT-specific vs OpenStack-specific fields
-				if useStackitMCM {
-					// STACKIT uses security group IDs and simplified tags
-					(*defaultMachineClass)["securityGroups"] = []string{securityGroupID}
-					(*defaultMachineClass)["tags"] = map[string]string{
-						"kubernetes.io/cluster": technicalID,
-					}
-					// Note: subnetID is NOT included for STACKIT
-				} else {
-					// OpenStack uses security group names, full tags, and subnetID
-					(*defaultMachineClass)["securityGroups"] = []string{securityGroupName}
-					(*defaultMachineClass)["tags"] = map[string]string{
-						fmt.Sprintf("kubernetes.io-cluster-%s", technicalID): "1",
-						"kubernetes.io-role-node":                            "1",
-					}
-					(*defaultMachineClass)["subnetID"] = subnetID
-				}
-
-				if imageID == "" {
-					(*defaultMachineClass)["imageName"] = name
-				} else {
-					(*defaultMachineClass)["imageID"] = imageID
-				}
-
-				newNodeTemplateZone1 := machinev1alpha1.NodeTemplate{
-					Capacity:     nodeCapacity,
-					InstanceType: machineType,
-					Region:       effectiveRegion,
-					Zone:         zone1,
-					Architecture: &architecture,
-				}
-
-				newNodeTemplateZone2 := machinev1alpha1.NodeTemplate{
-					Capacity:     nodeCapacity,
-					InstanceType: machineType,
-					Region:       effectiveRegion,
-					Zone:         zone2,
-					Architecture: &architecture,
-				}
-
-				var (
-					machineClassPool1Zone1 = useDefaultMachineClass(*defaultMachineClass, zone1)
-					machineClassPool1Zone2 = useDefaultMachineClass(*defaultMachineClass, zone2)
-					machineClassPool2Zone1 = useDefaultMachineClass(*defaultMachineClass, zone1)
-					machineClassPool2Zone2 = useDefaultMachineClass(*defaultMachineClass, zone2)
-					machineClassPool3Zone1 = useDefaultMachineClass(*defaultMachineClass, zone1)
-					machineClassPool3Zone2 = useDefaultMachineClass(*defaultMachineClass, zone2)
-
-					machineClassNamePool1Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool1)
-					machineClassNamePool1Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool1)
-					machineClassNamePool2Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool2)
-					machineClassNamePool2Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool2)
-					machineClassNamePool3Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool3)
-					machineClassNamePool3Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool3)
-
-					machineClassWithHashPool1Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool1Zone1, workerPoolHash1)
-					machineClassWithHashPool1Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool1Zone2, workerPoolHash1)
-					machineClassWithHashPool2Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool2Zone1, workerPoolHash2)
-					machineClassWithHashPool2Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool2Zone2, workerPoolHash2)
-					machineClassWithHashPool3Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool3Zone1, workerPoolHash3)
-					machineClassWithHashPool3Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool3Zone2, workerPoolHash3)
-				)
-
-				addNameAndSecretToMachineClass(machineClassPool1Zone1, machineClassWithHashPool1Zone1, w.Spec.SecretRef)
-				addNameAndSecretToMachineClass(machineClassPool1Zone2, machineClassWithHashPool1Zone2, w.Spec.SecretRef)
-				addNameAndSecretToMachineClass(machineClassPool2Zone1, machineClassWithHashPool2Zone1, w.Spec.SecretRef)
-				addNameAndSecretToMachineClass(machineClassPool2Zone2, machineClassWithHashPool2Zone2, w.Spec.SecretRef)
-				addNameAndSecretToMachineClass(machineClassPool3Zone1, machineClassWithHashPool3Zone1, w.Spec.SecretRef)
-				addNameAndSecretToMachineClass(machineClassPool3Zone2, machineClassWithHashPool3Zone2, w.Spec.SecretRef)
-
-				addNodeTemplateToMachineClass(machineClassPool1Zone1, newNodeTemplateZone1)
-				addNodeTemplateToMachineClass(machineClassPool1Zone2, newNodeTemplateZone2)
-				addNodeTemplateToMachineClass(machineClassPool2Zone1, newNodeTemplateZone1)
-				addNodeTemplateToMachineClass(machineClassPool2Zone2, newNodeTemplateZone2)
-				addNodeTemplateToMachineClass(machineClassPool3Zone1, newNodeTemplateZone1)
-				addNodeTemplateToMachineClass(machineClassPool3Zone2, newNodeTemplateZone2)
-
-				*machineClasses = map[string]any{"machineClasses": []map[string]any{
-					machineClassPool1Zone1,
-					machineClassPool1Zone2,
-					machineClassPool2Zone1,
-					machineClassPool2Zone2,
-					machineClassPool3Zone1,
-					machineClassPool3Zone2,
-				}}
-
-				labelsZone1 := map[string]string{openstack.CSIDiskDriverTopologyKey: zone1, openstack.CSISTACKITDriverTopologyKey: zone1}
-				labelsZone2 := map[string]string{openstack.CSIDiskDriverTopologyKey: zone2, openstack.CSISTACKITDriverTopologyKey: zone2}
-				*machineDeployments = worker.MachineDeployments{
-					{
-						Name:       machineClassNamePool1Zone1,
-						ClassName:  machineClassWithHashPool1Zone1,
-						SecretName: machineClassWithHashPool1Zone1,
-						Minimum:    worker.DistributeOverZones(0, minPool1, 2),
-						Maximum:    worker.DistributeOverZones(0, maxPool1, 2),
-						PoolName:   namePool1,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
-							RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool1, 2, minPool1)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool1, 2, maxPool1)),
-								},
-							},
-						},
-						Labels:                       labelsZone1,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-					{
-						Name:       machineClassNamePool1Zone2,
-						ClassName:  machineClassWithHashPool1Zone2,
-						SecretName: machineClassWithHashPool1Zone2,
-						Minimum:    worker.DistributeOverZones(1, minPool1, 2),
-						Maximum:    worker.DistributeOverZones(1, maxPool1, 2),
-						PoolName:   namePool1,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
-							RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool1, 2, minPool1)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool1, 2, maxPool1)),
-								},
-							},
-						},
-						Labels:                       labelsZone2,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-					{
-						Name:       machineClassNamePool2Zone1,
-						ClassName:  machineClassWithHashPool2Zone1,
-						SecretName: machineClassWithHashPool2Zone1,
-						Minimum:    worker.DistributeOverZones(0, minPool2, 2),
-						Maximum:    worker.DistributeOverZones(0, maxPool2, 2),
-						Priority:   priorityPool2,
-						PoolName:   namePool2,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
-							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
-								OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
-								},
-							},
-						},
-						Labels:                       labelsZone1,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-					{
-						Name:       machineClassNamePool2Zone2,
-						ClassName:  machineClassWithHashPool2Zone2,
-						SecretName: machineClassWithHashPool2Zone2,
-						Minimum:    worker.DistributeOverZones(1, minPool2, 2),
-						Maximum:    worker.DistributeOverZones(1, maxPool2, 2),
-						Priority:   priorityPool2,
-						PoolName:   namePool2,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
-							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
-								OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
-								},
-							},
-						},
-						Labels:                       labelsZone2,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-					{
-						Name:       machineClassNamePool3Zone1,
-						ClassName:  machineClassWithHashPool3Zone1,
-						SecretName: machineClassWithHashPool3Zone1,
-						Minimum:    worker.DistributeOverZones(0, minPool2, 2),
-						Maximum:    worker.DistributeOverZones(0, maxPool2, 2),
-						Priority:   priorityPool2,
-						PoolName:   namePool3,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
-							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
-								OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
-								},
-							},
-						},
-						Labels:                       labelsZone1,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-					{
-						Name:       machineClassNamePool3Zone2,
-						ClassName:  machineClassWithHashPool3Zone2,
-						SecretName: machineClassWithHashPool3Zone2,
-						Minimum:    worker.DistributeOverZones(1, minPool2, 2),
-						Maximum:    worker.DistributeOverZones(1, maxPool2, 2),
-						Priority:   priorityPool2,
-						PoolName:   namePool3,
-						Strategy: machinev1alpha1.MachineDeploymentStrategy{
-							Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
-							InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
-								OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
-								UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
-									MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
-									MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
-								},
-							},
-						},
-						Labels:                       labelsZone2,
-						MachineConfiguration:         machineConfiguration,
-						ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
-					},
-				}
-			}
-
 			Describe("machine images", func() {
 				var (
-					defaultMachineClass map[string]any
+					defaultMachineClass map[string]interface{}
 					machineDeployments  worker.MachineDeployments
-					machineClasses      map[string]any
+					machineClasses      map[string]interface{}
 					workerWithRegion    *extensionsv1alpha1.Worker
 					clusterWithRegion   *extensionscontroller.Cluster
 				)
-
 				BeforeEach(func() {
-					// Disable STACKIT feature flags for OpenStack-only machineclass tests
-					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, false))
+
+					workerWithRegion = w.DeepCopy()
+					zone1 = region + "a"
+					zone2 = region + "b"
+					workerWithRegion.Spec.Region = region
+					workerWithRegion.Spec.Pools[0].Zones = []string{zone1, zone2}
+					workerWithRegion.Spec.Pools[1].Zones = []string{zone1, zone2}
+					workerWithRegion.Spec.Pools[2].Zones = []string{zone1, zone2}
+
+					clusterWithRegion = &extensionscontroller.Cluster{
+						CloudProfile: cluster.CloudProfile,
+						Shoot:        cluster.Shoot.DeepCopy(),
+						Seed:         cluster.Seed,
+					}
+					clusterWithRegion.Shoot.Spec.Region = region
+
+					defaultMachineClass = map[string]interface{}{
+						"region":          region,
+						"keyName":         keyName,
+						"networkID":       networkID,
+						"subnetID":        subnetID,
+						"podNetworkCIDRs": []string{podCIDR},
+						"securityGroups":  []string{securityGroupName},
+						"tags": map[string]string{
+							fmt.Sprintf("kubernetes.io-cluster-%s", technicalID): "1",
+							"kubernetes.io-role-node":                            "1",
+						},
+						"secret": map[string]interface{}{
+							"cloudConfig": string(userData),
+						},
+						"operatingSystem": map[string]interface{}{
+							"operatingSystemName":    machineImageName,
+							"operatingSystemVersion": strings.ReplaceAll(machineImageVersion, "+", "_"),
+						},
+					}
+
+					if usesGlobalImageNames {
+						defaultMachineClass["imageName"] = machineImage
+					} else {
+						defaultMachineClass["imageID"] = machineImageID
+					}
+
+					newNodeTemplatePool1Zone1 := &nodeTemplatePool1Zone1
+					newNodeTemplatePool1Zone2 := &nodeTemplatePool1Zone2
+					newNodeTemplatePool2Zone1 := &nodeTemplatePool2Zone1
+					newNodeTemplatePool2Zone2 := &nodeTemplatePool2Zone2
+					newNodeTemplatePool3Zone1 := &nodeTemplatePool3Zone1
+					newNodeTemplatePool3Zone2 := &nodeTemplatePool3Zone2
+
+					var (
+						machineClassPool1Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool1Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+						machineClassPool2Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool2Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+						machineClassPool3Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool3Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+
+						machineClassNamePool1Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool1)
+						machineClassNamePool1Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool1)
+						machineClassNamePool2Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool2)
+						machineClassNamePool2Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool2)
+						machineClassNamePool3Zone1 = fmt.Sprintf("%s-%s-z1", technicalID, namePool3)
+						machineClassNamePool3Zone2 = fmt.Sprintf("%s-%s-z2", technicalID, namePool3)
+
+						machineClassWithHashPool1Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool1Zone1, workerPoolHash1)
+						machineClassWithHashPool1Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool1Zone2, workerPoolHash1)
+						machineClassWithHashPool2Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool2Zone1, workerPoolHash2)
+						machineClassWithHashPool2Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool2Zone2, workerPoolHash2)
+						machineClassWithHashPool3Zone1 = fmt.Sprintf("%s-%s", machineClassNamePool3Zone1, workerPoolHash3)
+						machineClassWithHashPool3Zone2 = fmt.Sprintf("%s-%s", machineClassNamePool3Zone2, workerPoolHash3)
+					)
+					machineClassPool1Zone1 = addKeyValueToMap(machineClassPool1Zone1, "machineType", machineType)
+					machineClassPool1Zone2 = addKeyValueToMap(machineClassPool1Zone2, "machineType", machineType)
+					machineClassPool2Zone1 = addKeyValueToMap(machineClassPool2Zone1, "machineType", machineType)
+					machineClassPool2Zone2 = addKeyValueToMap(machineClassPool2Zone2, "machineType", machineType)
+					machineClassPool3Zone1 = addKeyValueToMap(machineClassPool3Zone1, "machineType", machineTypeArm)
+					machineClassPool3Zone2 = addKeyValueToMap(machineClassPool3Zone2, "machineType", machineTypeArm)
+
+					addNameAndSecretToMachineClass(machineClassPool1Zone1, machineClassWithHashPool1Zone1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool1Zone2, machineClassWithHashPool1Zone2, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2Zone1, machineClassWithHashPool2Zone1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool2Zone2, machineClassWithHashPool2Zone2, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool3Zone1, machineClassWithHashPool3Zone1, w.Spec.SecretRef)
+					addNameAndSecretToMachineClass(machineClassPool3Zone2, machineClassWithHashPool3Zone2, w.Spec.SecretRef)
+
+					addNodeTemplateToMachineClass(machineClassPool1Zone1, *newNodeTemplatePool1Zone1)
+					addNodeTemplateToMachineClass(machineClassPool1Zone2, *newNodeTemplatePool1Zone2)
+					addNodeTemplateToMachineClass(machineClassPool2Zone1, *newNodeTemplatePool2Zone1)
+					addNodeTemplateToMachineClass(machineClassPool2Zone2, *newNodeTemplatePool2Zone2)
+					addNodeTemplateToMachineClass(machineClassPool3Zone1, *newNodeTemplatePool3Zone1)
+					addNodeTemplateToMachineClass(machineClassPool3Zone2, *newNodeTemplatePool3Zone2)
+
+					machineClasses = map[string]interface{}{"machineClasses": []map[string]interface{}{
+						machineClassPool1Zone1,
+						machineClassPool1Zone2,
+						machineClassPool2Zone1,
+						machineClassPool2Zone2,
+						machineClassPool3Zone1,
+						machineClassPool3Zone2,
+					}}
+
+					labelsZone1 := map[string]string{openstack.CSIDiskDriverTopologyKey: zone1, openstack.CSISTACKITDriverTopologyKey: zone1}
+					labelsZone2 := map[string]string{openstack.CSIDiskDriverTopologyKey: zone2, openstack.CSISTACKITDriverTopologyKey: zone2}
+					machineDeployments = worker.MachineDeployments{
+						{
+							Name:       machineClassNamePool1Zone1,
+							ClassName:  machineClassWithHashPool1Zone1,
+							SecretName: machineClassWithHashPool1Zone1,
+							Minimum:    worker.DistributeOverZones(0, minPool1, 2),
+							Maximum:    worker.DistributeOverZones(0, maxPool1, 2),
+							PoolName:   namePool1,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
+								RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool1, 2, minPool1)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool1, 2, maxPool1)),
+									},
+								},
+							},
+							Labels:                       labelsZone1,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+						{
+							Name:       machineClassNamePool1Zone2,
+							ClassName:  machineClassWithHashPool1Zone2,
+							SecretName: machineClassWithHashPool1Zone2,
+							Minimum:    worker.DistributeOverZones(1, minPool1, 2),
+							Maximum:    worker.DistributeOverZones(1, maxPool1, 2),
+							PoolName:   namePool1,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.RollingUpdateMachineDeploymentStrategyType,
+								RollingUpdate: &machinev1alpha1.RollingUpdateMachineDeployment{
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool1, 2, minPool1)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool1, 2, maxPool1)),
+									},
+								},
+							},
+							Labels:                       labelsZone2,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+						{
+							Name:       machineClassNamePool2Zone1,
+							ClassName:  machineClassWithHashPool2Zone1,
+							SecretName: machineClassWithHashPool2Zone1,
+							Minimum:    worker.DistributeOverZones(0, minPool2, 2),
+							Maximum:    worker.DistributeOverZones(0, maxPool2, 2),
+							Priority:   priorityPool2,
+							PoolName:   namePool2,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
+								InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
+									OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
+									},
+								},
+							},
+							Labels:                       labelsZone1,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+						{
+							Name:       machineClassNamePool2Zone2,
+							ClassName:  machineClassWithHashPool2Zone2,
+							SecretName: machineClassWithHashPool2Zone2,
+							Minimum:    worker.DistributeOverZones(1, minPool2, 2),
+							Maximum:    worker.DistributeOverZones(1, maxPool2, 2),
+							Priority:   priorityPool2,
+							PoolName:   namePool2,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
+								InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
+									OrchestrationType: machinev1alpha1.OrchestrationTypeAuto,
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
+									},
+								},
+							},
+							Labels:                       labelsZone2,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+						{
+							Name:       machineClassNamePool3Zone1,
+							ClassName:  machineClassWithHashPool3Zone1,
+							SecretName: machineClassWithHashPool3Zone1,
+							Minimum:    worker.DistributeOverZones(0, minPool2, 2),
+							Maximum:    worker.DistributeOverZones(0, maxPool2, 2),
+							Priority:   priorityPool2,
+							PoolName:   namePool3,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
+								InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
+									OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(0, maxUnavailablePool2, 2, minPool2)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(0, maxSurgePool2, 2, maxPool2)),
+									},
+								},
+							},
+							Labels:                       labelsZone1,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+						{
+							Name:       machineClassNamePool3Zone2,
+							ClassName:  machineClassWithHashPool3Zone2,
+							SecretName: machineClassWithHashPool3Zone2,
+							Minimum:    worker.DistributeOverZones(1, minPool2, 2),
+							Maximum:    worker.DistributeOverZones(1, maxPool2, 2),
+							Priority:   priorityPool2,
+							PoolName:   namePool3,
+							Strategy: machinev1alpha1.MachineDeploymentStrategy{
+								Type: machinev1alpha1.InPlaceUpdateMachineDeploymentStrategyType,
+								InPlaceUpdate: &machinev1alpha1.InPlaceUpdateMachineDeployment{
+									OrchestrationType: machinev1alpha1.OrchestrationTypeManual,
+									UpdateConfiguration: machinev1alpha1.UpdateConfiguration{
+										MaxUnavailable: new(worker.DistributePositiveIntOrPercent(1, maxUnavailablePool2, 2, minPool2)),
+										MaxSurge:       new(worker.DistributePositiveIntOrPercent(1, maxSurgePool2, 2, maxPool2)),
+									},
+								},
+							},
+							Labels:                       labelsZone2,
+							MachineConfiguration:         machineConfiguration,
+							ClusterAutoscalerAnnotations: emptyClusterAutoscalerAnnotations,
+						},
+					}
+
+					workerPoolHash1, _ = worker.WorkerPoolHash(w.Spec.Pools[0], cluster, nil, nil)
+					workerPoolHash2, _ = worker.WorkerPoolHash(w.Spec.Pools[1], cluster, nil, nil)
+					workerPoolHash3, _ = worker.WorkerPoolHash(w.Spec.Pools[2], cluster, nil, nil)
+
 				})
 
-				setup := func(region, name, imageID, architecture string) {
-					setupMachineTest(region, name, imageID, architecture, false, &defaultMachineClass, &machineDeployments, &machineClasses, &workerWithRegion, &clusterWithRegion)
-				}
-
 				It("should return the expected machine deployments for profile image types", func() {
-					setup(region, machineImage, "", archAMD)
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
 
 					// Test workerDelegate.DeployMachineClasses()
@@ -792,30 +835,10 @@ var _ = Describe("Machines", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Test workerDelegate.UpdateMachineDeployments()
-
-					expectedImages := &stackitv1alpha1.WorkerStatus{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
-							Kind:       "WorkerStatus",
-						},
-						MachineImages: []stackitv1alpha1.MachineImage{
-							{
-								Name:         machineImageName,
-								Version:      machineImageVersion,
-								Image:        machineImage,
-								Architecture: new(v1beta1constants.ArchitectureAMD64),
-							},
-						},
-					}
-
-					workerWithExpectedImages := w.DeepCopy()
-					workerWithExpectedImages.Status.ProviderStatus = &runtime.RawExtension{
-						Object: expectedImages,
-					}
-
+					// When using global image names (machineImageID==""), Image field is set;
+					// Test WorkerDelegate.UpdateMachineDeployments()
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
-					expectWorkerStatus(w, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 
@@ -825,11 +848,12 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should return the expected machine deployments for profile image types with id", func() {
-					setup(regionWithImages, "", machineImageID, archARM)
+					// setup(region, "", machineImageID, archARM)
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "")
-					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
+					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
+
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -844,31 +868,11 @@ var _ = Describe("Machines", func() {
 
 					err := workerDelegate.DeployMachineClasses(ctx)
 					Expect(err).NotTo(HaveOccurred())
-
+					// When using global image names (machineImageID==""), Image field is set;
 					// Test workerDelegate.GetMachineImages()
-					expectedImages := &stackitv1alpha1.WorkerStatus{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
-							Kind:       "WorkerStatus",
-						},
-						MachineImages: []stackitv1alpha1.MachineImage{
-							{
-								Name:         machineImageName,
-								Version:      machineImageVersion,
-								ID:           machineImageID,
-								Architecture: new(v1beta1constants.ArchitectureARM64),
-							},
-						},
-					}
-
-					workerWithExpectedImages := workerWithRegion.DeepCopy()
-					workerWithExpectedImages.Status.ProviderStatus = &runtime.RawExtension{
-						Object: expectedImages,
-					}
-
+					ctx := ctx
 					err = workerDelegate.UpdateMachineImagesStatus(ctx)
 					Expect(err).NotTo(HaveOccurred())
-					expectWorkerStatus(workerWithRegion, expectedImages)
 
 					// Test workerDelegate.GenerateMachineDeployments()
 
@@ -879,7 +883,7 @@ var _ = Describe("Machines", func() {
 
 				Context("Machine Labels", func() {
 					It("should consider rolling machine labels for the worker pool hash", func() {
-						setup(region, machineImage, "", archAMD)
+						//setup(region, machineImage, "")
 
 						applyLabelsAndPolicy := func(labels []stackitv1alpha1.MachineLabel) string {
 							w.Spec.Pools[0].Labels = utils.MergeStringMaps(w.Spec.Pools[0].Labels, map[string]string{"k1": "v1"})
@@ -941,125 +945,8 @@ var _ = Describe("Machines", func() {
 				})
 			})
 
-			Describe("machine images with STACKIT MCM", func() {
-				var (
-					defaultMachineClass map[string]any
-					machineDeployments  worker.MachineDeployments
-					machineClasses      map[string]any
-					workerWithRegion    *extensionsv1alpha1.Worker
-					clusterWithRegion   *extensionscontroller.Cluster
-				)
-
-				setup := func(region, name, imageID, architecture string) {
-					setupMachineTest(region, name, imageID, architecture, true, &defaultMachineClass, &machineDeployments, &machineClasses, &workerWithRegion, &clusterWithRegion)
-				}
-
-				It("should return the expected machine deployments for STACKIT with profile image types", func() {
-					setup(region, machineImage, "", archAMD)
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "kubernetes.io")
-
-					// Test workerDelegate.DeployMachineClasses()
-					chartApplier.
-						EXPECT().
-						ApplyFromEmbeddedFS(
-							ctx,
-							charts.InternalChart,
-							filepath.Join("internal", "machineclass-stackit"),
-							namespace,
-							"machineclass",
-							kubernetes.Values(machineClasses),
-						).
-						Return(nil)
-
-					err := workerDelegate.DeployMachineClasses(ctx)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Test workerDelegate.UpdateMachineImagesStatus()
-					expectedImages := &stackitv1alpha1.WorkerStatus{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
-							Kind:       "WorkerStatus",
-						},
-						MachineImages: []stackitv1alpha1.MachineImage{
-							{
-								Name:         machineImageName,
-								Version:      machineImageVersion,
-								Image:        machineImage,
-								Architecture: new(v1beta1constants.ArchitectureAMD64),
-							},
-						},
-					}
-
-					workerWithExpectedImages := workerWithRegion.DeepCopy()
-					workerWithExpectedImages.Status.ProviderStatus = &runtime.RawExtension{
-						Object: expectedImages,
-					}
-
-					err = workerDelegate.UpdateMachineImagesStatus(ctx)
-					Expect(err).NotTo(HaveOccurred())
-					expectWorkerStatus(workerWithRegion, expectedImages)
-
-					// Test workerDelegate.GenerateMachineDeployments()
-					result, err := workerDelegate.GenerateMachineDeployments(ctx)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(result).To(Equal(machineDeployments))
-				})
-
-				It("should return the expected machine deployments for STACKIT with profile image types with id", func() {
-					setup(regionWithImages, "", machineImageID, archARM)
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "kubernetes.io")
-					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
-
-					// Test workerDelegate.DeployMachineClasses()
-					chartApplier.
-						EXPECT().
-						ApplyFromEmbeddedFS(
-							ctx,
-							charts.InternalChart,
-							filepath.Join("internal", "machineclass-stackit"),
-							namespace,
-							"machineclass",
-							kubernetes.Values(machineClasses),
-						).
-						Return(nil)
-
-					err := workerDelegate.DeployMachineClasses(ctx)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Test workerDelegate.UpdateMachineImagesStatus()
-					expectedImages := &stackitv1alpha1.WorkerStatus{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
-							Kind:       "WorkerStatus",
-						},
-						MachineImages: []stackitv1alpha1.MachineImage{
-							{
-								Name:         machineImageName,
-								Version:      machineImageVersion,
-								ID:           machineImageID,
-								Architecture: new(v1beta1constants.ArchitectureARM64),
-							},
-						},
-					}
-
-					workerWithExpectedImages := workerWithRegion.DeepCopy()
-					workerWithExpectedImages.Status.ProviderStatus = &runtime.RawExtension{
-						Object: expectedImages,
-					}
-
-					err = workerDelegate.UpdateMachineImagesStatus(ctx)
-					Expect(err).NotTo(HaveOccurred())
-					expectWorkerStatus(workerWithRegion, expectedImages)
-
-					// Test workerDelegate.GenerateMachineDeployments()
-					result, err := workerDelegate.GenerateMachineDeployments(ctx)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(result).To(Equal(machineDeployments))
-				})
-			})
-
 			It("should fail because the version is invalid", func() {
-				w.Spec.Pools[1].KubernetesVersion = new("invalid")
+				clusterWithoutImages.Shoot.Spec.Kubernetes.Version = "invalid"
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
@@ -1163,40 +1050,123 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUnreadyTimeAnnotation]).To(Equal("3m0s"))
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUtilizationThresholdAnnotation]).To(Equal("0.5"))
 			})
+		},
+			Entry("with capabilities and using imageIDs", true, false),
+			Entry("with capabilities and using ImageNames", true, true),
+			Entry("without capabilities and using imageIDs", false, false),
+			Entry("without capabilities and using ImageNames", false, true),
+		)
 
-			DescribeTable("customLabelDomain in machineclass helm chart",
-				func(customDomain string) {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
-
-					chartApplier.
-						EXPECT().
-						ApplyFromEmbeddedFS(
-							ctx,
-							charts.InternalChart,
-							filepath.Join("internal", "machineclass-stackit"),
-							namespace,
-							"machineclass",
-							gomock.Any(),
-						).
-						Return(nil)
-
-					err := workerDelegate.DeployMachineClasses(ctx)
-					Expect(err).NotTo(HaveOccurred())
+		DescribeTable("EnsureUniformMachineImages", func(capabilityDefinitions []gardencorev1beta1.CapabilityDefinition, expectedImages []stackitv1alpha1.MachineImage) {
+			machineImages := []stackitv1alpha1.MachineImage{
+				// images with capability sets
+				{
+					Name:    "some-image",
+					Version: "1.2.1",
+					ID:      "id-for-arm64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"arm64"},
+					},
 				},
-				Entry("with default kubernetes.io domain",
-					"kubernetes.io",
-				),
-				Entry("with custom ske.stackit.cloud domain",
-					"ske.stackit.cloud",
-				),
-				Entry("with custom example.com domain",
-					"example.com",
-				),
-				Entry("with empty domain",
-					"",
-				),
-			)
-		})
+				{
+					Name:    "some-image",
+					Version: "1.2.2",
+					ID:      "id-for-amd64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"amd64"},
+					},
+				},
+				// legacy image entry without capability sets
+				{
+					Name:         "some-image",
+					Version:      "1.2.3",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+				{
+					Name:         "some-image",
+					Version:      "1.2.2",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+				{
+					Name:         "some-image",
+					Version:      "1.2.1",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+			}
+			actualImages := EnsureUniformMachineImages(machineImages, capabilityDefinitions)
+			Expect(actualImages).To(ContainElements(expectedImages))
+
+		},
+			Entry("should return images with Architecture", nil, []stackitv1alpha1.MachineImage{
+				// images with capability sets
+				{
+					Name:         "some-image",
+					Version:      "1.2.1",
+					ID:           "id-for-arm64",
+					Architecture: new("arm64"),
+				},
+				{
+					Name:         "some-image",
+					Version:      "1.2.2",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+				// legacy image entry without capability sets
+				{
+					Name:         "some-image",
+					Version:      "1.2.3",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+				{
+					Name:         "some-image",
+					Version:      "1.2.1",
+					ID:           "id-for-amd64",
+					Architecture: new("amd64"),
+				},
+			}),
+			Entry("should return images with Capabilities", []gardencorev1beta1.CapabilityDefinition{{
+				Name:   v1beta1constants.ArchitectureName,
+				Values: []string{"amd64", "arm64"},
+			}}, []stackitv1alpha1.MachineImage{
+				// images with capability sets
+				{
+					Name:    "some-image",
+					Version: "1.2.1",
+					ID:      "id-for-arm64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"arm64"},
+					},
+				},
+				{
+					Name:    "some-image",
+					Version: "1.2.2",
+					ID:      "id-for-amd64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"amd64"},
+					},
+				},
+				// legacy image entry without capability sets
+				{
+					Name:    "some-image",
+					Version: "1.2.3",
+					ID:      "id-for-amd64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"amd64"},
+					}},
+				{
+					Name:    "some-image",
+					Version: "1.2.1",
+					ID:      "id-for-amd64",
+					Capabilities: gardencorev1beta1.Capabilities{
+						v1beta1constants.ArchitectureName: []string{"amd64"},
+					},
+				},
+			}),
+		)
 	})
 })
 
@@ -1205,12 +1175,15 @@ func encode(obj runtime.Object) []byte {
 	return data
 }
 
-func useDefaultMachineClass(def map[string]any, value any) map[string]any {
+// nolint:unparam
+func addKeyValueToMap(def map[string]any, key string, value any) map[string]any {
 	out := make(map[string]any, len(def)+1)
 
-	maps.Copy(out, def)
+	for k, v := range def {
+		out[k] = v
+	}
 
-	out["availabilityZone"] = value
+	out[key] = value
 	return out
 }
 

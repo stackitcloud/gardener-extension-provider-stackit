@@ -10,10 +10,6 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/utils/test"
-	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -126,6 +122,66 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 					MatchFields(IgnoreExtras, Fields{
 						"Name":     Equal("image-2"),
 						"Versions": ContainElements(stackitv1alpha1.MachineImageVersion{Version: "2.0", Image: "image-name-3", Regions: []stackitv1alpha1.RegionIDMapping{{Name: "image-region-3", ID: "id-img-reg-3"}}}),
+					}),
+				))
+			})
+
+			It("should correctly merge extended machineImages using capabilities ", func() {
+				namespacedCloudProfile.Status.CloudProfileSpec.MachineCapabilities = []v1beta1.CapabilityDefinition{{
+					Name:   "architecture",
+					Values: []string{"amd64", "arm64"},
+				}}
+				namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
+"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"kind":"CloudProfileConfig",
+"machineImages":[
+  {"name":"image-1","versions":[{"version":"1.0","capabilityFlavors":[
+{"capabilities":{"architecture":["amd64"]},"regions":[{"name":"eu1","id":"id-img-reg-1"}]}
+]}]}
+]}`)}
+				namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
+"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"kind":"CloudProfileConfig",
+"machineImages":[
+  {"name":"image-1","versions":[{"version":"1.1","capabilityFlavors":[
+{"capabilities":{"architecture":["arm64"]},"regions":[{"name":"eu2","id":"id-img-reg-2"}]}
+]}]},
+  {"name":"image-2","versions":[{"version":"2.0","capabilityFlavors":[
+{"capabilities":{"architecture":["amd64"]},"regions":[{"name":"eu3","id":"id-img-reg-3"}]}
+]}]}
+]}`)}
+
+				Expect(namespacedCloudProfileMutator.Mutate(ctx, namespacedCloudProfile, nil)).To(Succeed())
+
+				mergedConfig, err := helper.CloudProfileConfigFromRawExtension(namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(mergedConfig.MachineImages).To(ConsistOf(
+					MatchFields(IgnoreExtras, Fields{
+						"Name": Equal("image-1"),
+						"Versions": ContainElements(
+							api.MachineImageVersion{Version: "1.0",
+								CapabilityFlavors: []api.MachineImageFlavor{{
+									Capabilities: v1beta1.Capabilities{"architecture": []string{"amd64"}},
+									Regions:      []api.RegionIDMapping{{Name: "eu1", ID: "id-img-reg-1"}},
+								}},
+							},
+							api.MachineImageVersion{Version: "1.1",
+								CapabilityFlavors: []api.MachineImageFlavor{{
+									Capabilities: v1beta1.Capabilities{"architecture": []string{"arm64"}},
+									Regions:      []api.RegionIDMapping{{Name: "eu2", ID: "id-img-reg-2"}},
+								}},
+							},
+						),
+					}),
+					MatchFields(IgnoreExtras, Fields{
+						"Name": Equal("image-2"),
+						"Versions": ContainElements(
+							api.MachineImageVersion{Version: "2.0",
+								CapabilityFlavors: []api.MachineImageFlavor{{
+									Capabilities: v1beta1.Capabilities{"architecture": []string{"amd64"}},
+									Regions:      []api.RegionIDMapping{{Name: "eu3", ID: "id-img-reg-3"}},
+								}},
+							}),
 					}),
 				))
 			})
