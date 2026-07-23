@@ -63,6 +63,16 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, infra *extension
 		return err
 	}
 
+	stackitALBClient, err := stackitclient.New(region, cluster).ApplicationLoadBalancer(ctx, a.client, infra.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
+	stackitALBCertClient, err := stackitclient.New(region, cluster).ApplicationLoadBalancerCertificate(ctx, a.client, infra.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
 	iaasClient, err := stackitclient.New(region, cluster).IaaS(ctx, a.client, infra.Spec.SecretRef)
 	if err != nil {
 		return err
@@ -76,6 +86,8 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, infra *extension
 		ClientFactory:  clientFactory,
 		Client:         a.client,
 		StackitLB:      stackitLBClient,
+		StackitALB:     stackitALBClient,
+		StackitALBCert: stackitALBCertClient,
 		IaaSClient:     iaasClient,
 	})
 	if err != nil {

@@ -30,6 +30,10 @@ type Factory interface {
 	// LoadBalancing returns a STACKIT load balancing service client.
 	LoadBalancing(context.Context, client.Client, corev1.SecretReference) (LoadBalancingClient, error)
 
+	ApplicationLoadBalancer(context.Context, client.Client, corev1.SecretReference) (ApplicationLoadBalancingClient, error)
+
+	ApplicationLoadBalancerCertificate(context.Context, client.Client, corev1.SecretReference) (ApplicationLoadBalancerCertificateClient, error)
+
 	// IaaS returns a STACKIT IaaS service client.
 	IaaS(context.Context, client.Client, corev1.SecretReference) (IaaSClient, error)
 }
@@ -66,6 +70,24 @@ func (f factory) LoadBalancing(ctx context.Context, c client.Client, secretRef c
 	}
 
 	return NewLoadBalancingClient(ctx, f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundleB64)
+}
+
+func (f factory) ApplicationLoadBalancer(ctx context.Context, c client.Client, secretRef corev1.SecretReference) (ApplicationLoadBalancingClient, error) {
+	credentials, err := stackit.GetCredentialsFromSecretRef(ctx, c, secretRef)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewApplicationLoadBalancingClient(ctx, f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundleB64)
+}
+
+func (f factory) ApplicationLoadBalancerCertificate(ctx context.Context, c client.Client, secretRef corev1.SecretReference) (ApplicationLoadBalancerCertificateClient, error) {
+	credentials, err := stackit.GetCredentialsFromSecretRef(ctx, c, secretRef)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewApplicationLoadBalancerCertificateClient(ctx, f.StackitRegion, f.StackitAPIEndpoints, credentials, f.CABundleB64)
 }
 
 func (f factory) IaaS(ctx context.Context, c client.Client, secretRef corev1.SecretReference) (IaaSClient, error) {

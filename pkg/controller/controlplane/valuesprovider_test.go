@@ -722,6 +722,9 @@ var _ = Describe("ValuesProvider fake client", func() {
 					"projectId": "foo",
 				},
 				"applicationLoadBalancer": map[string]any{
+					"extraLabels": map[string]string{
+						STACKITALBClusterLabelKey: "shoot--dev--test",
+					},
 					"networkId": "network-acbd1234",
 				},
 			}

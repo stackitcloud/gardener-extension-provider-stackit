@@ -72,6 +72,8 @@ type Opts struct {
 	State          *stackitv1alpha1.InfrastructureState
 	Client         client.Client
 	StackitLB      stackitclient.LoadBalancingClient
+	StackitALB     stackitclient.ApplicationLoadBalancingClient
+	StackitALBCert stackitclient.ApplicationLoadBalancerCertificateClient
 	IaaSClient     stackitclient.IaaSClient
 }
 
@@ -92,6 +94,8 @@ type FlowContext struct {
 	access             access.NetworkingAccess
 	compute            osclient.Compute
 	stackitLB          stackitclient.LoadBalancingClient
+	stackitALB         stackitclient.ApplicationLoadBalancingClient
+	stackitALBCert     stackitclient.ApplicationLoadBalancerCertificateClient
 	iaasClient         stackitclient.IaaSClient
 	hasStackitMCM      bool
 	technicalID        string
@@ -149,6 +153,8 @@ func NewFlowContext(ctx context.Context, opts Opts) (*FlowContext, error) {
 		log:                opts.Log,
 		client:             opts.Client,
 		stackitLB:          opts.StackitLB,
+		stackitALB:         opts.StackitALB,
+		stackitALBCert:     opts.StackitALBCert,
 		iaasClient:         opts.IaaSClient,
 		hasStackitMCM:      feature.UseStackitMachineControllerManager(opts.Cluster),
 		technicalID:        opts.Cluster.Shoot.Status.TechnicalID,

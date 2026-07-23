@@ -61,6 +61,16 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, infra *extension
 		return err
 	}
 
+	stackitALBClient, err := stackitclient.New(region, cluster).ApplicationLoadBalancer(ctx, a.client, infra.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
+	stackitALBCertClient, err := stackitclient.New(region, cluster).ApplicationLoadBalancerCertificate(ctx, a.client, infra.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
 	// Try to retrieve OpenStack credentials from cloudprovider secret, if they are not available then that's also fine.
 	// This is only for the migration mode where we still need to use both, since for example we want to use STACKIT infra
 	// controller together with the old openstack mcm (at least temporarily).
@@ -83,6 +93,8 @@ func (a *actuator) delete(ctx context.Context, log logr.Logger, infra *extension
 		UseOpenStackClient: useOpenStackClient,
 		Client:             a.client,
 		IaaSClient:         iaasClient,
+		StackitALB:         stackitALBClient,
+		StackitALBCert:     stackitALBCertClient,
 		StackitLB:          stackitLBClient,
 		CustomLabelDomain:  a.customLabelDomain,
 	})
