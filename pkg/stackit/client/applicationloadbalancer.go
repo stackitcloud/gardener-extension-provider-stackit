@@ -28,7 +28,7 @@ func NewApplicationLoadBalancingClient(_ context.Context, region string, endpoin
 	if err != nil {
 		return nil, err
 	}
-	if endpoints.LoadBalancer != nil {
+	if endpoints.ApplicationLoadBalancer != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.ApplicationLoadBalancer))
 	}
 

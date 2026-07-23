@@ -28,7 +28,7 @@ func NewApplicationLoadBalancerCertificateClient(_ context.Context, region strin
 	if err != nil {
 		return nil, err
 	}
-	if endpoints.LoadBalancer != nil {
+	if endpoints.ApplicationLoadBalancerCertificate != nil {
 		options = append(options, sdkconfig.WithEndpoint(*endpoints.ApplicationLoadBalancerCertificate))
 	}
 

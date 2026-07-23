@@ -59,7 +59,7 @@ func (fctx *FlowContext) buildDeleteGraph() *flow.Graph {
 		shared.DoIf(feature.Gate.Enabled(feature.EnsureSTACKITLBDeletion)),
 	)
 
-	_ = fctx.AddTask(g, "ensure STACKIT LB deletion",
+	_ = fctx.AddTask(g, "ensure STACKIT ALB deletion",
 		fctx.ensureSTACKIALBDeletion,
 		shared.Timeout(defaultTimeout),
 		shared.DoIf(feature.Gate.Enabled(feature.EnsureSTACKITALBDeletion)),

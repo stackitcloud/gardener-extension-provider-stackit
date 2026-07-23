@@ -1053,7 +1053,7 @@ func getSTACKITApplicationLoadBalancerCMChartValues(
 	if apiEndpoints != nil {
 		endpoints := map[string]any{}
 		if apiEndpoints.ApplicationLoadBalancer != nil {
-			endpoints["applicationLoadBalancerApi"] = apiEndpoints.ApplicationLoadBalancer
+			endpoints["applicationLoadBalancerApi"] = *apiEndpoints.ApplicationLoadBalancer
 		}
 
 		if apiEndpoints.ApplicationLoadBalancerCertificate != nil {
