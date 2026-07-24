@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 )
 
@@ -42,9 +43,7 @@ func (p *namespacedCloudProfile) Mutate(_ context.Context, newObj, _ client.Obje
 		return fmt.Errorf("wrong object type %T", newObj)
 	}
 
-	// Ignore NamespacedCloudProfiles being deleted and wait for core mutator to patch the status.
-	if profile.DeletionTimestamp != nil || profile.Generation != profile.Status.ObservedGeneration ||
-		profile.Spec.ProviderConfig == nil || profile.Status.CloudProfileSpec.ProviderConfig == nil {
+	if shouldSkipMutation(profile) {
 		return nil
 	}
 
@@ -57,20 +56,31 @@ func (p *namespacedCloudProfile) Mutate(_ context.Context, newObj, _ client.Obje
 		return fmt.Errorf("could not decode providerConfig of namespacedCloudProfile status for '%s': %w", profile.Name, err)
 	}
 
-	statusConfig.MachineImages = mergeMachineImages(specConfig.MachineImages, statusConfig.MachineImages)
+	uniformSpecConfig := helper.TransformProviderConfigToParentFormat(specConfig, profile.Status.CloudProfileSpec.MachineCapabilities)
+	statusConfig.MachineImages = mergeMachineImages(uniformSpecConfig.MachineImages, statusConfig.MachineImages)
 
 	// Overwrite API endpoints from spec
 	if specConfig.APIEndpoints != nil {
 		statusConfig.APIEndpoints = specConfig.APIEndpoints
 	}
 
-	modifiedStatusConfig, err := json.Marshal(statusConfig)
+	return p.updateProfileStatus(profile, statusConfig)
+}
+
+func (p *namespacedCloudProfile) updateProfileStatus(profile *gardencorev1beta1.NamespacedCloudProfile, config *stackitv1alpha1.CloudProfileConfig) error {
+	modifiedStatusConfig, err := json.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal status config: %w", err)
 	}
 	profile.Status.CloudProfileSpec.ProviderConfig.Raw = modifiedStatusConfig
-
 	return nil
+}
+
+func shouldSkipMutation(profile *gardencorev1beta1.NamespacedCloudProfile) bool {
+	return profile.DeletionTimestamp != nil ||
+		profile.Generation != profile.Status.ObservedGeneration ||
+		profile.Spec.ProviderConfig == nil ||
+		profile.Status.CloudProfileSpec.ProviderConfig == nil
 }
 
 func mergeMachineImages(specMachineImages, statusMachineImages []stackitv1alpha1.MachineImages) []stackitv1alpha1.MachineImages {

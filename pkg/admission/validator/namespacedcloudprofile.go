@@ -10,6 +10,8 @@ import (
 	"slices"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	gardencoreapi "github.com/gardener/gardener/pkg/api"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/apis/core"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
@@ -21,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
+	stackithelper "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 )
@@ -48,7 +50,7 @@ func (p *namespacedCloudProfile) Validate(ctx context.Context, newObj, _ client.
 		return nil
 	}
 
-	cpConfig, err := helper.CloudProfileConfigFromRawExtension(profile.Spec.ProviderConfig)
+	cpConfig, err := stackithelper.CloudProfileConfigFromRawExtension(profile.Spec.ProviderConfig)
 	if err != nil {
 		return err
 	}
@@ -62,13 +64,20 @@ func (p *namespacedCloudProfile) Validate(ctx context.Context, newObj, _ client.
 		return err
 	}
 
-	return p.validateNamespacedCloudProfileProviderConfig(cpConfig, profile.Spec, parentProfile.Spec).ToAggregate()
+	allErrs := field.ErrorList{}
+	if err := p.validateMachineImagesAndAPIEndpointsOnlyInNamespacedCloudProfile(cpConfig); err != nil {
+		allErrs = append(allErrs, err.(*field.Error))
+	}
+
+	if err := stackithelper.SimulateTransformToParentFormat(cpConfig, profile, parentProfile.Spec.MachineCapabilities); err != nil {
+		return err
+	}
+
+	allErrs = append(allErrs, p.validateMachineImages(cpConfig, profile.Spec.MachineImages, parentProfile.Spec)...)
+	return allErrs.ToAggregate()
 }
 
-// validateNamespacedCloudProfileProviderConfig validates the CloudProfileConfig passed with a NamespacedCloudProfile.
-func (p *namespacedCloudProfile) validateNamespacedCloudProfileProviderConfig(providerConfig *stackitv1alpha1.CloudProfileConfig, profileSpec core.NamespacedCloudProfileSpec, parentSpec gardencorev1beta1.CloudProfileSpec) field.ErrorList {
-	allErrs := field.ErrorList{}
-
+func (p *namespacedCloudProfile) validateMachineImagesAndAPIEndpointsOnlyInNamespacedCloudProfile(providerConfig *stackitv1alpha1.CloudProfileConfig) error {
 	validationProviderConfig := &stackitv1alpha1.CloudProfileConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
@@ -78,15 +87,12 @@ func (p *namespacedCloudProfile) validateNamespacedCloudProfileProviderConfig(pr
 		APIEndpoints:  providerConfig.APIEndpoints,
 	}
 	if !equality.Semantic.DeepEqual(validationProviderConfig, providerConfig) {
-		allErrs = append(allErrs, field.Forbidden(
+		return field.Forbidden(
 			field.NewPath("spec.providerConfig"),
 			"must only set machineImages and stackitAPIEndpoints",
-		))
+		)
 	}
-
-	allErrs = append(allErrs, p.validateMachineImages(providerConfig, profileSpec.MachineImages, parentSpec)...)
-
-	return allErrs
+	return nil
 }
 
 func (p *namespacedCloudProfile) validateMachineImages(providerConfig *stackitv1alpha1.CloudProfileConfig, machineImages []core.MachineImage, parentSpec gardencorev1beta1.CloudProfileSpec) field.ErrorList {
@@ -95,7 +101,7 @@ func (p *namespacedCloudProfile) validateMachineImages(providerConfig *stackitv1
 	machineImagesPath := field.NewPath("spec.providerConfig.machineImages")
 	for i, machineImage := range providerConfig.MachineImages {
 		idxPath := machineImagesPath.Index(i)
-		allErrs = append(allErrs, validation.ValidateProviderMachineImage(idxPath, machineImage)...)
+		allErrs = append(allErrs, validation.ValidateProviderMachineImage(machineImage, parentSpec.MachineCapabilities, idxPath)...)
 	}
 
 	profileImages := gardener.NewCoreImagesContext(machineImages)
@@ -120,9 +126,18 @@ func (p *namespacedCloudProfile) validateMachineImages(providerConfig *stackitv1
 					field.NewPath("spec.providerConfig.machineImages"),
 					fmt.Sprintf("machine image version %s@%s is not defined in the NamespacedCloudProfile providerConfig", machineImage.Name, version.Version),
 				))
+				continue
 			}
 
-			allErrs = append(allErrs, validateMachineImageArchitectures(machineImage, version, providerImageVersion)...)
+			if len(parentSpec.MachineCapabilities) == 0 {
+				allErrs = append(allErrs, validateMachineImageArchitectures(machineImage, version, providerImageVersion)...)
+			} else {
+				var v1beta1Version gardencorev1beta1.MachineImageVersion
+				if err := gardencoreapi.Scheme.Convert(&version, &v1beta1Version, nil); err != nil {
+					return append(allErrs, field.InternalError(machineImagesPath, err))
+				}
+				allErrs = append(allErrs, validateMachineImageCapabilities(machineImage, v1beta1Version, providerImageVersion, parentSpec.MachineCapabilities)...)
+			}
 		}
 	}
 	for imageIdx, machineImage := range providerConfig.MachineImages {
@@ -152,6 +167,65 @@ func (p *namespacedCloudProfile) validateMachineImages(providerConfig *stackitv1
 					fmt.Sprintf("%s@%s", machineImage.Name, version.Version),
 					"machine image version is not defined in the NamespacedCloudProfile",
 				))
+			}
+		}
+	}
+
+	return allErrs
+}
+
+func validateMachineImageCapabilities(machineImage core.MachineImage, version gardencorev1beta1.MachineImageVersion, providerImageVersion stackitv1alpha1.MachineImageVersion, capabilityDefinitions []gardencorev1beta1.CapabilityDefinition) field.ErrorList {
+	allErrs := field.ErrorList{}
+	path := field.NewPath("spec.providerConfig.machineImages")
+	defaultedCapabilityFlavors := gardencorev1beta1helper.GetImageFlavorsWithAppliedDefaults(version.CapabilityFlavors, capabilityDefinitions)
+	regionsCapabilitiesMap := map[string][]gardencorev1beta1.Capabilities{}
+
+	for _, capabilityFlavor := range providerImageVersion.CapabilityFlavors {
+		isFound := false
+		for _, coreDefaultedCapabilitySet := range defaultedCapabilityFlavors {
+			defaultedProviderCapabilities := gardencorev1beta1.GetCapabilitiesWithAppliedDefaults(capabilityFlavor.Capabilities, capabilityDefinitions)
+			if gardencorev1beta1helper.AreCapabilitiesEqual(coreDefaultedCapabilitySet.Capabilities, defaultedProviderCapabilities) {
+				isFound = true
+			}
+		}
+		if !isFound {
+			allErrs = append(allErrs, field.Forbidden(path,
+				fmt.Sprintf("machine image version %s@%s has an excess capabilityFlavor %v, which is not defined in the machineImages spec",
+					machineImage.Name, version.Version, capabilityFlavor.Capabilities)))
+		}
+
+		for _, regionMapping := range capabilityFlavor.Regions {
+			regionsCapabilitiesMap[regionMapping.Name] = append(regionsCapabilitiesMap[regionMapping.Name], capabilityFlavor.Capabilities)
+		}
+	}
+
+	for _, coreDefaultedCapabilityFlavor := range defaultedCapabilityFlavors {
+		isFound := false
+		for _, capabilityFlavor := range providerImageVersion.CapabilityFlavors {
+			defaultedProviderCapabilities := gardencorev1beta1.GetCapabilitiesWithAppliedDefaults(capabilityFlavor.Capabilities, capabilityDefinitions)
+			if gardencorev1beta1helper.AreCapabilitiesEqual(coreDefaultedCapabilityFlavor.Capabilities, defaultedProviderCapabilities) {
+				isFound = true
+			}
+		}
+		if !isFound {
+			allErrs = append(allErrs, field.Required(path,
+				fmt.Sprintf("machine image version %s@%s has a capabilityFlavor %v not defined in the NamespacedCloudProfile providerConfig",
+					machineImage.Name, version.Version, coreDefaultedCapabilityFlavor.Capabilities)))
+			continue
+		}
+
+		for region, regionCapabilities := range regionsCapabilitiesMap {
+			isFound := false
+			for _, capabilities := range regionCapabilities {
+				regionDefaultedCapabilities := gardencorev1beta1.GetCapabilitiesWithAppliedDefaults(capabilities, capabilityDefinitions)
+				if gardencorev1beta1helper.AreCapabilitiesEqual(regionDefaultedCapabilities, coreDefaultedCapabilityFlavor.Capabilities) {
+					isFound = true
+				}
+			}
+			if !isFound {
+				allErrs = append(allErrs, field.Required(path,
+					fmt.Sprintf("machine image version %s@%s is missing region %q in capabilityFlavor %v in the NamespacedCloudProfile providerConfig",
+						machineImage.Name, version.Version, region, coreDefaultedCapabilityFlavor.Capabilities)))
 			}
 		}
 	}

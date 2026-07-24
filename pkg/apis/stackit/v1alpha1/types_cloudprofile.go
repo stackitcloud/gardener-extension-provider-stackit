@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -165,6 +166,23 @@ type MachineImageVersion struct {
 	Image string `json:"image,omitempty"`
 	// Regions is an optional mapping to the correct Image ID for the machine image in the supported regions.
 	Regions []RegionIDMapping `json:"regions,omitempty"`
+	// CapabilityFlavors is grouping of region AMIs by capabilities.
+	CapabilityFlavors []MachineImageFlavor `json:"capabilityFlavors,omitempty"`
+}
+
+// MachineImageFlavor groups all RegionAMIMappings for a specific set of capabilities.
+type MachineImageFlavor struct {
+	// Regions is a mapping to the correct Image ID for the machine image in the supported regions.
+	Regions []RegionIDMapping `json:"regions,omitempty"`
+	// Image is the name of the image.
+	Image string `json:"image,omitempty"`
+	// Capabilities that are supported by the Image ID in this set.
+	Capabilities gardencorev1beta1.Capabilities `json:"capabilities,omitempty"`
+}
+
+// GetCapabilities returns the Capabilities of a MachineImageFlavor
+func (cs *MachineImageFlavor) GetCapabilities() gardencorev1beta1.Capabilities {
+	return cs.Capabilities
 }
 
 // RegionIDMapping is a mapping to the correct ID for the machine image in the given region.

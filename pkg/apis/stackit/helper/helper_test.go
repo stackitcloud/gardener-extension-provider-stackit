@@ -5,8 +5,10 @@
 package helper_test
 
 import (
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
@@ -251,6 +253,82 @@ var _ = Describe("Helper", func() {
 		})
 	})
 
+	DescribeTableSubtree("Select Worker Images", func(hasCapabilities bool) {
+		var capabilityDefinitions []gardencorev1beta1.CapabilityDefinition
+		var machineTypeCapabilities gardencorev1beta1.Capabilities
+		var imageCapabilities gardencorev1beta1.Capabilities
+		region := "europe"
+
+		if hasCapabilities {
+			capabilityDefinitions = []gardencorev1beta1.CapabilityDefinition{
+				{Name: "architecture", Values: []string{"amd64", "arm64"}},
+				{Name: "capability1", Values: []string{"value1", "value2", "value3"}},
+			}
+			machineTypeCapabilities = gardencorev1beta1.Capabilities{
+				"architecture": []string{"amd64"},
+				"capability1":  []string{"value2"},
+			}
+			imageCapabilities = gardencorev1beta1.Capabilities{
+				"architecture": []string{"amd64"},
+				"capability1":  []string{"value2"},
+			}
+		}
+
+		DescribeTable("#FindImageInWorkerStatus",
+			func(machineImages []stackitv1alpha1.MachineImage, name, version string, arch *string, expectedMachineImage *stackitv1alpha1.MachineImage, expectErr bool) {
+				if hasCapabilities {
+					machineTypeCapabilities["architecture"] = []string{*arch}
+					if expectedMachineImage != nil {
+						expectedMachineImage.Capabilities = imageCapabilities
+						expectedMachineImage.Architecture = nil
+					}
+				}
+				machineImage, err := FindImageInWorkerStatus(machineImages, name, version, arch, machineTypeCapabilities, capabilityDefinitions)
+				expectResults(machineImage, expectedMachineImage, err, expectErr)
+			},
+
+			Entry("list is nil", nil, "bar", "1.2.3", ptr.To("amd64"), nil, true),
+			Entry("empty list", []stackitv1alpha1.MachineImage{}, "image", "1.2.3", ptr.To("amd64"), nil, true),
+			Entry("entry not found (no name)", makeStatusMachineImages("bar", "1.2.3", "id-1234", ptr.To("amd64"), imageCapabilities), "foo", "1.2.3", ptr.To("amd64"), nil, true),
+			Entry("entry not found (no version)", makeStatusMachineImages("bar", "1.2.3", "id-1234", ptr.To("amd64"), imageCapabilities), "bar", "1.2.ś", ptr.To("amd64"), nil, true),
+			Entry("entry not found (no architecture)", []stackitv1alpha1.MachineImage{{Name: "bar", Version: "1.2.3", Architecture: ptr.To("arm64"), Capabilities: gardencorev1beta1.Capabilities{"architecture": []string{"arm64"}}}}, "bar", "1.2.3", ptr.To("amd64"), nil, true),
+			Entry("entry exists if architecture is nil", makeStatusMachineImages("bar", "1.2.3", "id-1234", nil, imageCapabilities), "bar", "1.2.3", ptr.To("amd64"), &stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", ID: "id-1234", Architecture: ptr.To("amd64")}, false),
+			Entry("entry exists", makeStatusMachineImages("bar", "1.2.3", "id-1234", ptr.To("amd64"), imageCapabilities), "bar", "1.2.3", ptr.To("amd64"), &stackitv1alpha1.MachineImage{Name: "bar", Version: "1.2.3", ID: "id-1234", Architecture: ptr.To("amd64")}, false),
+		)
+
+		DescribeTable("#FindImageInCloudProfile",
+			func(profileImages []stackitv1alpha1.MachineImages, imageName, version, regionName string, arch *string, expectedID string) {
+				if hasCapabilities {
+					machineTypeCapabilities["architecture"] = []string{*arch}
+				}
+				cfg := &stackitv1alpha1.CloudProfileConfig{}
+				cfg.MachineImages = profileImages
+
+				imageFlavor, err := FindImageInCloudProfile(cfg, imageName, version, regionName, arch, machineTypeCapabilities, capabilityDefinitions)
+
+				if expectedID != "" {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(imageFlavor.Regions[0].ID).To(Equal(expectedID))
+				} else {
+					Expect(err).To(HaveOccurred())
+				}
+			},
+
+			Entry("list is nil", nil, "ubuntu", "1", region, ptr.To("amd64"), ""),
+
+			Entry("profile empty list", []stackitv1alpha1.MachineImages{}, "ubuntu", "1", region, ptr.To("amd64"), ""),
+			Entry("profile entry not found (image does not exist)", makeProfileMachineImages("debian", "1", region, "0", ptr.To("amd64"), imageCapabilities), "ubuntu", "1", region, ptr.To("amd64"), ""),
+			Entry("profile entry not found (version does not exist)", makeProfileMachineImages("ubuntu", "2", region, "0", ptr.To("amd64"), imageCapabilities), "ubuntu", "1", region, ptr.To("amd64"), ""),
+			Entry("profile entry not found (architecture does not exist)", makeProfileMachineImages("ubuntu", "1", region, "0", ptr.To("amd64"), imageCapabilities), "ubuntu", "1", region, ptr.To("arm64"), ""),
+			Entry("profile entry", makeProfileMachineImages("ubuntu", "1", region, "id-1234", ptr.To("amd64"), imageCapabilities), "ubuntu", "1", region, ptr.To("amd64"), "id-1234"),
+			Entry("profile non matching region", makeProfileMachineImages("ubuntu", "1", region, "id-1234", ptr.To("amd64"), imageCapabilities), "ubuntu", "1", "china", ptr.To("amd64"), ""),
+		)
+
+	},
+		Entry("without capabilities", false),
+		Entry("with capabilities", true),
+	)
+
 	DescribeTable("#FindKeyStoneURL",
 		func(keyStoneURLs []stackitv1alpha1.KeyStoneURL, keystoneURL, region, expectedKeyStoneURL string, expectErr bool) {
 			result, err := FindKeyStoneURL(keyStoneURLs, keystoneURL, region)
@@ -290,6 +368,59 @@ var _ = Describe("Helper", func() {
 		Entry("return non-constraing fip as there is no other matching fip", []stackitv1alpha1.FloatingPool{{Name: "nofip-1", Region: &regionName}, {Name: "fip-1", Region: &regionName, NonConstraining: new(true)}}, "fip-1", regionName, nil, new("fip-1")),
 	)
 })
+
+//nolint:unparam
+func makeProfileMachineImages(name, version, region, id string, arch *string, capabilities gardencorev1beta1.Capabilities) []stackitv1alpha1.MachineImages {
+	versions := []stackitv1alpha1.MachineImageVersion{{
+		Version: version,
+	}}
+
+	if capabilities == nil {
+		versions[0].Regions = []stackitv1alpha1.RegionIDMapping{{
+			Name:         region,
+			ID:           id,
+			Architecture: arch,
+		}}
+	} else {
+		versions[0].CapabilityFlavors = []stackitv1alpha1.MachineImageFlavor{{
+			Capabilities: capabilities,
+			Regions: []stackitv1alpha1.RegionIDMapping{{
+				Name: region,
+				ID:   id,
+			}},
+		}}
+	}
+
+	return []stackitv1alpha1.MachineImages{
+		{
+			Name:     name,
+			Versions: versions,
+		},
+	}
+}
+
+//nolint:unparam
+func makeStatusMachineImages(name, version, id string, arch *string, capabilities gardencorev1beta1.Capabilities) []stackitv1alpha1.MachineImage {
+	if capabilities != nil {
+		capabilities["architecture"] = []string{ptr.Deref(arch, "")}
+		return []stackitv1alpha1.MachineImage{
+			{
+				Name:         name,
+				Version:      version,
+				ID:           id,
+				Capabilities: capabilities,
+			},
+		}
+	}
+	return []stackitv1alpha1.MachineImage{
+		{
+			Name:         name,
+			Version:      version,
+			ID:           id,
+			Architecture: arch,
+		},
+	}
+}
 
 func expectResults(result, expected any, err error, expectErr bool) {
 	if !expectErr {

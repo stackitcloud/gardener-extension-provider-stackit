@@ -7,6 +7,9 @@ package helper
 import (
 	"fmt"
 
+	"github.com/gardener/gardener/extensions/pkg/controller/worker"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"k8s.io/utils/ptr"
 
@@ -95,6 +98,121 @@ func FindImageFromCloudProfile(cloudProfileConfig *stackitv1alpha1.CloudProfileC
 	}
 
 	return nil, fmt.Errorf("could not find an image for name %q in version %q for region %q", imageName, imageVersion, regionName)
+}
+
+// FindImageInCloudProfile finds the best matching machine image flavor for the given image, region, architecture, and capabilities.
+func FindImageInCloudProfile(
+	cloudProfileConfig *stackitv1alpha1.CloudProfileConfig,
+	name, version, region string,
+	arch *string,
+	machineCapabilities gardencorev1beta1.Capabilities,
+	capabilityDefinitions []gardencorev1beta1.CapabilityDefinition,
+) (*stackitv1alpha1.MachineImageFlavor, error) {
+	if cloudProfileConfig == nil {
+		return nil, fmt.Errorf("cloud profile config is nil")
+	}
+
+	capabilitySet, err := findMachineImageFlavor(cloudProfileConfig.MachineImages, name, version, region, arch, machineCapabilities, capabilityDefinitions)
+	if err != nil {
+		return nil, fmt.Errorf("could not find an image for region %q, image %q, version %q that supports %v: %w", region, name, version, machineCapabilities, err)
+	}
+	if capabilitySet != nil && len(capabilitySet.Regions) > 0 && (capabilitySet.Regions[0].ID != "" || capabilitySet.Image != "") {
+		return capabilitySet, nil
+	}
+	return nil, fmt.Errorf("could not find an image for region %q, image %q, version %q that supports %v", region, name, version, machineCapabilities)
+}
+
+// FindImageInWorkerStatus finds a previously selected machine image in the Worker provider status.
+func FindImageInWorkerStatus(machineImages []stackitv1alpha1.MachineImage, name, version string, architecture *string, machineCapabilities gardencorev1beta1.Capabilities, capabilityDefinitions []gardencorev1beta1.CapabilityDefinition) (*stackitv1alpha1.MachineImage, error) {
+	if len(capabilityDefinitions) == 0 {
+		for _, statusMachineImage := range machineImages {
+			if statusMachineImage.Architecture == nil {
+				statusMachineImage.Architecture = ptr.To(v1beta1constants.ArchitectureAMD64)
+			}
+			if statusMachineImage.Name == name && statusMachineImage.Version == version && ptr.Equal(architecture, statusMachineImage.Architecture) {
+				return &statusMachineImage, nil
+			}
+		}
+		return nil, fmt.Errorf("no machine image found for image %q with version %q and architecture %q", name, version, ptr.Deref(architecture, ""))
+	}
+
+	for _, statusMachineImage := range machineImages {
+		if statusMachineImage.Name == name && statusMachineImage.Version == version && gardencorev1beta1helper.AreCapabilitiesCompatible(statusMachineImage.Capabilities, machineCapabilities, capabilityDefinitions) {
+			return &statusMachineImage, nil
+		}
+	}
+	return nil, fmt.Errorf("no machine image found for image %q with version %q and capabilities %v", name, version, machineCapabilities)
+}
+
+func findMachineImageFlavor(
+	machineImages []stackitv1alpha1.MachineImages,
+	imageName, imageVersion, region string,
+	arch *string,
+	machineCapabilities gardencorev1beta1.Capabilities,
+	capabilityDefinitions []gardencorev1beta1.CapabilityDefinition,
+) (*stackitv1alpha1.MachineImageFlavor, error) {
+	for _, machineImage := range machineImages {
+		if machineImage.Name != imageName {
+			continue
+		}
+		for _, version := range machineImage.Versions {
+			if imageVersion != version.Version {
+				continue
+			}
+
+			if len(capabilityDefinitions) == 0 {
+				for _, mapping := range version.Regions {
+					if region == mapping.Name && ptr.Equal(arch, mapping.Architecture) {
+						return &stackitv1alpha1.MachineImageFlavor{
+							Image:        version.Image,
+							Regions:      []stackitv1alpha1.RegionIDMapping{mapping},
+							Capabilities: gardencorev1beta1.Capabilities{},
+						}, nil
+					}
+				}
+				if version.Image != "" && ptr.Deref(arch, v1beta1constants.ArchitectureAMD64) == v1beta1constants.ArchitectureAMD64 {
+					return &stackitv1alpha1.MachineImageFlavor{
+						Image: version.Image,
+						Regions: []stackitv1alpha1.RegionIDMapping{{
+							Name:         region,
+							Architecture: ptr.To(v1beta1constants.ArchitectureAMD64),
+						}},
+						Capabilities: gardencorev1beta1.Capabilities{},
+					}, nil
+				}
+				continue
+			}
+
+			filteredCapabilityFlavors := filterCapabilityFlavorsByRegion(version.CapabilityFlavors, region)
+			bestMatch, err := worker.FindBestImageFlavor(filteredCapabilityFlavors, machineCapabilities, capabilityDefinitions)
+			if err != nil {
+				return nil, fmt.Errorf("could not determine best flavor: %w", err)
+			}
+			return bestMatch, nil
+		}
+	}
+	return nil, nil
+}
+
+func filterCapabilityFlavorsByRegion(capabilityFlavors []stackitv1alpha1.MachineImageFlavor, regionName string) []*stackitv1alpha1.MachineImageFlavor {
+	var compatibleFlavors []*stackitv1alpha1.MachineImageFlavor
+
+	for _, capabilityFlavor := range capabilityFlavors {
+		var regionIDMapping *stackitv1alpha1.RegionIDMapping
+		for _, region := range capabilityFlavor.Regions {
+			if region.Name == regionName {
+				regionIDMapping = &region
+			}
+		}
+		if regionIDMapping != nil {
+			compatibleFlavors = append(compatibleFlavors, &stackitv1alpha1.MachineImageFlavor{
+				Regions:      []stackitv1alpha1.RegionIDMapping{*regionIDMapping},
+				Image:        capabilityFlavor.Image,
+				Capabilities: capabilityFlavor.Capabilities,
+			})
+		}
+	}
+	return compatibleFlavors
 }
 
 // FindKeyStoneURL takes a list of keystone URLs and tries to find the first entry
