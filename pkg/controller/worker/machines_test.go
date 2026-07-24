@@ -1121,6 +1121,7 @@ var _ = Describe("Machines", func() {
 				}
 			})
 		},
+			// TODO: Add Test with MCM enabled
 			Entry("with capabilities and using imageIDs", true, false, false),
 			Entry("with capabilities and using ImageNames", true, true, false),
 			Entry("without capabilities and using imageIDs", false, false, false),
