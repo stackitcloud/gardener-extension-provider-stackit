@@ -170,8 +170,8 @@ github.com/gardener/gardener-extension-networking-calico v1.59.0 h1:L5w61z7ueiV8
 github.com/gardener/gardener-extension-networking-calico v1.59.0/go.mod h1:CTdu8c+5C8y7yoNR6QAvDBVRO4l8i8r7jvzIKv9ZFRc=
 github.com/gardener/gardener-extension-os-coreos v1.31.0 h1:mqeSX5cspdvNc7OyQtqVjE+gCl0BxlVm4IwDWN8IXO0=
 github.com/gardener/gardener-extension-os-coreos v1.31.0/go.mod h1:d5K2QNpBjBQZZo1T6QM2x30GlmRDg1qH3YUZQV6yLh0=
-github.com/gardener/gardener/hack/tools v1.147.0 h1:TL5kXUROsK9E+8H/vaBbPoVUCSREMRcc6U6dIEe3h3Y=
-github.com/gardener/gardener/hack/tools v1.147.0/go.mod h1:2MzyJ3tFKLquDhDunSpdTOrf7h4qX4fYmlShXIbaIT4=
+github.com/gardener/gardener/hack/tools v1.147.1 h1:KCFTVhK49LzUHap9dDzKaQvaAcP5GM6fcR9dN85jAlQ=
+github.com/gardener/gardener/hack/tools v1.147.1/go.mod h1:2MzyJ3tFKLquDhDunSpdTOrf7h4qX4fYmlShXIbaIT4=
 github.com/gardener/gardener/pkg/apis v1.147.0 h1:9mlwQhVRxYIkE0G6YZdwIMdju1PxJGdl4EHDdnSPdxM=
 github.com/gardener/gardener/pkg/apis v1.147.0/go.mod h1:qaMyCp4H/Gjct9tF57r5GoaV8YI0IrO6snnQQA9pgEo=
 github.com/gardener/machine-controller-manager v0.62.1 h1:TQ4Qs9aaYTqSkqFownIaEAvnrYoNpBMcp7ZMYVEgUWM=

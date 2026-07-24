@@ -9,7 +9,7 @@ require (
 	github.com/gardener/gardener v1.147.0
 	github.com/gardener/gardener-extension-networking-calico v1.59.0
 	github.com/gardener/gardener-extension-os-coreos v1.31.0
-	github.com/gardener/gardener/hack/tools v1.147.0
+	github.com/gardener/gardener/hack/tools v1.147.1
 	github.com/gardener/gardener/pkg/apis v1.147.0
 	github.com/gardener/machine-controller-manager v0.62.1
 	github.com/go-logr/logr v1.4.4
