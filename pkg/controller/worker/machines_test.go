@@ -6,6 +6,7 @@ package worker_test
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -21,23 +22,23 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	mockkubernetes "github.com/gardener/gardener/pkg/client/kubernetes/mock"
 	"github.com/gardener/gardener/pkg/utils"
+	testutils "github.com/gardener/gardener/pkg/utils/test"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/charts"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
-	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 )
 
@@ -59,9 +60,7 @@ var _ = Describe("Machines", func() {
 		chartApplier = mockkubernetes.NewMockChartApplier(ctrl)
 
 		scheme = runtime.NewScheme()
-		utilruntime.Must(corev1.AddToScheme(scheme))
-		utilruntime.Must(extensionsv1alpha1.AddToScheme(scheme))
-		utilruntime.Must(stackitv1alpha1.AddToScheme(scheme))
+		_ = stackitv1alpha1.AddToScheme(scheme)
 	})
 
 	AfterEach(func() {
@@ -92,7 +91,7 @@ var _ = Describe("Machines", func() {
 			})
 		})
 
-		DescribeTableSubtree("#GenerateMachineDeployments, #DeployMachineClasses", func(isCapabilitiesCloudProfile bool, usesGlobalImageNames bool) {
+		DescribeTableSubtree("#GenerateMachineDeployments, #DeployMachineClasses", func(isCapabilitiesCloudProfile bool, usesGlobalImageNames bool, useStackitMCM bool) {
 
 			var (
 				namespace        string
@@ -165,6 +164,8 @@ var _ = Describe("Machines", func() {
 			)
 
 			BeforeEach(func() {
+				// Disable STACKIT feature flags for OpenStack-only machineclass tests
+				DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, false))
 				if isCapabilitiesCloudProfile {
 					capabilityDefinitions = []gardencorev1beta1.CapabilityDefinition{
 						{Name: "some-capability", Values: []string{"a", "b", "c"}},
@@ -290,7 +291,7 @@ var _ = Describe("Machines", func() {
 				machineConfiguration = &machinev1alpha1.MachineConfiguration{}
 
 				shootVersionMajorMinor = "1.32"
-				shootVersion = shootVersionMajorMinor + ".14"
+				shootVersion = shootVersionMajorMinor + ".0"
 
 				cloudProfileConfig := &stackitv1alpha1.CloudProfileConfig{
 					TypeMeta: metav1.TypeMeta{
@@ -595,7 +596,6 @@ var _ = Describe("Machines", func() {
 						"region":          region,
 						"keyName":         keyName,
 						"networkID":       networkID,
-						"subnetID":        subnetID,
 						"podNetworkCIDRs": []string{podCIDR},
 						"securityGroups":  []string{securityGroupName},
 						"tags": map[string]string{
@@ -609,6 +609,24 @@ var _ = Describe("Machines", func() {
 							"operatingSystemName":    machineImageName,
 							"operatingSystemVersion": strings.ReplaceAll(machineImageVersion, "+", "_"),
 						},
+					}
+
+					if useStackitMCM {
+						securityGroupID := "sg-12345"
+						// STACKIT uses security group IDs and simplified tags
+						defaultMachineClass["securityGroups"] = []string{securityGroupID}
+						defaultMachineClass["tags"] = map[string]string{
+							"kubernetes.io/cluster": technicalID,
+						}
+						// Note: subnetID is NOT included for STACKIT
+					} else {
+						// OpenStack uses security group names, full tags, and subnetID
+						defaultMachineClass["securityGroups"] = []string{securityGroupName}
+						defaultMachineClass["tags"] = map[string]string{
+							fmt.Sprintf("kubernetes.io-cluster-%s", technicalID): "1",
+							"kubernetes.io-role-node":                            "1",
+						}
+						defaultMachineClass["subnetID"] = subnetID
 					}
 
 					if usesGlobalImageNames {
@@ -819,6 +837,7 @@ var _ = Describe("Machines", func() {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
 
 					// Test workerDelegate.DeployMachineClasses()
+
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -850,21 +869,11 @@ var _ = Describe("Machines", func() {
 				It("should return the expected machine deployments for profile image types with id", func() {
 					// setup(region, "", machineImageID, archARM)
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, "")
-					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
 
-					chartApplier.
-						EXPECT().
-						ApplyFromEmbeddedFS(
-							ctx,
-							charts.InternalChart,
-							filepath.Join("internal", "machineclass"),
-							namespace,
-							"machineclass",
-							kubernetes.Values(machineClasses),
-						).
-						Return(nil)
+					chartApplier.EXPECT().ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join("internal", "machineclass"), namespace, "machineclass", kubernetes.Values(machineClasses)).Return(nil)
 
 					err := workerDelegate.DeployMachineClasses(ctx)
 					Expect(err).NotTo(HaveOccurred())
@@ -883,7 +892,7 @@ var _ = Describe("Machines", func() {
 
 				Context("Machine Labels", func() {
 					It("should consider rolling machine labels for the worker pool hash", func() {
-						//setup(region, machineImage, "")
+						// setup(region, machineImage, "")
 
 						applyLabelsAndPolicy := func(labels []stackitv1alpha1.MachineLabel) string {
 							w.Spec.Pools[0].Labels = utils.MergeStringMaps(w.Spec.Pools[0].Labels, map[string]string{"k1": "v1"})
@@ -894,7 +903,6 @@ var _ = Describe("Machines", func() {
 								},
 								MachineLabels: labels,
 							}
-
 							w.Spec.Pools[0].ProviderConfig = &runtime.RawExtension{
 								Raw: encode(workerConfig),
 							}
@@ -1050,11 +1058,73 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUnreadyTimeAnnotation]).To(Equal("3m0s"))
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUtilizationThresholdAnnotation]).To(Equal("0.5"))
 			})
+
+			It("should use storage type and size from cloud profile machine type as default when no pool volume is specified", func() {
+				premiumStorageSize := resource.MustParse("64Gi")
+				clusterWithPremiumMachineType := &extensionscontroller.Cluster{
+					CloudProfile: cluster.CloudProfile.DeepCopy(),
+					Shoot:        cluster.Shoot,
+					Seed:         cluster.Seed,
+				}
+				clusterWithPremiumMachineType.CloudProfile.Spec.MachineTypes = []gardencorev1beta1.MachineType{
+					{
+						Name:         machineType,
+						Capabilities: capabilitiesAmd,
+						Storage: &gardencorev1beta1.MachineTypeStorage{
+							Class:       "standard",
+							StorageSize: &premiumStorageSize,
+							Type:        "premium",
+						},
+					},
+					{
+						Name:         machineTypeArm,
+						Architecture: new(archARM),
+						Capabilities: capabilitiesArm,
+					},
+				}
+
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, "")
+
+				var capturedMachineClasses []map[string]interface{}
+				chartApplier.
+					EXPECT().
+					ApplyFromEmbeddedFS(
+						ctx,
+						charts.InternalChart,
+						filepath.Join("internal", "machineclass"),
+						namespace,
+						"machineclass",
+						gomock.AssignableToTypeOf(kubernetes.Values(nil)),
+					).
+					DoAndReturn(func(_ context.Context, _ embed.FS, _, _, _ string, opts ...kubernetes.ApplyOption) error {
+						applyOpts := &kubernetes.ApplyOptions{}
+						for _, o := range opts {
+							o.MutateApplyOptions(applyOpts)
+						}
+						if values, ok := applyOpts.Values.(map[string]interface{}); ok {
+							if classes, ok := values["machineClasses"].([]map[string]interface{}); ok {
+								capturedMachineClasses = classes
+							}
+						}
+						return nil
+					})
+
+				err := workerDelegate.DeployMachineClasses(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(capturedMachineClasses).NotTo(BeEmpty())
+				for _, class := range capturedMachineClasses {
+					if class["machineType"] == machineType {
+						Expect(class).To(HaveKeyWithValue("rootDiskType", "premium"), "expected rootDiskType to be set from cloud profile storage type")
+						Expect(class).To(HaveKeyWithValue("rootDiskSize", 64), "expected rootDiskSize to be set from cloud profile storage size")
+					}
+				}
+			})
 		},
-			Entry("with capabilities and using imageIDs", true, false),
-			Entry("with capabilities and using ImageNames", true, true),
-			Entry("without capabilities and using imageIDs", false, false),
-			Entry("without capabilities and using ImageNames", false, true),
+			Entry("with capabilities and using imageIDs", true, false, false),
+			Entry("with capabilities and using ImageNames", true, true, false),
+			Entry("without capabilities and using imageIDs", false, false, false),
+			Entry("without capabilities and using ImageNames", false, true, false),
 		)
 
 		DescribeTable("EnsureUniformMachineImages", func(capabilityDefinitions []gardencorev1beta1.CapabilityDefinition, expectedImages []stackitv1alpha1.MachineImage) {
@@ -1176,8 +1246,8 @@ func encode(obj runtime.Object) []byte {
 }
 
 // nolint:unparam
-func addKeyValueToMap(def map[string]any, key string, value any) map[string]any {
-	out := make(map[string]any, len(def)+1)
+func addKeyValueToMap(def map[string]interface{}, key string, value interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(def)+1)
 
 	for k, v := range def {
 		out[k] = v
@@ -1187,16 +1257,16 @@ func addKeyValueToMap(def map[string]any, key string, value any) map[string]any 
 	return out
 }
 
-func addNodeTemplateToMachineClass(class map[string]any, nodeTemplate machinev1alpha1.NodeTemplate) {
+func addNodeTemplateToMachineClass(class map[string]interface{}, nodeTemplate machinev1alpha1.NodeTemplate) {
 	class["nodeTemplate"] = nodeTemplate
 }
 
-func addNameAndSecretToMachineClass(class map[string]any, name string, credentialsSecretRef corev1.SecretReference) {
+func addNameAndSecretToMachineClass(class map[string]interface{}, name string, credentialsSecretRef corev1.SecretReference) {
 	class["name"] = name
 	class["labels"] = map[string]string{
 		v1beta1constants.GardenerPurpose: v1beta1constants.GardenPurposeMachineClass,
 	}
-	class["credentialsSecretRef"] = map[string]any{
+	class["credentialsSecretRef"] = map[string]interface{}{
 		"name":      credentialsSecretRef.Name,
 		"namespace": credentialsSecretRef.Namespace,
 	}
