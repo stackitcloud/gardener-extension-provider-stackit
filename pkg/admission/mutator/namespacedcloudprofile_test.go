@@ -10,6 +10,10 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/gardener/gardener/pkg/utils/test"
+	. "github.com/gardener/gardener/pkg/utils/test/matchers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -132,7 +136,7 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 					Values: []string{"amd64", "arm64"},
 				}}
 				namespacedCloudProfile.Status.CloudProfileSpec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.0","capabilityFlavors":[
@@ -140,7 +144,7 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 ]}]}
 ]}`)}
 				namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.1","capabilityFlavors":[
@@ -159,16 +163,16 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 					MatchFields(IgnoreExtras, Fields{
 						"Name": Equal("image-1"),
 						"Versions": ContainElements(
-							api.MachineImageVersion{Version: "1.0",
-								CapabilityFlavors: []api.MachineImageFlavor{{
+							stackitv1alpha1.MachineImageVersion{Version: "1.0",
+								CapabilityFlavors: []stackitv1alpha1.MachineImageFlavor{{
 									Capabilities: v1beta1.Capabilities{"architecture": []string{"amd64"}},
-									Regions:      []api.RegionIDMapping{{Name: "eu1", ID: "id-img-reg-1"}},
+									Regions:      []stackitv1alpha1.RegionIDMapping{{Name: "eu1", ID: "id-img-reg-1"}},
 								}},
 							},
-							api.MachineImageVersion{Version: "1.1",
-								CapabilityFlavors: []api.MachineImageFlavor{{
+							stackitv1alpha1.MachineImageVersion{Version: "1.1",
+								CapabilityFlavors: []stackitv1alpha1.MachineImageFlavor{{
 									Capabilities: v1beta1.Capabilities{"architecture": []string{"arm64"}},
-									Regions:      []api.RegionIDMapping{{Name: "eu2", ID: "id-img-reg-2"}},
+									Regions:      []stackitv1alpha1.RegionIDMapping{{Name: "eu2", ID: "id-img-reg-2"}},
 								}},
 							},
 						),
@@ -176,10 +180,10 @@ var _ = Describe("NamespacedCloudProfile Mutator", func() {
 					MatchFields(IgnoreExtras, Fields{
 						"Name": Equal("image-2"),
 						"Versions": ContainElements(
-							api.MachineImageVersion{Version: "2.0",
-								CapabilityFlavors: []api.MachineImageFlavor{{
+							stackitv1alpha1.MachineImageVersion{Version: "2.0",
+								CapabilityFlavors: []stackitv1alpha1.MachineImageFlavor{{
 									Capabilities: v1beta1.Capabilities{"architecture": []string{"amd64"}},
-									Regions:      []api.RegionIDMapping{{Name: "eu3", ID: "id-img-reg-3"}},
+									Regions:      []stackitv1alpha1.RegionIDMapping{{Name: "eu3", ID: "id-img-reg-3"}},
 								}},
 							}),
 					}),

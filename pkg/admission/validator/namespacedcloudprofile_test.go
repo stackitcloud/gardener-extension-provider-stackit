@@ -25,8 +25,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/gardener/gardener-extension-provider-openstack/pkg/admission/validator"
-	"github.com/gardener/gardener-extension-provider-openstack/pkg/apis/openstack/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 )
 
 var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabilitiesCloudProfile bool) {
@@ -104,13 +104,13 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
   {"name":"image-2","versions":[{"version":"2.0","capabilityFlavors":[{"regions":[{"name":"image-region-1","id":"id-img-reg-1"}]}]}]}`
 			}
 			cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[{"name":"image-1","versions":[{"version":"1.0","image":"image-name-1", %s}]}]
 }`, imageIDMappings))}
 
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[%s]
 }`, namespacedImageIDMappings))}
@@ -134,7 +134,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 
 		It("should fail for NamespacedCloudProfile with invalid parent kind", func() {
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig"
 }`)}
 			namespacedCloudProfile.Spec.Parent = core.CloudProfileReference{
@@ -159,7 +159,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 			cloudProfile.Spec.MachineTypes = []v1beta1.MachineType{{Name: "type-1"}}
 
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.0","image":"image-name-1", %s}]}
@@ -191,7 +191,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 			}
 
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.1","image":"image-name-1", %s}]}
@@ -224,7 +224,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 
 		It("should fail for NamespacedCloudProfile specifying new spec.machineImages without the according version in the provider config", func() {
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig"
 }`)}
 			namespacedCloudProfile.Spec.MachineImages = []core.MachineImage{
@@ -263,7 +263,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 				cloudProfile.Spec.MachineCapabilities[0].Values = []string{"amd64", "arm64"}
 			}
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[
@@ -346,7 +346,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 
 		It("should fail for NamespacedCloudProfile specifying an invalid field in the provider config", func() {
 			namespacedCloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "keystoneURL":"http://url-to-keystone/v3"
 }`)}
@@ -357,7 +357,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 			Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(field.ErrorTypeForbidden),
 				"Field":  Equal("spec.providerConfig"),
-				"Detail": Equal("must only set machineImages"),
+				"Detail": Equal("must only set machineImages and stackitAPIEndpoints"),
 			}))))
 		})
 	})

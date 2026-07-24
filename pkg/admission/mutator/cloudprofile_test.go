@@ -22,8 +22,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/gardener/gardener-extension-provider-openstack/pkg/admission/mutator"
-	"github.com/gardener/gardener-extension-provider-openstack/pkg/apis/openstack/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/mutator"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 )
 
 var _ = Describe("CloudProfile Mutator", func() {
@@ -86,7 +86,7 @@ var _ = Describe("CloudProfile Mutator", func() {
 
 			It("should succeed and not modify the CloudProfile", func() {
 				cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"image-1","versions":[{"version":"1.1","regions":[{"name":"eu2","id":"id-124","architecture":"armhf"}]}]}
@@ -134,7 +134,7 @@ var _ = Describe("CloudProfile Mutator", func() {
 ]`
 
 				cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"os-1","versions":[
@@ -196,7 +196,7 @@ var _ = Describe("CloudProfile Mutator", func() {
 					},
 				}
 				cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{
-"apiVersion":"openstack.provider.extensions.gardener.cloud/v1alpha1",
+"apiVersion":"stackit.provider.extensions.gardener.cloud/v1alpha1",
 "kind":"CloudProfileConfig",
 "machineImages":[
   {"name":"os-1","versions":[
