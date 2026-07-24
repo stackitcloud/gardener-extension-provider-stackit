@@ -145,9 +145,12 @@ cleanup-crds:
 
 .PHONY: gardener-crds
 gardener-crds:
+	@cp $(GARDENER_DIR)/example/seed-crds/10-crd-autoscaling.k8s.io_verticalpodautoscalers.yaml $(UPSTREAM_CRDS_DIR)
 	@cp $(GARDENER_DIR)/example/seed-crds/10-crd-extensions.gardener.cloud_clusters.yaml $(UPSTREAM_CRDS_DIR)
+	@cp $(GARDENER_DIR)/example/seed-crds/10-crd-extensions.gardener.cloud_controlplanes.yaml $(UPSTREAM_CRDS_DIR)
 	@cp $(GARDENER_DIR)/example/seed-crds/10-crd-extensions.gardener.cloud_infrastructures.yaml $(UPSTREAM_CRDS_DIR)
 	@cp $(GARDENER_DIR)/example/seed-crds/10-crd-extensions.gardener.cloud_selfhostedshootexposures.yaml $(UPSTREAM_CRDS_DIR)
+	@cp $(GARDENER_DIR)/example/resource-manager/10-crd-resources.gardener.cloud_managedresources.yaml $(UPSTREAM_CRDS_DIR)
 
 .PHONY: test
 test: $(REPORT_COLLECTOR) $(SETUP_ENVTEST) ## Runs the unit-test suite
