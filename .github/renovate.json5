@@ -63,6 +63,7 @@
       matchPackageNames: [
         'github.com/gardener/gardener',
         'github.com/gardener/gardener/pkg/apis',
+        'github.com/gardener/gardener/hack/tools',
       ],
     },
     {
