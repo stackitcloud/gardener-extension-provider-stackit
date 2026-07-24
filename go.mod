@@ -11,7 +11,7 @@ require (
 	github.com/gardener/gardener-extension-os-coreos v1.31.0
 	github.com/gardener/gardener/pkg/apis v1.145.4
 	github.com/gardener/machine-controller-manager v0.61.3
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gophercloud/gophercloud/v2 v2.13.0
