@@ -305,12 +305,12 @@ func (w *workerDelegate) generateWorkerPoolHash(pool extensionsv1alpha1.WorkerPo
 		additionalHashData = append(additionalHashData, pairs...)
 	}
 
-	// hash v1 would otherwise hash the ProviderConfig
+	// The provider config is not part of the worker pool hash
 	pool.ProviderConfig = nil
 
 	// Generate the worker pool hash.
-	// since the ProviderConfig is in this provider is always nil, we just add the same additionalHashdata to v2.
-	return worker.WorkerPoolHash(pool, w.cluster, additionalHashData, additionalHashData, nil)
+	// since the ProviderConfig is in this provider is always nil, we add some additionalHashdata
+	return worker.WorkerPoolHash(pool, w.cluster, additionalHashData, nil)
 }
 
 // NormalizeLabelsForMachineClass because metadata in OpenStack resources do not allow for certain characters that present in k8s labels e.g. "/",
