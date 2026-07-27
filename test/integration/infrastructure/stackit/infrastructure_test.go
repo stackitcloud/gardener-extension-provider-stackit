@@ -232,12 +232,16 @@ var _ = BeforeSuite(func() {
 	Expect(client.IgnoreAlreadyExists(c.Create(ctx, priorityClass))).To(Succeed())
 })
 
-var _ = Describe("Infrastructure tests flow", func() {
-	testInfrastructure(new(reconcilerUseFlow))
-})
+// TODO: Remove outer Describe() container and Serial, Ordered when issue with concurrent network creates
+// is solved.
+var _ = Describe("Infrastructure integration tests", Serial, Ordered, func() {
+	var _ = Describe("test reconcile flow", func() {
+		testInfrastructure(new(reconcilerUseFlow))
+	})
 
-var _ = Describe("Infrastructure tests recover", func() {
-	testInfrastructure(new(reconcilerRecoverState))
+	var _ = Describe("test recover flow", func() {
+		testInfrastructure(new(reconcilerRecoverState))
+	})
 })
 
 func testInfrastructure(reconciler *string) {
