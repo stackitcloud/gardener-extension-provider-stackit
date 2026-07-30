@@ -168,8 +168,8 @@ github.com/gardener/gardener v1.147.1 h1:KRkdvsNJBpONesxqmCpWA+U8jqVzm4Rg2clxtof
 github.com/gardener/gardener v1.147.1/go.mod h1:FSbwvYXFWTEnTqOdE6eYKUMpeOPtcsIfS/IAfbtxhkc=
 github.com/gardener/gardener-extension-networking-calico v1.59.0 h1:L5w61z7ueiV8y2m4oHLFEQbv3sw7JVqouk3o0UPjdu8=
 github.com/gardener/gardener-extension-networking-calico v1.59.0/go.mod h1:CTdu8c+5C8y7yoNR6QAvDBVRO4l8i8r7jvzIKv9ZFRc=
-github.com/gardener/gardener-extension-os-coreos v1.32.0 h1:aQXqJcVu53Z75j2kYvvD0ARaCoLzYqIEIADT95FAQ8w=
-github.com/gardener/gardener-extension-os-coreos v1.32.0/go.mod h1:d5K2QNpBjBQZZo1T6QM2x30GlmRDg1qH3YUZQV6yLh0=
+github.com/gardener/gardener-extension-os-coreos v1.34.0 h1:MIMEyhkVF6+74hxporD7hWE5919M8PvkkigcWvHiIxs=
+github.com/gardener/gardener-extension-os-coreos v1.34.0/go.mod h1:d5K2QNpBjBQZZo1T6QM2x30GlmRDg1qH3YUZQV6yLh0=
 github.com/gardener/gardener/hack/tools v1.147.1 h1:KCFTVhK49LzUHap9dDzKaQvaAcP5GM6fcR9dN85jAlQ=
 github.com/gardener/gardener/hack/tools v1.147.1/go.mod h1:2MzyJ3tFKLquDhDunSpdTOrf7h4qX4fYmlShXIbaIT4=
 github.com/gardener/gardener/pkg/apis v1.147.1 h1:ma54rOosgNMipGkdMEpFWUJ8k5M0sEOT3Sba1wKwIqY=
