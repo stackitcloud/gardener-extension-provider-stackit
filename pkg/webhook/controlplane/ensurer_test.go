@@ -560,6 +560,9 @@ WantedBy=multi-user.target
 			Expect(deployment.Spec.Template.Spec.Containers).To(BeEmpty())
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-openstack", "foo:bar")
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 	})
@@ -602,6 +605,9 @@ WantedBy=multi-user.target
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127WithSTACKITMCM, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-stackit", "foo:bar")
 			expectedContainer.Env = []corev1.EnvVar{}
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 
@@ -610,6 +616,9 @@ WantedBy=multi-user.target
 			Expect(ensurer.EnsureMachineControllerManagerDeployment(context.TODO(), eContextK8s127WithSTACKITMCMANDCUSTOMCA, deployment, nil)).To(Succeed())
 			expectedContainer := machinecontrollermanager.ProviderSidecarContainer(shoot, deployment.Namespace, "provider-stackit", "foo:bar")
 			expectedContainer.Env = []corev1.EnvVar{}
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
 			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
 				MountPath: "/etc/ssl/certs/cloudprofile-ca.crt",
@@ -675,6 +684,9 @@ WantedBy=multi-user.target
 					Value: "token.qa",
 				},
 			}
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 	})
