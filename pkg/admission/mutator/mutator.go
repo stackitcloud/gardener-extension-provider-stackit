@@ -30,7 +30,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Path: "/webhooks/mutate",
 		Mutators: map[extensionswebhook.Mutator][]extensionswebhook.Type{
 			NewShootMutator(mgr):                  {{Obj: &gardencorev1beta1.Shoot{}}},
-			NewNamespacedCloudProfileMutator(mgr): {{Obj: &gardencorev1beta1.NamespacedCloudProfile{}, Subresource: new("status")}},
+			NewCloudProfileMutator(mgr):           {{Obj: &gardencorev1beta1.CloudProfile{}}},
+			NewNamespacedCloudProfileMutator(mgr): {{Obj: &gardencorev1beta1.NamespacedCloudProfile{}}, {Obj: &gardencorev1beta1.NamespacedCloudProfile{}, Subresource: new("status")}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
