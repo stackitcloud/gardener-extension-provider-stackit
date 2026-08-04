@@ -9,7 +9,7 @@ spec:
     kind: Deployment
     name: stackit-application-load-balancer-controller
   updatePolicy:
-    updateMode: Auto
+    updateMode: InPlaceOrRecreate
   resourcePolicy:
     containerPolicies:
     - containerName: stackit-application-load-balancer-controller

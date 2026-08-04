@@ -14,5 +14,5 @@ spec:
     kind: Deployment
     name: {{.Values.prefix}}-csi-snapshot-controller
   updatePolicy:
-    updateMode: Auto
+    updateMode: InPlaceOrRecreate
 {{- end }}

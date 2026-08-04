@@ -12,7 +12,7 @@ healthPort: 8081
 vpa:
   enabled: true
   updatePolicy:
-    updateMode: "Auto"
+    updateMode: "InPlaceOrRecreate"
 webhookConfig:
   serverPort: 10250
   servicePort: 443
