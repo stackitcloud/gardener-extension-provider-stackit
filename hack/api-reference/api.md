@@ -1257,6 +1257,76 @@ string
 <p>Architecture is the CPU architecture of the machine image</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>capabilities</code></br>
+<em>
+<a href="#capabilities">Capabilities</a>
+</em>
+</td>
+<td>
+<p>Capabilities of the machine image.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="machineimageflavor">MachineImageFlavor
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#machineimageversion">MachineImageVersion</a>)
+</p>
+
+<p>
+MachineImageFlavor groups all RegionAMIMappings for a specific set of capabilities.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>regions</code></br>
+<em>
+<a href="#regionidmapping">RegionIDMapping</a> array
+</em>
+</td>
+<td>
+<p>Regions is a mapping to the correct Image ID for the machine image in the supported regions.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>image</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Image is the name of the image.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>capabilities</code></br>
+<em>
+<a href="#capabilities">Capabilities</a>
+</em>
+</td>
+<td>
+<p>Capabilities that are supported by the Image ID in this set.</p>
+</td>
+</tr>
 
 </tbody>
 </table>
@@ -1314,6 +1384,17 @@ string
 </td>
 <td>
 <p>Regions is an optional mapping to the correct Image ID for the machine image in the supported regions.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>capabilityFlavors</code></br>
+<em>
+<a href="#machineimageflavor">MachineImageFlavor</a> array
+</em>
+</td>
+<td>
+<p>CapabilityFlavors is grouping of region AMIs by capabilities.</p>
 </td>
 </tr>
 
@@ -1685,7 +1766,7 @@ Purpose is a purpose of a resource.
 
 
 <p>
-(<em>Appears on:</em><a href="#machineimageversion">MachineImageVersion</a>)
+(<em>Appears on:</em><a href="#machineimageflavor">MachineImageFlavor</a>, <a href="#machineimageversion">MachineImageVersion</a>)
 </p>
 
 <p>
