@@ -66,14 +66,14 @@ func (p *namespacedCloudProfile) Validate(ctx context.Context, newObj, _ client.
 
 	//nolint:prealloc // size is not known yet
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, p.validateMachineImagesOnlyInNamespacedCloudProfile(cpConfig)...)
+	allErrs = append(allErrs, p.validateValidOverrideOptions(cpConfig)...)
 
 	allErrs = append(allErrs, p.validateMachineImages(cpConfig, profile.Spec.MachineImages, parentProfile.Spec)...)
 	return allErrs.ToAggregate()
 }
 
-// validateNamespacedCloudProfileProviderConfig checks that only machineImages or apiEndpoints are set in the CloudProfileConfig passed with a NamespacedCloudProfile.
-func (p *namespacedCloudProfile) validateMachineImagesOnlyInNamespacedCloudProfile(providerConfig *stackitv1alpha1.CloudProfileConfig) field.ErrorList {
+// validateValidOverrideOptions checks that only machineImages or apiEndpoints are set in the CloudProfileConfig passed with a NamespacedCloudProfile.
+func (p *namespacedCloudProfile) validateValidOverrideOptions(providerConfig *stackitv1alpha1.CloudProfileConfig) field.ErrorList {
 	validationProviderConfig := &stackitv1alpha1.CloudProfileConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: stackitv1alpha1.SchemeGroupVersion.String(),
