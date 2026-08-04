@@ -18,8 +18,6 @@ import (
 	"github.com/gardener/gardener/pkg/utils/gardener"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,14 +31,12 @@ import (
 // NewNamespacedCloudProfileValidator returns a new instance of a namespaced cloud profile validator.
 func NewNamespacedCloudProfileValidator(mgr manager.Manager) extensionswebhook.Validator {
 	return &namespacedCloudProfile{
-		client:  mgr.GetClient(),
-		decoder: serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		client: mgr.GetClient(),
 	}
 }
 
 type namespacedCloudProfile struct {
-	client  client.Client
-	decoder runtime.Decoder
+	client client.Client
 }
 
 // Validate validates the given NamespacedCloudProfile objects.
