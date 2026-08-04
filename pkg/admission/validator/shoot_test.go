@@ -68,6 +68,11 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 					InfrastructureConfig: &runtime.RawExtension{
 						Raw: encode(&infrastructureConfig),
 					},
+					Workers: []core.Worker{
+						{
+							Name: "worker",
+						},
+					},
 				},
 				Networking: &core.Networking{Nodes: new("10.0.0.0/24")},
 			},
@@ -126,6 +131,15 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			newShoot.Spec.Provider.InfrastructureConfig = &runtime.RawExtension{Raw: encode(&infrastructureConfig)}
 
 			Expect(shootValidator.Validate(ctx, newShoot, shoot)).To(Not(Succeed()))
+		})
+
+		It("should skip with workerless shoot", func() {
+			// this would be invalid for a shoot with workers
+			infrastructureConfig.Networks.Workers = ""
+			shoot.Spec.Provider.InfrastructureConfig = &runtime.RawExtension{Raw: encode(&infrastructureConfig)}
+			shoot.Spec.Provider.Workers = []core.Worker{}
+
+			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
 		})
 	})
 })
