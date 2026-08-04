@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	gardencorehelper "github.com/gardener/gardener/pkg/api/core/helper"
 	"github.com/gardener/gardener/pkg/apis/core"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
@@ -35,6 +36,11 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 	shoot, ok := newObj.(*core.Shoot)
 	if !ok {
 		return fmt.Errorf("wrong object type %T", newObj)
+	}
+
+	// Skip if it's a workerless Shoot
+	if gardencorehelper.IsWorkerless(shoot) {
+		return nil
 	}
 
 	cpConfig, err := helper.ControlPlaneConfigFromRawExtension(shoot.Spec.Provider.ControlPlaneConfig)
