@@ -1164,9 +1164,31 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUtilizationThresholdAnnotation]).To(Equal("0.5"))
 			})
 
-			DescribeTable("customLabelDomain in machineclass helm chart",
-				func(customDomain string) {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
+			It("should use storage type and size from cloud profile machine type as default when no pool volume is specified", func() {
+				premiumStorageSize := resource.MustParse("64Gi")
+				clusterWithPremiumMachineType := &extensionscontroller.Cluster{
+					CloudProfile: cluster.CloudProfile.DeepCopy(),
+					Shoot:        cluster.Shoot,
+					Seed:         cluster.Seed,
+				}
+				clusterWithPremiumMachineType.CloudProfile.Spec.MachineTypes = []gardencorev1beta1.MachineType{
+					{
+						Name:         machineType,
+						Capabilities: capabilitiesAmd,
+						Storage: &gardencorev1beta1.MachineTypeStorage{
+							Class:       "standard",
+							StorageSize: &premiumStorageSize,
+							Type:        "premium",
+						},
+					},
+					{
+						Name:         machineTypeArm,
+						Architecture: new(archARM),
+						Capabilities: capabilitiesArm,
+					},
+				}
+
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain)
 
 					chartApplier.
 						EXPECT().
