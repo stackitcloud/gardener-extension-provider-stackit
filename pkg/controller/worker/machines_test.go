@@ -1201,6 +1201,64 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].AutoPreserveFailedMachineMax).To(Equal(int32(0)))
 			})
 
+			It("should use storage type and size from cloud profile machine type as default when no pool volume is specified", func() {
+				premiumStorageSize := resource.MustParse("64Gi")
+				expectedVolumeSize, err := worker.DiskSize(premiumStorageSize.String())
+				Expect(err).NotTo(HaveOccurred())
+
+				clusterWithPremiumMachineType := &extensionscontroller.Cluster{
+					CloudProfile: cluster.CloudProfile.DeepCopy(),
+					Shoot:        cluster.Shoot,
+					Seed:         cluster.Seed,
+				}
+				clusterWithPremiumMachineType.CloudProfile.Spec.MachineTypes = []gardencorev1beta1.MachineType{
+					{
+						Name: machineType,
+						Storage: &gardencorev1beta1.MachineTypeStorage{
+							Class:       "standard",
+							StorageSize: &premiumStorageSize,
+							Type:        "premium",
+						},
+					},
+				}
+
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, "")
+				var appliedValues map[string]any
+
+				chartApplier.
+					EXPECT().
+					ApplyFromEmbeddedFS(
+						ctx,
+						charts.InternalChart,
+						gomock.Any(),
+						namespace,
+						"machineclass",
+						gomock.Any(),
+					).
+					DoAndReturn(func(_ context.Context, _ any, _ string, _ string, _ string, opts ...kubernetes.ApplyOption) error {
+						applyOptions := &kubernetes.ApplyOptions{}
+						for _, opt := range opts {
+							opt.MutateApplyOptions(applyOptions)
+						}
+						var ok bool
+						appliedValues, ok = applyOptions.Values.(map[string]any)
+						Expect(ok).To(BeTrue())
+						return nil
+					})
+
+				err = workerDelegate.DeployMachineClasses(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				machineClasses, ok := appliedValues["machineClasses"].([]map[string]any)
+				Expect(ok).To(BeTrue())
+				Expect(machineClasses).NotTo(BeEmpty())
+
+				for _, machineClass := range machineClasses {
+					Expect(machineClass["rootDiskType"]).To(Equal("premium"))
+					Expect(machineClass["rootDiskSize"]).To(Equal(expectedVolumeSize))
+				}
+			})
+
 			DescribeTable("customLabelDomain in machineclass helm chart",
 				func(customDomain string) {
 					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)

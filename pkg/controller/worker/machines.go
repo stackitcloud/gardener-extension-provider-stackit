@@ -117,6 +117,8 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		}
 		machineImages = appendMachineImage(machineImages, *machineImage)
 
+		machineTypeFromCloudProfile := gardencorev1beta1helper.FindMachineTypeByName(w.cluster.CloudProfile.Spec.MachineTypes, pool.MachineType)
+
 		var volumeSize int
 		if pool.Volume != nil {
 			volumeSize, err = worker.DiskSize(pool.Volume.Size)
@@ -194,6 +196,20 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 			// specifying the volume type requires a custom volume size to be specified too.
 			if pool.Volume != nil && pool.Volume.Type != nil {
 				machineClassSpec["rootDiskType"] = *pool.Volume.Type
+			} else if machineTypeFromCloudProfile != nil &&
+				machineTypeFromCloudProfile.Storage != nil &&
+				machineTypeFromCloudProfile.Storage.Type != "" &&
+				machineTypeFromCloudProfile.Storage.Type != "default" {
+				// Use the storage type from the cloud profile as the default if not explicitly set in the shoot spec.
+				machineClassSpec["rootDiskType"] = machineTypeFromCloudProfile.Storage.Type
+				if machineTypeFromCloudProfile.Storage.StorageSize != nil {
+					cloudProfileVolumeSize, err := worker.DiskSize(machineTypeFromCloudProfile.Storage.StorageSize.String())
+					if err == nil && cloudProfileVolumeSize > 0 {
+						if _, alreadySet := machineClassSpec["rootDiskSize"]; !alreadySet {
+							machineClassSpec["rootDiskSize"] = cloudProfileVolumeSize
+						}
+					}
+				}
 			}
 
 			if machineImage.ID != "" {
