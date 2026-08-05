@@ -23,4 +23,4 @@ spec:
     kind: Deployment
     name: {{.Values.prefix}}-csi-driver-controller
   updatePolicy:
-    updateMode: Auto
+    updateMode: InPlaceOrRecreate
