@@ -1265,6 +1265,7 @@ string
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>Capabilities of the machine image.</p>
 </td>
 </tr>
@@ -1394,6 +1395,7 @@ string
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>CapabilityFlavors is grouping of region AMIs by capabilities.</p>
 </td>
 </tr>
