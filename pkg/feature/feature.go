@@ -14,8 +14,6 @@ const (
 	// // MyFeature enables Foo.
 	// MyFeature featuregate.Feature = "MyFeature"
 
-	// MutateDisableNTP enables the mutation that disables NTP if any worker's flatcar image version is greater than or equal to `FlatcarImageVersion`
-	MutateDisableNTP featuregate.Feature = "MutateDisableNTP"
 	// EnsureSTACKITLBDeletion enables the STACKIT LB deletion cleanup. The function checks for dangling/zombied LB's and then tries to delete them.
 	EnsureSTACKITLBDeletion featuregate.Feature = "EnsureSTACKITLBDeletion"
 	// EnsureSTACKITALBDeletion enables the STACKIT ALB deletion cleanup. The function checks for dangling/zombied ALB's and then tries to delete them.
@@ -46,7 +44,6 @@ var (
 	Gate featuregate.FeatureGate = MutableGate
 
 	allGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		MutateDisableNTP:                      {Default: true, PreRelease: featuregate.Alpha},
 		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
 		EnsureSTACKITALBDeletion:              {Default: false, PreRelease: featuregate.Alpha},
 		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},

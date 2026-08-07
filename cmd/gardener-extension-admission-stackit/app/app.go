@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	admissioncmd "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/cmd"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/mutator"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
 	stackitinstall "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
@@ -183,7 +182,6 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 	verflag.AddFlags(cmd.Flags())
 	aggOption.AddFlags(cmd.Flags())
 	feature.MutableGate.AddFlag(cmd.Flags())
-	cmd.Flags().StringVar(&mutator.FlatcarImageVersion, "flatcar-image-version", "4230.2.1", "the first image version that supports PTP. Used in the shoot mutator.")
 
 	return cmd
 }
