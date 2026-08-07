@@ -167,6 +167,7 @@ type MachineImageVersion struct {
 	// Regions is an optional mapping to the correct Image ID for the machine image in the supported regions.
 	Regions []RegionIDMapping `json:"regions,omitempty"`
 	// CapabilityFlavors is grouping of region AMIs by capabilities.
+	// +optional
 	CapabilityFlavors []MachineImageFlavor `json:"capabilityFlavors,omitempty"`
 }
 

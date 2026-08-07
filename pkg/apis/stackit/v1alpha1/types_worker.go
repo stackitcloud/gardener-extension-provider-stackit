@@ -44,6 +44,7 @@ type MachineImage struct {
 	// +optional
 	Architecture *string `json:"architecture,omitempty"`
 	// Capabilities of the machine image.
+	// +optional
 	Capabilities gardencorev1beta1.Capabilities `json:"capabilities,omitempty"`
 }
 
