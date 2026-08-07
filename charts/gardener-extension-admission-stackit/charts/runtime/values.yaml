@@ -21,7 +21,6 @@ kubeconfig:
 
 featureGates: {}
 #   SomeGate: true
-flatcarImageVersion: ""
 #allowApplicationLoadBalancerController: false
 
 #projectedKubeconfig:
