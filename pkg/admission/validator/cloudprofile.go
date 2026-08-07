@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/apis/core"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,5 +43,10 @@ func (cp *cloudProfile) Validate(_ context.Context, newObj, _ client.Object) err
 		return err
 	}
 
-	return stackitvalidation.ValidateCloudProfileConfig(cpConfig, cloudProfile.Spec.MachineImages, providerConfigPath).ToAggregate()
+	capabilityDefinitions, err := gardencorev1beta1helper.ConvertV1beta1CapabilityDefinitions(cloudProfile.Spec.MachineCapabilities)
+	if err != nil {
+		return field.InternalError(field.NewPath("spec").Child("machineCapabilities"), err)
+	}
+
+	return stackitvalidation.ValidateCloudProfileConfig(cpConfig, cloudProfile.Spec.MachineImages, capabilityDefinitions, providerConfigPath).ToAggregate()
 }
