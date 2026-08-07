@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,45 +9,33 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 )
-
-// FlatcarImageVersion is the OEM image that supports PTP.
-var FlatcarImageVersion string
 
 type shoot struct {
 	decoder runtime.Decoder
 }
 
 var (
-	scheme  = runtime.NewScheme()
-	encoder runtime.Encoder
+	scheme = runtime.NewScheme()
 )
 
 func init() {
 	utilruntime.Must(configv1alpha1.AddToScheme(scheme))
-	encoder = serializer.NewCodecFactory(scheme).EncoderForVersion(&json.Serializer{}, configv1alpha1.SchemeGroupVersion)
 }
 
 // NewShootMutator returns a new instance of a shoot mutator.
 func NewShootMutator(mgr manager.Manager) extensionswebhook.Mutator {
-	logger.Info("MutateDisableNTP", "enabled", feature.Gate.Enabled(feature.MutateDisableNTP))
-	logger.Info("FlatcarImageVersion", "version", FlatcarImageVersion)
-
 	return &shoot{
 		decoder: serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
 	}
 }
 
-func (s *shoot) Mutate(ctx context.Context, newObj, oldObj client.Object) error {
+func (s *shoot) Mutate(_ context.Context, newObj, oldObj client.Object) error {
 	shoot, ok := newObj.(*gardencorev1beta1.Shoot)
 	if !ok {
 		return fmt.Errorf("wrong object type: %T", newObj)
@@ -88,13 +75,6 @@ func (s *shoot) Mutate(ctx context.Context, newObj, oldObj client.Object) error 
 		return nil
 	}
 
-	if feature.Gate.Enabled(feature.MutateDisableNTP) {
-		// Check and update machine image versions
-		if err := s.mutateMachineImageVersion(shoot); err != nil {
-			return fmt.Errorf("failed to mutate machine image version: %w", err)
-		}
-	}
-
 	return nil
 }
 
@@ -113,44 +93,4 @@ func isShootInMigrationOrRestorePhase(shoot *gardencorev1beta1.Shoot) bool {
 		(shoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeRestore &&
 			shoot.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded ||
 			shoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeMigrate)
-}
-
-// mutateMachineImageVersion checks if any worker's Flatcar image version is greater than or equal to FlatcarImageVersion
-// and disables the ntp service.
-func (s *shoot) mutateMachineImageVersion(shoot *gardencorev1beta1.Shoot) error {
-	ptpOverride := configv1alpha1.ExtensionConfig{NTP: &configv1alpha1.NTPConfig{
-		Enabled: new(false),
-	}}
-	providerConfigBuf := new(bytes.Buffer)
-	err := encoder.Encode(&ptpOverride, providerConfigBuf)
-	if err != nil {
-		return err
-	}
-
-	for i, worker := range shoot.Spec.Provider.Workers {
-		if worker.Machine.Image != nil && worker.Machine.Image.Name == "coreos" {
-			currentVersion := "v" + *worker.Machine.Image.Version
-			targetVersion := "v" + FlatcarImageVersion
-
-			if semver.Compare(currentVersion, targetVersion) >= 0 {
-				if worker.Machine.Image.ProviderConfig != nil {
-					var existingConfig configv1alpha1.ExtensionConfig
-					if _, _, err := s.decoder.Decode(worker.Machine.Image.ProviderConfig.Raw, nil, &existingConfig); err != nil {
-						return fmt.Errorf("failed to decode existing provider config for worker pool %s: %w", worker.Name, err)
-					}
-
-					// Check if NTP is already disabled
-					// if disabled skip the worker mutate
-					if existingConfig.NTP != nil && existingConfig.NTP.Enabled != nil && !*existingConfig.NTP.Enabled {
-						continue
-					}
-				}
-
-				shoot.Spec.Provider.Workers[i].Machine.Image.ProviderConfig = &runtime.RawExtension{Raw: providerConfigBuf.Bytes()}
-				logger.Info("PTP was enabled",
-					"namespace", shoot.Namespace, "shoot", shoot.Name, "node-pool", worker.Name)
-			}
-		}
-	}
-	return nil
 }

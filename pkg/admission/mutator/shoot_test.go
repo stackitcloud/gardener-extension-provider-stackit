@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"bytes"
 	"context"
 	"time"
 
@@ -12,13 +11,9 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
 var _ = Describe("Shoot mutator", func() {
@@ -32,30 +27,16 @@ var _ = Describe("Shoot mutator", func() {
 			ctx          = context.TODO()
 			now          = metav1.Now()
 			mgr          *testutils.FakeManager
-
-			// Define the expected ProviderConfig RawExtension for PTP disabled
-			expectedPTPDisabledProviderConfig *runtime.RawExtension
 		)
 
 		BeforeEach(func() {
 			scheme := runtime.NewScheme()
 			Expect(gardencorev1beta1.AddToScheme(scheme)).To(Succeed())
 			Expect(configv1alpha1.AddToScheme(scheme)).To(Succeed())
-			DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MutateDisableNTP, true))
 
 			mgr = &testutils.FakeManager{Scheme: scheme}
 
 			shootMutator = NewShootMutator(mgr)
-
-			// Prepare the expected RawExtension for ProviderConfig
-			ptpOverride := configv1alpha1.ExtensionConfig{NTP: &configv1alpha1.NTPConfig{
-				Enabled: new(false),
-			}}
-			buffer := new(bytes.Buffer)
-
-			encoder := serializer.NewCodecFactory(scheme).EncoderForVersion(&json.Serializer{}, configv1alpha1.SchemeGroupVersion)
-			Expect(encoder.Encode(&ptpOverride, buffer)).To(Succeed())
-			expectedPTPDisabledProviderConfig = &runtime.RawExtension{Raw: buffer.Bytes()}
 
 			// Default shoot for tests
 			shoot = &gardencorev1beta1.Shoot{
@@ -185,119 +166,5 @@ var _ = Describe("Shoot mutator", func() {
 			})
 		})
 
-		Context("Mutate Flatcar Machine Image Version and ProviderConfig", func() {
-			It("should not mutate image version or ProviderConfig for non-coreos workers", func() {
-				// Shoot already has worker2 with ubuntu image
-				shootExpected := shoot.DeepCopy() // Capture initial state
-
-				err := shootMutator.Mutate(ctx, shoot, oldShoot)
-				Expect(err).NotTo(HaveOccurred())
-
-				// worker1 (coreos 4152.2.3) - should not get ProviderConfig because version < 4230.2.1
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4152.2.3")))
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
-
-				// worker2 (ubuntu 22.04) - should be untouched
-				Expect(shoot.Spec.Provider.Workers[1]).To(DeepEqual(shootExpected.Spec.Provider.Workers[1]))
-			})
-
-			It("should not mutate image version but should set ProviderConfig for coreos worker with exact target version", func() {
-				shoot.Spec.Provider.Workers[0].Machine.Image.Version = new(FlatcarImageVersion) // Set to exact target
-
-				err := shootMutator.Mutate(ctx, shoot, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				// Version should remain FlatcarImageVersion
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new(FlatcarImageVersion)))
-				// ProviderConfig should be set (because version >= FlatcarImageVersion)
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
-
-				// worker2 (ubuntu) should be untouched
-				Expect(shoot.Spec.Provider.Workers[1]).To(DeepEqual(oldShoot.Spec.Provider.Workers[1]))
-			})
-
-			It("should not mutate image version but should set ProviderConfig for coreos worker with newer version", func() {
-				shoot.Spec.Provider.Workers[0].Machine.Image.Version = new("4300.0.0") // Newer version
-
-				err := shootMutator.Mutate(ctx, shoot, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				// Version should remain 4300.0.0
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4300.0.0")))
-				// ProviderConfig should be set (because version >= FlatcarImageVersion)
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
-			})
-
-			It("should not mutate image version or ProviderConfig for coreos worker with older version", func() {
-				err := shootMutator.Mutate(ctx, shoot, oldShoot)
-				Expect(err).NotTo(HaveOccurred())
-
-				// Version should remain 4152.2.3 (not mutated)
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4152.2.3")))
-				// ProviderConfig should be nil (because version < FlatcarImageVersion)
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
-			})
-
-			It("should handle multiple coreos workers with mixed versions correctly", func() {
-				shoot.Spec.Provider.Workers = []gardencorev1beta1.Worker{
-					{
-						Name: "old-coreos",
-						Machine: gardencorev1beta1.Machine{
-							Image: &gardencorev1beta1.ShootMachineImage{
-								Name:    "coreos",
-								Version: new("4100.0.0"), // Older
-							},
-						},
-					},
-					{
-						Name: "new-coreos",
-						Machine: gardencorev1beta1.Machine{
-							Image: &gardencorev1beta1.ShootMachineImage{
-								Name:    "coreos",
-								Version: new("4230.2.1"), // Exact target
-							},
-						},
-					},
-					{
-						Name: "newer-coreos",
-						Machine: gardencorev1beta1.Machine{
-							Image: &gardencorev1beta1.ShootMachineImage{
-								Name:    "coreos",
-								Version: new("4500.0.0"), // Newer
-							},
-						},
-					},
-					{
-						Name: "other-os",
-						Machine: gardencorev1beta1.Machine{
-							Image: &gardencorev1beta1.ShootMachineImage{
-								Name:    "suse-jeos",
-								Version: new("15.5"),
-							},
-						},
-					},
-				}
-				oldShoot = shoot.DeepCopy()
-
-				FlatcarImageVersion = "4230.2.1"
-				err := shootMutator.Mutate(ctx, shoot, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				// old-coreos: version unchanged, ProviderConfig nil
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.Version).To(Equal(new("4100.0.0")))
-				Expect(shoot.Spec.Provider.Workers[0].Machine.Image.ProviderConfig).To(BeNil())
-
-				// new-coreos: version unchanged, ProviderConfig set
-				Expect(shoot.Spec.Provider.Workers[1].Machine.Image.Version).To(Equal(new("4230.2.1")))
-				Expect(shoot.Spec.Provider.Workers[1].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
-
-				// newer-coreos: version unchanged, ProviderConfig set
-				Expect(shoot.Spec.Provider.Workers[2].Machine.Image.Version).To(Equal(new("4500.0.0")))
-				Expect(shoot.Spec.Provider.Workers[2].Machine.Image.ProviderConfig).To(DeepEqual(expectedPTPDisabledProviderConfig))
-
-				// other-os: untouched
-				Expect(shoot.Spec.Provider.Workers[3]).To(DeepEqual(oldShoot.Spec.Provider.Workers[3]))
-			})
-		})
 	})
 })
