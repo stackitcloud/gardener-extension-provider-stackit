@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
@@ -40,6 +41,7 @@ var _ = Describe("Shoot mutator", func() {
 			scheme := runtime.NewScheme()
 			Expect(gardencorev1beta1.AddToScheme(scheme)).To(Succeed())
 			Expect(configv1alpha1.AddToScheme(scheme)).To(Succeed())
+			DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MutateDisableNTP, true))
 
 			mgr = &testutils.FakeManager{Scheme: scheme}
 
