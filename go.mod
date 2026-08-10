@@ -31,7 +31,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/dns v0.22.1
 	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.14.0
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.15.0
-	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.24.1
+	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.24.2
 	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.20.1
 	go.uber.org/atomic v1.11.0
 	go.uber.org/mock v0.6.0
