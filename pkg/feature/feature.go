@@ -46,7 +46,7 @@ var (
 	Gate featuregate.FeatureGate = MutableGate
 
 	allGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		MutateDisableNTP:                      {Default: true, PreRelease: featuregate.Alpha},
+		MutateDisableNTP:                      {Default: false, PreRelease: featuregate.Alpha},
 		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
 		EnsureSTACKITALBDeletion:              {Default: false, PreRelease: featuregate.Alpha},
 		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
