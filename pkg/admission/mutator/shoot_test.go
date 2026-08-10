@@ -12,6 +12,7 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -40,6 +41,7 @@ var _ = Describe("Shoot mutator", func() {
 			scheme := runtime.NewScheme()
 			Expect(gardencorev1beta1.AddToScheme(scheme)).To(Succeed())
 			Expect(configv1alpha1.AddToScheme(scheme)).To(Succeed())
+			DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MutateDisableNTP, true))
 
 			mgr = &testutils.FakeManager{Scheme: scheme}
 
