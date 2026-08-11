@@ -43,6 +43,8 @@ type Networks struct {
 	SubnetID *string `json:"subnetId,omitempty"`
 	// ShareNetwork holds information about the share network (used for shared file systems like NFS)
 	// +optional
+	//
+	// Deprecated: Unused and will be removed later on
 	ShareNetwork *ShareNetwork `json:"shareNetwork,omitempty"`
 	// DNSServers overrides the default dns configuration from cloud profile
 	// +optional
@@ -56,6 +58,8 @@ type Router struct {
 }
 
 // ShareNetwork holds information about the share network (used for shared file systems like NFS)
+//
+// Deprecated: Unused and will be removed later on
 type ShareNetwork struct {
 	// Enabled is the switch to enable the creation of a share network
 	Enabled bool `json:"enabled"`
@@ -90,10 +94,17 @@ type NetworkStatus struct {
 	FloatingPool FloatingPoolStatus `json:"floatingPool"`
 	// Router contains information about the Router and related resources.
 	Router RouterStatus `json:"router"`
+	// DNSServer contains the networks configured dnsServers
+	// +optional
+	DNSServers *[]string `json:"dnsServers,omitempty"`
 	// Subnets is a list of subnets that have been created.
+	//
+	// Deprecated: Will be removed once fully migrated to IaaS API
 	Subnets []Subnet `json:"subnets"`
 	// ShareNetwork contains information about a created/provided ShareNetwork
 	// +optional
+	//
+	// Deprecated: Unused and will be removed later on
 	ShareNetwork *ShareNetworkStatus `json:"shareNetwork,omitempty"`
 }
 
