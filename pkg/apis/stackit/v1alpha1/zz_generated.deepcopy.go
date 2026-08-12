@@ -660,6 +660,15 @@ func (in *NetworkStatus) DeepCopyInto(out *NetworkStatus) {
 	*out = *in
 	out.FloatingPool = in.FloatingPool
 	in.Router.DeepCopyInto(&out.Router)
+	if in.DNSServers != nil {
+		in, out := &in.DNSServers, &out.DNSServers
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
+	}
 	if in.Subnets != nil {
 		in, out := &in.Subnets, &out.Subnets
 		*out = make([]Subnet, len(*in))

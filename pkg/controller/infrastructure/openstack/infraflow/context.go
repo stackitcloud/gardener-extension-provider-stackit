@@ -200,7 +200,12 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	status.Node.KeyName = ptr.Deref(fctx.state.Get(NameKeyPair), "")
 
+	if fctx.dnsNameservers != nil {
+		status.Networks.DNSServers = fctx.dnsNameservers
+	}
+
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
+		//nolint:staticcheck // SA1019: Keep support for OpenStack mcm until we completely drop it
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,

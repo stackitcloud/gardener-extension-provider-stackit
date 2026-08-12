@@ -180,7 +180,13 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	status.Node.KeyName = ptr.Deref(fctx.state.Get(NameKeyPair), "")
 
+	if fctx.dnsNameservers != nil {
+		status.Networks.DNSServers = fctx.dnsNameservers
+	}
+
+	// TODO: Remove once migrated fully to IaaS API
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
+		//nolint:staticcheck // SA1019: Will be removed once OpenStack mcm support is dropped.
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,

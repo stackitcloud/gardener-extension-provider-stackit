@@ -1495,13 +1495,25 @@ string
 </tr>
 <tr>
 <td>
+<code>dnsServers</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>DNSServer contains the networks configured dnsServers</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>subnets</code></br>
 <em>
 <a href="#subnet">Subnet</a> array
 </em>
 </td>
 <td>
-<p>Subnets is a list of subnets that have been created.</p>
+<p>Subnets is a list of subnets that have been created.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1513,7 +1525,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>ShareNetwork contains information about a created/provided ShareNetwork</p>
+<p>ShareNetwork contains information about a created/provided ShareNetwork<br />Deprecated: Unused and will be removed later on</p>
 </td>
 </tr>
 
@@ -1609,7 +1621,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>ShareNetwork holds information about the share network (used for shared file systems like NFS)</p>
+<p>ShareNetwork holds information about the share network (used for shared file systems like NFS)<br />Deprecated: Unused and will be removed later on</p>
 </td>
 </tr>
 <tr>
@@ -1998,6 +2010,8 @@ string
 
 <p>
 ShareNetwork holds information about the share network (used for shared file systems like NFS)
+
+Deprecated: Unused and will be removed later on
 </p>
 
 <table>
