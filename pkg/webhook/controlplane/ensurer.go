@@ -126,6 +126,10 @@ func (e *ensurer) EnsureMachineControllerManagerDeployment(ctx context.Context, 
 		sidecarContainer.Args,
 		"--resource-exhausted-retry=", "30m",
 	)
+	sidecarContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+		sidecarContainer.Args,
+		"--machine-creation-timeout=", "45m",
+	)
 
 	newObj.Spec.Template.Spec.Containers = extensionswebhook.EnsureContainerWithName(
 		newObj.Spec.Template.Spec.Containers,

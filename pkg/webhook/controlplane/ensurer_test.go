@@ -563,6 +563,9 @@ WantedBy=multi-user.target
 			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
 				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
 			)
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--machine-creation-timeout=", "45m",
+			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 	})
@@ -608,6 +611,9 @@ WantedBy=multi-user.target
 			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
 				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
 			)
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--machine-creation-timeout=", "45m",
+			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
 
@@ -618,6 +624,9 @@ WantedBy=multi-user.target
 			expectedContainer.Env = []corev1.EnvVar{}
 			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
 				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--machine-creation-timeout=", "45m",
 			)
 			expectedContainer.VolumeMounts = append(expectedContainer.VolumeMounts, corev1.VolumeMount{
 				Name:      CAVolumeName,
@@ -686,6 +695,9 @@ WantedBy=multi-user.target
 			}
 			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
 				expectedContainer.Args, "--resource-exhausted-retry=", "30m",
+			)
+			expectedContainer.Args = extensionswebhook.EnsureStringWithPrefix(
+				expectedContainer.Args, "--machine-creation-timeout=", "45m",
 			)
 			Expect(deployment.Spec.Template.Spec.Containers).To(ConsistOf(expectedContainer))
 		})
