@@ -99,7 +99,7 @@ type NetworkStatus struct {
 	DNSServers *[]string `json:"dnsServers,omitempty"`
 	// Subnets is a list of subnets that have been created.
 	//
-	// Deprecated: Will be removed once fully migrated to IaaS API
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	Subnets []Subnet `json:"subnets"`
 	// ShareNetwork contains information about a created/provided ShareNetwork
 	// +optional
