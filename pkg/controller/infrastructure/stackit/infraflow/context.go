@@ -186,7 +186,7 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	// TODO: Remove once migrated fully to IaaS API
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
-		//nolint:staticcheck // SA1019: Remove once cluster-controller does not use that field anymore
+		//nolint:staticcheck // SA1019: Will be removed once OpenStack mcm support is dropped.
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,
