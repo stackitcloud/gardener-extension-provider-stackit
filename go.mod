@@ -8,7 +8,6 @@ require (
 	github.com/gardener/etcd-druid/api v0.37.1
 	github.com/gardener/gardener v1.148.2
 	github.com/gardener/gardener-extension-networking-calico v1.59.0
-	github.com/gardener/gardener-extension-os-coreos v1.34.0
 	github.com/gardener/gardener/hack/tools v1.148.2
 	github.com/gardener/gardener/pkg/apis v1.148.2
 	github.com/gardener/machine-controller-manager v0.62.1
