@@ -1513,7 +1513,7 @@ string
 </em>
 </td>
 <td>
-<p>Subnets is a list of subnets that have been created.<br />Deprecated: Will be removed once fully migrated to IaaS API</p>
+<p>Subnets is a list of subnets that have been created.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
