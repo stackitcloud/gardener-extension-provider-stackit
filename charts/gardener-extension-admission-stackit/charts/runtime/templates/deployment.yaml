@@ -60,9 +60,6 @@ spec:
         {{- with .Values.featureGates }}
         - --feature-gates={{- include "featureGates" . }}
         {{- end }}
-        {{- if .Values.flatcarImageVersion }}
-        - --flatcar-image-version={{ .Values.flatcarImageVersion }}
-        {{- end }}
         {{- if .Values.allowApplicationLoadBalancerController }}
         - --allow-application-load-balancer-controller={{ .Values.allowApplicationLoadBalancerController }}
         {{- end }}

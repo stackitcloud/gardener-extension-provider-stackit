@@ -8,7 +8,6 @@ require (
 	github.com/gardener/etcd-druid/api v0.37.1
 	github.com/gardener/gardener v1.148.2
 	github.com/gardener/gardener-extension-networking-calico v1.59.0
-	github.com/gardener/gardener-extension-os-coreos v1.34.0
 	github.com/gardener/gardener/hack/tools v1.148.2
 	github.com/gardener/gardener/pkg/apis v1.148.2
 	github.com/gardener/machine-controller-manager v0.62.1
@@ -35,7 +34,6 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.20.1
 	go.uber.org/atomic v1.11.0
 	go.uber.org/mock v0.6.0
-	golang.org/x/mod v0.38.0
 	k8s.io/api v0.36.3
 	k8s.io/apiextensions-apiserver v0.36.3
 	k8s.io/apimachinery v0.36.3
@@ -225,6 +223,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
