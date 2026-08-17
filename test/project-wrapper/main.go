@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,11 +34,11 @@ The project will be deleted after the tests have run.
 # Required environment variables:
 
 STACKIT_REGION: the region of the STACKIT API endpoint, usually `eu01`
-STACKIT_SERVICE_ACCOUNT_TOKEN: service account token with permissions to create projects in `PORTAL_FOLDER_ID`
-STACKIT_SERVICE_ACCOUNT_EMAIL: the e-mail address of the service account token
 BILLING_REFERENCE: a valid billing reference for the created portal project
 PROJECT_OWNER: string representing how is responsible for the created account
 PORTAL_FOLDER_ID: the folder in the portal overview in which the integration portal project will be created
+
+Credentials that are auto-detected by the STACKIT SDK with permissions to create projects in `PORTAL_FOLDER_ID`
 */
 
 const (
@@ -91,7 +93,13 @@ func run() error {
 	// in our case this is expected behavior and the risk of malicious behavior
 	// is limited in our CI tooling. Therefore, we can ignore it.
 	cmd := exec.CommandContext(ctx, os.Args[1], os.Args[2:]...) // #nosec G204 G702
-	cmd.Env = append(os.Environ(),
+	cmd.Env = append(
+		// remove `STACKIT_SERVICE_ACCOUNT_EMAIL` to prevent using workflow identity path
+		slices.DeleteFunc(os.Environ(), func(env string) bool {
+			return strings.HasPrefix(env, "STACKIT_SERVICE_ACCOUNT_EMAIL=")
+		}),
+		// also shadow the federated token file
+		"STACKIT_FEDERATED_TOKEN_FILE=/dev/null",
 		fmt.Sprintf("STACKIT_SERVICE_ACCOUNT_KEY=%s", saKeyJSON),
 		fmt.Sprintf("STACKIT_PROJECT_ID=%s", stackitProjectID),
 	)
