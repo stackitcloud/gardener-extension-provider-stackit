@@ -127,7 +127,6 @@ func run() error {
 func checkRequiredEnvironmentVariables() error {
 	requiredVars := []string{
 		"STACKIT_REGION",
-		"STACKIT_SERVICE_ACCOUNT_KEY",
 		"STACKIT_SERVICE_ACCOUNT_EMAIL",
 		"BILLING_REFERENCE",
 		"PROJECT_OWNER",
