@@ -4,7 +4,7 @@ metadata:
   name: stackit-cloud-controller-manager
   namespace: {{ .Release.Namespace }}
   annotations:
-    networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"port":{{ .Values.config.metricsPort }},"protocol":"TCP"}]'
+    networking.resources.gardener.cloud/from-all-scrape-targets-allowed-ports: '[{"port":{{ .Values.config.metricsPort }},"protocol":"TCP"},{"port":{{ .Values.config.port }},"protocol":"TCP"}]'
   labels:
     app: kubernetes
     role: stackit-cloud-controller-manager
@@ -14,6 +14,9 @@ spec:
   ports:
   - name: metrics
     port: {{ .Values.config.metricsPort }}
+    protocol: TCP
+  - name: https
+    port: {{ .Values.config.port }}
     protocol: TCP
   selector:
     app: kubernetes
