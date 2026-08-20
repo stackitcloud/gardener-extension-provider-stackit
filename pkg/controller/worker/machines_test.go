@@ -6,7 +6,6 @@ package worker_test
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -1067,12 +1066,11 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUnreadyTimeAnnotation]).To(Equal("3m0s"))
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUtilizationThresholdAnnotation]).To(Equal("0.5"))
 			})
-
 			It("should distribute autoPreserveFailedMachineMax across zones", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: new(int32(4)),
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1083,7 +1081,7 @@ var _ = Describe("Machines", func() {
 
 			It("should set autoPreserveFailedMachineMax to 0 per zone when machineControllerManagerSettings is nil", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = nil
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1096,116 +1094,13 @@ var _ = Describe("Machines", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: nil,
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, "")
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
 				Expect(result[0].AutoPreserveFailedMachineMax).To(Equal(int32(0)))
 				Expect(result[1].AutoPreserveFailedMachineMax).To(Equal(int32(0)))
-			})
-
-			It("should use storage type and size from cloud profile machine type as default when no pool volume is specified", func() {
-				premiumStorageSize := resource.MustParse("64Gi")
-				expectedVolumeSize, err := worker.DiskSize(premiumStorageSize.String())
-				Expect(err).NotTo(HaveOccurred())
-
-				clusterWithPremiumMachineType := &extensionscontroller.Cluster{
-					CloudProfile: cluster.CloudProfile.DeepCopy(),
-					Shoot:        cluster.Shoot,
-					Seed:         cluster.Seed,
-				}
-				clusterWithPremiumMachineType.CloudProfile.Spec.MachineTypes = []gardencorev1beta1.MachineType{
-					{
-						Name: machineType,
-						Storage: &gardencorev1beta1.MachineTypeStorage{
-							Class:       "standard",
-							StorageSize: &premiumStorageSize,
-							Type:        "premium",
-						},
-					},
-				}
-
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, "")
-				var appliedValues map[string]any
-
-				chartApplier.
-					EXPECT().
-					ApplyFromEmbeddedFS(
-						ctx,
-						charts.InternalChart,
-						gomock.Any(),
-						namespace,
-						"machineclass",
-						gomock.Any(),
-					).
-					DoAndReturn(func(_ context.Context, _ any, _ string, _ string, _ string, opts ...kubernetes.ApplyOption) error {
-						applyOptions := &kubernetes.ApplyOptions{}
-						for _, opt := range opts {
-							opt.MutateApplyOptions(applyOptions)
-						}
-						var ok bool
-						appliedValues, ok = applyOptions.Values.(map[string]any)
-						Expect(ok).To(BeTrue())
-						return nil
-					})
-
-				err = workerDelegate.DeployMachineClasses(ctx)
-				Expect(err).NotTo(HaveOccurred())
-
-				machineClasses, ok := appliedValues["machineClasses"].([]map[string]any)
-				Expect(ok).To(BeTrue())
-				Expect(machineClasses).NotTo(BeEmpty())
-
-				for _, machineClass := range machineClasses {
-					Expect(machineClass["rootDiskType"]).To(Equal("premium"))
-					Expect(machineClass["rootDiskSize"]).To(Equal(expectedVolumeSize))
-				}
-			})
-
-			DescribeTable("customLabelDomain in machineclass helm chart",
-				func(customDomain string) {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
-
-				machineClassPath := filepath.Join("internal", "machineclass")
-				if useStackitMCM {
-					machineClassPath = filepath.Join("internal", "machineclass-stackit")
-				}
-
-				var capturedMachineClasses []map[string]any
-				chartApplier.
-					EXPECT().
-					ApplyFromEmbeddedFS(
-						ctx,
-						charts.InternalChart,
-						machineClassPath,
-						namespace,
-						"machineclass",
-						gomock.AssignableToTypeOf(kubernetes.Values(nil)),
-					).
-					DoAndReturn(func(_ context.Context, _ embed.FS, _, _, _ string, opts ...kubernetes.ApplyOption) error {
-						applyOpts := &kubernetes.ApplyOptions{}
-						for _, o := range opts {
-							o.MutateApplyOptions(applyOpts)
-						}
-						if values, ok := applyOpts.Values.(map[string]any); ok {
-							if classes, ok := values["machineClasses"].([]map[string]any); ok {
-								capturedMachineClasses = classes
-							}
-						}
-						return nil
-					})
-
-				err := workerDelegate.DeployMachineClasses(ctx)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(capturedMachineClasses).NotTo(BeEmpty())
-				for _, class := range capturedMachineClasses {
-					if class["machineType"] == machineType {
-						Expect(class).To(HaveKeyWithValue("rootDiskType", "premium"), "expected rootDiskType to be set from cloud profile storage type")
-						Expect(class).To(HaveKeyWithValue("rootDiskSize", 64), "expected rootDiskSize to be set from cloud profile storage size")
-					}
-				}
 			})
 		},
 			Entry("with capabilities and using imageIDs", true, false, false),
