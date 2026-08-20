@@ -41,11 +41,6 @@ ignoreResources: false
 # ignoreHAReplicas will set an annotation to the deployment that will change the HA webhook behavior and set the replicas to 1.
 ignoreHAReplicas: false
 # imageVectorOverwrite: |
-#   caBundle:
-#     inline: |
-#       -----BEGIN CERTIFICATE-----
-#       ...
-#       -----END CERTIFICATE-----
 #   images:
 #   - name: pause-container
 #     sourceRepository: github.com/kubernetes/kubernetes/blob/master/build/pause/Dockerfile
