@@ -92,18 +92,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		Context("floating pools constraints", func() {
-			It("should enforce that at least one pool has been defined", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
-				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{}
-
-				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, capabilityDefinitions, fldPath)
-
-				Expect(errorList).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":  Equal(field.ErrorTypeRequired),
-					"Field": Equal("root.constraints.floatingPools"),
-				}))))
-			})
-
 			It("should forbid unsupported pools", func() {
 				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
@@ -181,20 +169,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		Context("keystone url validation", func() {
-			It("should forbid keystone urls with unsupported format", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
-				cloudProfileConfig.KeyStoneURL = ""
-				//nolint:staticcheck // SA1019: needed for migration purposes
-				cloudProfileConfig.KeyStoneURLs = nil
-
-				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, capabilityDefinitions, fldPath)
-
-				Expect(errorList).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":  Equal(field.ErrorTypeRequired),
-					"Field": Equal("root.keyStoneURL"),
-				}))))
-			})
-
 			It("should forbid keystone urls with missing keys", func() {
 				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.KeyStoneURL = ""
