@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -136,13 +137,16 @@ func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.
 		result = append(result, sdkconfig.WithTokenEndpoint(*endpoints.TokenEndpoint))
 	}
 
+	httpClient := http.DefaultClient
 	if caBundle != "" {
-		customHttpClient, err := newHTTPClientWithCustomCA([]byte(caBundle))
+		var err error
+		httpClient, err = newHTTPClientWithCustomCA([]byte(caBundle))
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, sdkconfig.WithHTTPClient(customHttpClient))
 	}
+
+	result = append(result, sdkconfig.WithHTTPClient(metrics.WrapHTTPClient(httpClient, "gardener-extension-provider-stackit")))
 
 	return result, nil
 }
