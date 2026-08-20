@@ -29,11 +29,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 	allErrs := field.ErrorList{}
 
 	floatingPoolPath := fldPath.Child("constraints", "floatingPools")
-	//nolint:staticcheck // SA1019: needed for migration purposes
-	if len(cloudProfile.Constraints.FloatingPools) == 0 {
-		allErrs = append(allErrs, field.Required(floatingPoolPath, "must provide at least one floating pool"))
-	}
-
 	combinationFound := sets.NewString()
 	//nolint:staticcheck // SA1019: needed for migration purposes
 	for i, pool := range cloudProfile.Constraints.FloatingPools {
@@ -76,10 +71,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 	}
 	allErrs = append(allErrs, validateMachineImageMapping(machineImages, cloudProfile, capabilityDefinitions, field.NewPath("spec").Child("machineImages"))...)
 
-	//nolint:staticcheck // SA1019: needed for migration purposes
-	if len(cloudProfile.KeyStoneURL) == 0 && len(cloudProfile.KeyStoneURLs) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("keyStoneURL"), "must provide the URL to KeyStone"))
-	}
 	//nolint:staticcheck // SA1019: needed for migration purposes
 	if ca := cloudProfile.KeyStoneCACert; ca != nil && len(*ca) > 0 {
 		_, err := utils.DecodeCertificate([]byte(*ca))
