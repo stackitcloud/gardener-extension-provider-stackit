@@ -15,6 +15,7 @@ import (
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
@@ -136,13 +137,16 @@ func clientOptions(endpoints stackitv1alpha1.APIEndpoints, credentials *stackit.
 		result = append(result, sdkconfig.WithTokenEndpoint(*endpoints.TokenEndpoint))
 	}
 
+	httpClient := http.DefaultClient
 	if caBundle != "" {
-		customHttpClient, err := newHTTPClientWithCustomCA([]byte(caBundle))
+		var err error
+		httpClient, err = newHTTPClientWithCustomCA([]byte(caBundle))
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, sdkconfig.WithHTTPClient(customHttpClient))
 	}
+
+	result = append(result, sdkconfig.WithHTTPClient(metrics.WrapHTTPClient(httpClient, "gardener-extension-provider-stackit")))
 
 	return result, nil
 }
