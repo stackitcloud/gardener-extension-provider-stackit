@@ -10,7 +10,7 @@ In this document we are describing how this configuration looks like for STACKIT
 The cloud profile configuration contains information about the real machine image IDs in the STACKIT environment (image names).
 You have to map every version that you specify in `.spec.machineImages[].versions` here such that the STACKIT extension knows the image ID for every version you want to offer.
 
-TODO: ask about storageclass
+TODO: ask about storageclass, where can i find what type of storage class exist and what imp thing to mention.
 
 It also contains optional default values for DNS servers that shall be used for shoots.
 In the `dnsServers[]` list you can specify IP addresses that are used as DNS configuration for created shoot subnets.
