@@ -22,3 +22,48 @@ You can specify API endpoints for various STACKIT services(IaaS, LoadBalancer), 
 
 ## Example `CloudProfile` manifest
 
+The following example shows a minimal `CloudProfile` configuration for STACKIT:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: CloudProfile
+metadata:
+  name: stackit
+spec:
+  type: stackit
+  kubernetes:
+    versions:
+    - version: 1.35.6
+  machineImages:
+  - name: coreos
+    versions:
+    - version: 4593.2.2
+      architectures:
+      - amd64
+  machineTypes:
+  - name: g1.2
+    cpu: "2"
+    gpu: "0"
+    memory: 8Gi
+    architecture: amd64
+    storage:
+      class: storage_premium_perf1
+      type: storage_premium_perf1
+      size: 50Gi
+  regions:
+  - name: RegionOne
+    zones:
+    - name: eu01-1
+  providerConfig:
+    apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
+    kind: CloudProfileConfig
+    machineImages:
+    - name: coreos
+      versions:
+      - version: 4593.2.2
+        regions:
+        - name: RegionOne
+          architecture: amd64
+          id: <STACKIT_IMAGE_ID>
+	storageClasses: TODO: add it after clarification.
+	  
