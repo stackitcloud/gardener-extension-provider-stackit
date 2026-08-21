@@ -72,20 +72,9 @@ For detailed information about STACKIT Workload Identity, see the [STACKIT docum
 
 This extension automatically deploys and configures the STACKIT Application Load Balancer (ALB) Controller in your SKE cluster's control plane, enabling workloads to create Application Load Balancers using Kubernetes `Ingress` resources.
 
-### What this extension provides
-
-- Automatic deployment of the STACKIT ALB Controller in the Shoot control plane
-- Support for creating Application Load Balancers from Kubernetes `Ingress` resources
-- Deployment of the ALB validating webhook
-
-No manual ALB Controller installation is required — the extension handles this for you.
-
 ### Quick start
 
-**Prerequisites:**
-
-- An SKE cluster with the Application Load Balancer extension enabled
-- A Kubernetes `Ingress` resource
+Refer to [usage doc](https://github.com/stackitcloud/application-load-balancer-controller/blob/main/docs/user.md) of Application Load Balancer for setup. 
 
 ### Enable the extension
 
@@ -95,10 +84,16 @@ The Application Load Balancer extension is enabled through the SKE API:
 extensions:
   applicationLoadBalancer:
     enabled: true
+  	ingress:
+	  enabled: true
 ```
 
-Ingress support is enabled automatically when the Application Load Balancer extension is enabled.
+NOTE: Ingress support needs to be enabled in order to use Application Load Balancer extension.
 
 ### Learn more
 
 For more information about the STACKIT Application Load Balancer Controller, see the [`application-load-balancer-controller`](https://github.com/stackitcloud/application-load-balancer-controller) repository.
+
+# Migrate from Openstack to STACKIT provider
+
+We still have openstack code runnnig in the repository, and in future it will be fully migrated and use stackit provider.
