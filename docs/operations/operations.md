@@ -20,3 +20,5 @@ For those hypervisors you can enable the storage plugin interacting with Cinder 
 
 You can specify API endpoints for various STACKIT services(IaaS, LoadBalancer), via `APIEndpoints`.
 
+## Example `CloudProfile` manifest
+
