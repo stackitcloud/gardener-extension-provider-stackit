@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 	sdkconfig "github.com/stackitcloud/stackit-sdk-go/core/config"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 

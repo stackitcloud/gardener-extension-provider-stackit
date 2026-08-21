@@ -8,12 +8,12 @@ import (
 	"os"
 
 	"github.com/gardener/gardener/pkg/logger"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/cmd/gardener-extension-provider-stackit/app"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/metrics"
 )
 
 func init() {
