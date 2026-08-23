@@ -78,7 +78,7 @@ Refer to [usage doc](https://github.com/stackitcloud/application-load-balancer-c
 
 ### Enable the extension
 
-The Application Load Balancer extension is enabled through the SKE API:
+The Application Load Balancer extension can be enables by ControlPlaneConfig of the shoot:
 
 ```yaml
 extensions:
