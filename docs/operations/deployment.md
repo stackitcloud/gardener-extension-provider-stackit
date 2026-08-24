@@ -82,3 +82,11 @@ users:
   user:
     tokenFile: /var/run/secrets/projected/serviceaccount/token
 ```
+
+### Enabling Application Loadbalancer
+
+The Application Loadbalancer can only be enabled if we allow it in configuration of admission webhook in the following way. 
+
+```yaml
+allowApplicationLoadBalancerController: true
+```
