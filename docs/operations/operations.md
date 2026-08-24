@@ -10,7 +10,7 @@ In this document we are describing how this configuration looks like for STACKIT
 The cloud profile configuration contains information about the real machine image IDs in the STACKIT environment (image names).
 You have to map every version that you specify in `.spec.machineImages[].versions` here such that the STACKIT extension knows the image ID for every version you want to offer.
 
-TODO: ask about storageclass, where can i find what type of storage class exist and what imp thing to mention.
+storageClasses defines the StorageClasses available in the Shoot cluster. Each StorageClass maps to a specific volume type and can be configured as the default StorageClass.
 
 It also contains optional default values for DNS servers that shall be used for shoots.
 In the `dnsServers[]` list you can specify IP addresses that are used as DNS configuration for created shoot subnets.
@@ -65,5 +65,10 @@ spec:
         - name: RegionOne
           architecture: amd64
           id: <STACKIT_IMAGE_ID>
-	storageClasses: TODO: add it after clarification.
+	storageClasses: 
+	- name: premium-perf1-stackit 
+	  default: true parameters: 
+	  type: storage_premium_perf1 
+	  provisioner: cinder.csi.openstack.org 
+	  volumeBindingMode: WaitForFirstConsumer
 	  
