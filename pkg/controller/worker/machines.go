@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -34,7 +35,11 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	stackitutils "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
+	iaas2 "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 )
+
+const shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
+const migratedMachineAnnotation = "stackit.cloud/migrated-machine"
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
 func (w *workerDelegate) MachineClassKind() string {
@@ -63,7 +68,19 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	if feature.UseStackitMachineControllerManager(w.cluster) {
 		chartPath = "machineclass-stackit"
 	}
-	return w.seedChartApplier.ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join(charts.InternalChartsPath, chartPath), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]any{"machineClasses": w.machineClasses}))
+	err := w.seedChartApplier.ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join(charts.InternalChartsPath, chartPath), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]any{"machineClasses": w.machineClasses}))
+	if err != nil {
+		return err
+	}
+
+	if feature.MigrateStackitMachineControllerManager(w.cluster) {
+		err = w.migrateMachines(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GenerateMachineDeployments generates the configuration for the desired machine deployments.
@@ -392,4 +409,78 @@ func EnsureUniformMachineImages(images []stackitv1alpha1.MachineImage, definitio
 		}, definitions)
 	}
 	return uniformMachineImages
+}
+
+func (w *workerDelegate) migrateMachines(ctx context.Context) error {
+	var allMachines machinev1alpha1.MachineList
+	var migrateMachines []machinev1alpha1.Machine
+
+	err := w.seedClient.List(ctx, &allMachines, &client.ListOptions{Namespace: w.worker.Namespace})
+	if err != nil {
+		return err
+	}
+
+	for i := range allMachines.Items {
+		// ignore error as default is false
+		migrateAnnotation, _ := strconv.ParseBool(allMachines.Items[i].Annotations[shouldMigrateMachineAnnotation])
+		if !strings.HasPrefix(allMachines.Items[i].Spec.ProviderID, "stackit://") || migrateAnnotation {
+			migrateMachines = append(migrateMachines, allMachines.Items[i])
+		}
+	}
+
+	if len(migrateMachines) == 0 {
+		// no old openstack machine
+		return nil
+	}
+
+	iaas, err := w.stackitClient.IaaS(ctx, w.seedClient, w.worker.Spec.SecretRef)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range migrateMachines {
+		patchAnnotations := client.MergeFrom(m.DeepCopy())
+		m.Annotations[shouldMigrateMachineAnnotation] = "true"
+		m.Annotations[migratedMachineAnnotation] = "true"
+		err = w.seedClient.Patch(ctx, &m, patchAnnotations)
+		if err != nil {
+			return err
+		}
+
+		if m.Spec.ProviderID != "" {
+			providerIDParts := strings.Split(m.Spec.ProviderID, "/")
+			if len(providerIDParts) == 0 {
+				return fmt.Errorf("migrateMachines: malformed machine provider ID: %s", m.Spec.ProviderID)
+			}
+			serverID := providerIDParts[len(providerIDParts)-1]
+
+			patch := client.MergeFrom(m.DeepCopy())
+			m.Spec.ProviderID = fmt.Sprintf("stackit://%s/%s", iaas.ProjectID(), serverID)
+			err = w.seedClient.Patch(ctx, &m, patch)
+			if err != nil {
+				return err
+			}
+
+			_, err = iaas.UpdateServer(ctx, serverID, iaas2.UpdateServerPayload{
+				Labels: map[string]any{
+					//	// TODO refine labels
+					"mcm.gardener.cloud/machine":      m.Name,
+					"mcm.gardener.cloud/machineclass": m.Spec.Class.Name,
+					"mcm.gardener.cloud/role":         "node",
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		patchRemoveMigrationAnnotation := client.MergeFrom(m.DeepCopy())
+		delete(m.Annotations, shouldMigrateMachineAnnotation)
+		err = w.seedClient.Patch(ctx, &m, patchRemoveMigrationAnnotation)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -379,3 +379,18 @@ func (mr *MockIaaSClientMockRecorder) UpdateSecurityGroupRules(ctx, group, desir
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecurityGroupRules", reflect.TypeOf((*MockIaaSClient)(nil).UpdateSecurityGroupRules), ctx, group, desiredRules, allowDelete)
 }
+
+// UpdateServer mocks base method.
+func (m *MockIaaSClient) UpdateServer(ctx context.Context, serverId string, payload v2api.UpdateServerPayload) (*v2api.Server, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateServer", ctx, serverId, payload)
+	ret0, _ := ret[0].(*v2api.Server)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateServer indicates an expected call of UpdateServer.
+func (mr *MockIaaSClientMockRecorder) UpdateServer(ctx, serverId, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateServer", reflect.TypeOf((*MockIaaSClient)(nil).UpdateServer), ctx, serverId, payload)
+}
