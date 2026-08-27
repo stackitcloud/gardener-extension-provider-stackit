@@ -23,6 +23,7 @@ You can find all available make targets by running `make help`.
 
 For information on our workflows, see:
 
+* [Usage guide](docs/usage/usage.md)
 * [Cloudprovider configuration guide](docs/cloudprovider.md)
 * [Development guide](docs/development.md)
 * [Testing guide](docs/testing.md)
