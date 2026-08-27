@@ -251,6 +251,11 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				}
 			}
 
+			var preserveMax int32
+			if pool.MachineControllerManagerSettings != nil {
+				preserveMax = ptr.Deref(pool.MachineControllerManagerSettings.AutoPreserveFailedMachineMax, 0)
+			}
+
 			machineDeployments = append(machineDeployments, worker.MachineDeployment{
 				Name:                         deploymentName,
 				ClassName:                    className,
@@ -265,6 +270,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 				Taints:                       pool.Taints,
 				MachineConfiguration:         genericworkeractuator.ReadMachineConfiguration(pool),
 				ClusterAutoscalerAnnotations: extensionsv1alpha1helper.GetMachineDeploymentClusterAutoscalerAnnotations(pool.ClusterAutoscaler),
+				AutoPreserveFailedMachineMax: worker.DistributeOverZones(zoneIdx, preserveMax, zoneLen),
 			})
 
 			machineClassSpec["name"] = className
