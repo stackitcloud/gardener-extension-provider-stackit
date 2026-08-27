@@ -38,9 +38,11 @@ import (
 	iaas2 "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 )
 
-const shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
-const migratedMachineAnnotation = "stackit.cloud/migrated-machine"
-const workerMigratedAnnotation = "stackit.cloud/machine-controller-manager-migrated"
+const (
+	shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
+	migratedMachineAnnotation      = "stackit.cloud/migrated-machine"
+	workerMigratedAnnotation       = "stackit.cloud/machine-controller-manager-migrated"
+)
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
 func (w *workerDelegate) MachineClassKind() string {
@@ -431,7 +433,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 
 	if len(migrateMachines) == 0 {
 		// no old openstack machine
-		return nil
+		return w.markWorkerAsMigrated(ctx)
 	}
 
 	iaas, err := w.stackitClient.IaaS(ctx, w.seedClient, w.worker.Spec.SecretRef)
