@@ -40,6 +40,7 @@ import (
 
 const shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
 const migratedMachineAnnotation = "stackit.cloud/migrated-machine"
+const workerMigratedAnnotation = "stackit.cloud/machine-controller-manager-migrated"
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
 func (w *workerDelegate) MachineClassKind() string {
@@ -482,5 +483,17 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return w.markWorkerAsMigrated(ctx)
+}
+
+func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
+	patchWorker := client.MergeFrom(w.worker.DeepCopy())
+
+	if w.worker.Annotations == nil {
+		w.worker.Annotations = make(map[string]string)
+	}
+
+	w.worker.Annotations[workerMigratedAnnotation] = "true"
+
+	return w.seedClient.Patch(ctx, w.worker, patchWorker)
 }
