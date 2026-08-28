@@ -30,7 +30,15 @@ The two required fields are:
 
 These keys are defined in `pkg/stackit/credentials.go` and are the only fields read from the provider secret.
 
-The service account must be granted the permissions required by the deployed components (see [CloudProvider Configuration](../cloudprovider.md)).
+The service account must be granted the STACKIT permissions required by the deployed components. The roles referenced in this repository are:
+
+| Permission                    | Purpose                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| `nlb.admin`                   | CCM service-controller, network load balancer and self-hosted shoot exposure controller |
+| `blockstorage.admin`          | CSI driver                                                                              |
+| `compute.admin`               | CCM node-controller and MCM                                                             |
+| `iaas.network.admin`          | bastion and infrastructure controller                                                   |
+| `iaas.isolated-network.admin` | infrastructure controller                                                               |
 
 ## `InfrastructureConfig`
 
@@ -46,7 +54,7 @@ networks:
   workers: 10.250.0.0/19
 ```
 
-The `floatingPoolName` is the name of the floating pool (external network) you want to use for your shoot. It is a required field and is used by the extension to look up the external network for the shoot. If you don't know which floating pools are available, look them up in the respective `CloudProfile`.
+The `floatingPoolName` is the name of the floating pool (external network) you want to use for your shoot. It is a required field. If you don't know which floating pools are available, look them up in the respective `CloudProfile`.
 
 The `networks.workers` section describes the CIDR for the (isolated) network that is used for all shoot worker nodes, i.e., VMs which later run your applications. You can freely choose this CIDR and it is your responsibility to properly design the network layout to suit your needs.
 
@@ -102,10 +110,10 @@ storage:
   csi:
     name: stackit
     # compatibilityMode: default
-# applicationLoadBalancer:
-#   enabled: true
-#   ingress:
-#     enabled: true
+applicationLoadBalancer:
+  enabled: true
+  ingress:
+    enabled: true
 ```
 
 ### `cloudControllerManager`
@@ -140,6 +148,8 @@ The optional `applicationLoadBalancer` section enables the STACKIT Application L
 - `applicationLoadBalancer.ingress.enabled` activates the Ingress controller for the ALB.
 
 When the ALB is enabled, at least one controller source (currently only `ingress`) must be enabled.
+
+> **Note:** ALB support must be enabled in the admission webhook configuration before it can be used in a shoot. See [Deployment](../operations/deployment.md) for details.
 
 ### Deprecated fields
 
@@ -247,7 +257,7 @@ spec:
 
 ## CSI volume provisioners
 
-Every STACKIT shoot cluster is deployed with the STACKIT CSI driver, which uses the `block-storage.csi.stackit.cloud` provisioner. During migration, the legacy OpenStack Cinder CSI driver (`cinder.csi.openstack.org`) can be selected instead via `ControlPlaneConfig.storage.csi.name`, and a Cinder compatibility layer can be enabled via `ControlPlaneConfig.storage.csi.compatibilityMode` (see [above](#storagecsi)).
+By default, every STACKIT shoot cluster is deployed with the STACKIT CSI driver, which uses the `block-storage.csi.stackit.cloud` provisioner. During migration, the legacy OpenStack Cinder CSI driver (`cinder.csi.openstack.org`) can be selected instead via `ControlPlaneConfig.storage.csi.name`, and a Cinder compatibility layer can be enabled via `ControlPlaneConfig.storage.csi.compatibilityMode` (see [above](#storagecsi)).
 
 End-users who still use custom `StorageClass`es referencing the legacy `cinder.csi.openstack.org` provisioner should consider migrating them to `block-storage.csi.stackit.cloud`.
 
