@@ -6,7 +6,7 @@
 
 ### Authentication against the Garden cluster
 
-By default, the admission component uses in-cluster configuration to talk to the Garden cluster. To use an explicit kubeconfig instead, set `.Values.kubeconfig` in the `runtime` chart. The value is the kubeconfig content as a string; the chart base64-encodes it into a `Secret` that is mounted into the pod (passed via `--kubeconfig=/etc/gardener-extension-admission-stackit/kubeconfig/kubeconfig`). When `kubeconfig` is set, the pod's service account token is not automounted.
+By default, the admission component uses in-cluster configuration to talk to the Garden cluster. To use an explicit kubeconfig instead, set `.Values.kubeconfig` in the `admission-stackit-runtime` chart. The value is the kubeconfig content as a string; the chart base64-encodes it into a `Secret` that is mounted into the pod (passed via `--kubeconfig=/etc/gardener-extension-admission-stackit/kubeconfig/kubeconfig`). When `kubeconfig` is set, the pod's service account token is not automounted.
 
 Alternatively, use a projected service account token volume by setting `.Values.projectedKubeconfig`:
 
@@ -21,15 +21,15 @@ This mounts a generic kubeconfig and a token from the two referenced secrets int
 
 ### Virtual Garden
 
-When a *Virtual Garden* is used (i.e., the `runtime` Garden cluster is different from the `target` Garden cluster), set `.Values.gardener.virtualCluster.enabled: true` (the default in the `runtime` chart).
+When a _Virtual Garden_ is used (i.e., the admission webhook runs in the `runtimeCluster` while the webhook configurations are maintained in a separate `virtualCluster`), set `.Values.gardener.virtualCluster.enabled: true` in the `admission-stackit-runtime` chart (the default).
 
-This switches the admission webhook configuration from service mode to URL mode (`--webhook-config-mode=url`) and sets the `SOURCE_CLUSTER` environment variable. The `virtual-garden` subchart deploys a `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding` into the target cluster.
+This switches the admission webhook configuration from service mode to URL mode (`--webhook-config-mode=url`) and sets the `SOURCE_CLUSTER` environment variable. The `admission-stackit-virtual-garden` chart deploys a `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding` into the virtual cluster.
 
 ### Enabling Application Load Balancer support
 
 The Application Load Balancer (ALB) controller is disabled by default in the admission webhook. To allow shoots to enable ALB support via `ControlPlaneConfig.applicationLoadBalancer.enabled: true`, the admission webhook must be configured with `allowApplicationLoadBalancerController: true`.
 
-Set this in the `gardener-extension-admission-stackit` chart values:
+Set this in the `admission-stackit-runtime` chart values:
 
 ```yaml
 # charts/gardener-extension-admission-stackit/charts/runtime/values.yaml

@@ -17,13 +17,13 @@ For each machine image version, region-specific image IDs are mapped using the `
 
 ```yaml
 machineImages:
-- name: ubuntu
-  versions:
-  - version: "22.04"
-    regions:
-    - name: eu01
-      id: <image-id>
-      architecture: amd64
+  - name: ubuntu
+    versions:
+      - version: "22.04"
+        regions:
+          - name: eu01
+            id: <image-id>
+            architecture: amd64
 ```
 
 An optional `image` field at the version level can be used as a fallback (image name) if no region mapping is found. This fallback only works for the `amd64` architecture and is strongly discouraged; prefer explicit image IDs.
@@ -38,14 +38,14 @@ The `rescanBlockStorageOnResize` field specifies whether the storage plugin scan
 
 ### `storageClasses`
 
-The `storageClasses` field enables the creation of Kubernetes `StorageClass`es for shoots. Each entry can define a `name`, whether it is `default`, and `parameters` (e.g., the storage type). The provisioner is set by the extension based on the CSI driver in use (`block-storage.csi.stackit.cloud` for the STACKIT CSI driver, `cinder.csi.openstack.org` for the legacy Cinder driver).
+The `storageClasses` field enables the creation of Kubernetes `StorageClass`es for shoots. Each entry can define a `name`, whether it is `default`, `parameters`, `annotations`, `labels`, `reclaimPolicy`, and `volumeBindingMode`. The provisioner is set automatically by the extension to `block-storage.csi.stackit.cloud` (the STACKIT CSI driver).
 
 ```yaml
 storageClasses:
-- name: default
-  default: true
-  parameters:
-    type: "storage_premium_perf4"
+  - name: default
+    default: true
+    parameters:
+      type: "storage_premium_perf4"
 ```
 
 ### `apiEndpoints`
@@ -63,21 +63,9 @@ The `apiEndpoints` field contains API endpoints for the various STACKIT services
 
 The `bastion.rootDiskSize` field allows adjusting the root disk size of the bastion server. It defaults to `25`.
 
-### Deprecated fields
+### `resolvConfOptions`
 
-The following fields exist for compatibility with the OpenStack provider during the ongoing migration, but are not used by the STACKIT controllers:
-
-- `caBundle` (deprecated, ignored)
-- `constraints`
-- `dhcpDomain`
-- `keystoneURL`, `keystoneCACert`, `keystoneForceInsecure`, `keystoneURLs`
-- `requestTimeout`
-- `ignoreVolumeAZ`
-- `nodeVolumeAttachLimit`
-- `useOctavia`
-- `useSNAT`
-- `serverGroupPolicies`
-- `resolvConfOptions`
+The `resolvConfOptions` field specifies resolver options (e.g. `rotate`, `timeout:1`) that are added as an `options` line to the `resolv.conf` used by the kubelet on workers.
 
 ## Example `CloudProfile` manifest
 
@@ -90,42 +78,42 @@ spec:
   type: stackit
   kubernetes:
     versions:
-    - version: 1.33.0
+      - version: 1.33.0
   machineImages:
-  - name: ubuntu
-    versions:
-    - version: "22.04"
+    - name: ubuntu
+      versions:
+        - version: "22.04"
   machineTypes:
-  - name: <machine-type>
-    cpu: "4"
-    gpu: "0"
-    memory: 8Gi
-    storage:
-      type: default
-      size: 40Gi
+    - name: <machine-type>
+      cpu: "4"
+      gpu: "0"
+      memory: 8Gi
+      storage:
+        type: default
+        size: 40Gi
   regions:
-  - name: eu01
-    zones:
-    - name: eu01-1
+    - name: eu01
+      zones:
+        - name: eu01-1
   providerConfig:
     apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
     kind: CloudProfileConfig
     machineImages:
-    - name: ubuntu
-      versions:
-      - version: "22.04"
-        regions:
-        - name: eu01
-          id: <image-id>
-          architecture: amd64
+      - name: ubuntu
+        versions:
+          - version: "22.04"
+            regions:
+              - name: eu01
+                id: <image-id>
+                architecture: amd64
     dnsServers:
-    - 1.1.1.1
+      - 1.1.1.1
     rescanBlockStorageOnResize: true
     storageClasses:
-    - name: default
-      default: true
-      parameters:
-        type: "storage_premium_perf4"
+      - name: default
+        default: true
+        parameters:
+          type: "storage_premium_perf4"
     apiEndpoints:
       loadBalancer: https://<load-balancer-api-endpoint>
       iaas: https://<iaas-api-endpoint>
