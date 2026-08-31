@@ -7,6 +7,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"path/filepath"
 	"regexp"
@@ -488,7 +489,28 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 	return w.markWorkerAsMigrated(ctx)
 }
 
+//func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
+//	patchWorker := client.MergeFrom(w.worker.DeepCopy())
+//
+//	if w.worker.Annotations == nil {
+//		w.worker.Annotations = make(map[string]string)
+//	}
+//
+//	w.worker.Annotations[workerMigratedAnnotation] = "true"
+//
+//	return w.seedClient.Patch(ctx, w.worker, patchWorker)
+//}
+
+// this is a diagnosis code and should not be used in production code.
 func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
+	log.Printf(
+		"markWorkerAsMigrated: worker=%s namespace=%s resourceVersion=%s annotationsBefore=%v",
+		w.worker.Name,
+		w.worker.Namespace,
+		w.worker.ResourceVersion,
+		w.worker.Annotations,
+	)
+
 	patchWorker := client.MergeFrom(w.worker.DeepCopy())
 
 	if w.worker.Annotations == nil {
@@ -497,5 +519,61 @@ func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
 
 	w.worker.Annotations[workerMigratedAnnotation] = "true"
 
-	return w.seedClient.Patch(ctx, w.worker, patchWorker)
+	log.Printf(
+		"markWorkerAsMigrated: patching worker=%s annotation=%s value=%s",
+		w.worker.Name,
+		workerMigratedAnnotation,
+		w.worker.Annotations[workerMigratedAnnotation],
+	)
+
+	if err := w.seedClient.Patch(ctx, w.worker, patchWorker); err != nil {
+		log.Printf(
+			"markWorkerAsMigrated: PATCH FAILED worker=%s error=%v",
+			w.worker.Name,
+			err,
+		)
+		return fmt.Errorf("patch worker migration annotation: %w", err)
+	}
+
+	log.Printf(
+		"markWorkerAsMigrated: PATCH SUCCEEDED worker=%s resourceVersion=%s annotations=%v",
+		w.worker.Name,
+		w.worker.ResourceVersion,
+		w.worker.Annotations,
+	)
+
+	// Read the Worker again from the API server.
+	var worker extensionsv1alpha1.Worker
+	if err := w.seedClient.Get(
+		ctx,
+		client.ObjectKeyFromObject(w.worker),
+		&worker,
+	); err != nil {
+		log.Printf(
+			"markWorkerAsMigrated: GET AFTER PATCH FAILED worker=%s error=%v",
+			w.worker.Name,
+			err,
+		)
+		return fmt.Errorf("get worker after migration patch: %w", err)
+	}
+
+	actualValue := worker.Annotations[workerMigratedAnnotation]
+
+	log.Printf(
+		"markWorkerAsMigrated: API SERVER VALUE worker=%s annotation=%s value=%q allAnnotations=%v",
+		worker.Name,
+		workerMigratedAnnotation,
+		actualValue,
+		worker.Annotations,
+	)
+
+	if actualValue != "true" {
+		return fmt.Errorf(
+			"worker migration annotation was not persisted: worker=%s value=%q",
+			worker.Name,
+			actualValue,
+		)
+	}
+
+	return nil
 }
