@@ -265,6 +265,76 @@ spec:
       enabled: true
 ```
 
+## Workload identity
+
+Workload identity allows pods in a shoot cluster to authenticate against STACKIT APIs without static service account credentials. When enabled, the extension deploys the `stackit-pod-identity-webhook` into the shoot's control plane and a corresponding `MutatingWebhookConfiguration` into the shoot cluster.
+
+For newly created pods, the webhook injects a projected ServiceAccount token and configures the STACKIT SDK for secretless authentication. The [`stackit-pod-identity-webhook`](https://github.com/stackitcloud/stackit-pod-identity-webhook#supported-annotations) project defines the supported ServiceAccount annotations and their defaults.
+
+The webhook is only deployed when both of the following conditions are met:
+
+- `EnableSTACKITWorkloadIdentity` feature gate is enabled on the extension (see the [deployment documentation](../operations/deployment.md#enabling-workload-identity))
+- Shoot uses a service account token issuer
+
+### Configure a service account token issuer
+
+The shoot must use a service account token issuer. This requirement is met by exactly one of the following two mutually exclusive options:
+
+**Managed issuer** – annotate the shoot with `authentication.gardener.cloud/issuer=managed`:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: my-shoot
+  namespace: garden-my-project
+  annotations:
+    authentication.gardener.cloud/issuer: "managed"
+```
+
+The managed issuer requires the Gardener Discovery Server to be deployed. Do not set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` together with this annotation. Annotating the shoot does not trigger reconciliation immediately, so annotate with `gardener.cloud/operation=reconcile` or wait for the maintenance window.
+
+**Custom issuer** – set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` to a valid `https` URL:
+
+```yaml
+spec:
+  kubernetes:
+    kubeAPIServer:
+      serviceAccountConfig:
+        issuer: https://my-issuer.example.com
+```
+
+### Establish trust with STACKIT
+
+Workload identity only works if the STACKIT identity provider is configured to trust your cluster's service account issuer:
+
+1. In the STACKIT Portal, configure [Service Account Federation](https://docs.stackit.cloud/platform/access-and-identity/service-accounts/how-tos/manage-service-account-federations/) for the STACKIT Service Account that your workloads will assume.
+2. Provide the cluster's `serviceAccountIssuer` URL. The issuer can be retrieved from the shoot's status:
+
+   ```bash
+   kubectl -n <project> get shoot <shoot> -o jsonpath='{.status.advertisedAddresses[?(@.name=="service-account-issuer")].url}'
+   ```
+
+3. Create an assertion mapping on the `sub` claim to restrict the STACKIT Service Account to a specific Kubernetes `ServiceAccount`, formatted exactly as `system:serviceaccount:<namespace>:<name>`.
+
+### Configure your workloads
+
+Enable workload identity for a `ServiceAccount` by annotating it with `workload-identity.stackit.cloud/service-account-email`:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app
+  namespace: default
+  annotations:
+    workload-identity.stackit.cloud/service-account-email: "<stackit-service-account-email>"
+```
+
+The webhook then injects the projected token volume and the required environment variables (such as `STACKIT_SERVICE_ACCOUNT_EMAIL`) into pods that use this `ServiceAccount`. See the [STACKIT workload identity documentation](https://docs.stackit.cloud/products/runtime/kubernetes-engine/how-tos/workload-identity/) for the full list of supported annotations and their defaults.
+
+To exclude a pod or namespace from the webhook, set the `workload-identity.stackit.cloud/skip-pod-identity-webhook` label on the pod or namespace.
+
 ## CSI volume provisioners
 
 By default, every STACKIT shoot cluster is deployed with the STACKIT CSI driver, which uses the `block-storage.csi.stackit.cloud` provisioner.

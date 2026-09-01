@@ -37,3 +37,14 @@ allowApplicationLoadBalancerController: true
 ```
 
 When this flag is `false` (the default), any shoot attempting to enable the ALB controller will be rejected by the admission webhook with a validation error.
+
+### Enabling Workload Identity
+
+Workload identity for shoot clusters is an alpha feature that is disabled by default. To enable it, set the `EnableSTACKITWorkloadIdentity` feature gate on the provider extension via the `featureGates` value in the `gardener-extension-provider-stackit` chart:
+
+```yaml
+featureGates:
+  EnableSTACKITWorkloadIdentity: true
+```
+
+Once enabled, a shoot must also use a service account token issuer for the webhook to be deployed. See the [usage documentation](../usage/usage.md#workload-identity) for details.
