@@ -8,7 +8,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-CODE_GEN_DIR=$(GOWORK=off go list -m -modfile "$(go list -m -f '{{.Dir}}' github.com/gardener/gardener/hack/tools)/go.mod" -f '{{.Dir}}' k8s.io/code-generator)
+MODFILE="$(go list -m -f '{{.Dir}}' github.com/gardener/gardener/hack/tools)/go.mod"
+GOWORK=off go mod download -modfile "${MODFILE}" k8s.io/code-generator
+CODE_GEN_DIR=$(GOWORK=off go list -m -modfile "${MODFILE}" -f '{{.Dir}}' k8s.io/code-generator)
 source "${CODE_GEN_DIR}/kube_codegen.sh"
 
 GOPATH="${GOPATH:-$(go env GOPATH)}"
