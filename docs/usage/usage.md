@@ -33,6 +33,7 @@ The service account must be granted the STACKIT permissions required by the depl
 | Permission                    | Purpose                                                                                 |
 | ----------------------------- | --------------------------------------------------------------------------------------- |
 | `nlb.admin`                   | CCM service-controller, network load balancer and self-hosted shoot exposure controller |
+| `alb.admin`                   | application load balancer controller                                                    |
 | `blockstorage.admin`          | CSI driver                                                                              |
 | `compute.admin`               | CCM node-controller and MCM                                                             |
 | `iaas.network.admin`          | bastion and infrastructure controller                                                   |
@@ -78,6 +79,9 @@ provider:
 
 When `networks.id` is set, the `networks.workers` CIDR must not be set. The `networks.id` value must be a valid STACKIT network ID (UUID).
 
+> [!NOTE]
+> `networks.worker` is a deprecated alias for `networks.workers`. If both are set, `networks.workers` takes precedence.
+
 The optional `networks.dnsServers` field overrides the DNS servers configured in the `CloudProfile` (`CloudProfileConfig.dnsServers`) and is used when the worker network is created:
 
 ```yaml
@@ -91,8 +95,6 @@ provider:
       dnsServers:
         - 1.1.1.1
 ```
-
-`networks.worker` is a deprecated alias for `networks.workers`. If both are set, `networks.workers` takes precedence.
 
 The `floatingPoolName` and the whole `networks` section are immutable after cluster creation.
 
@@ -177,17 +179,7 @@ spec:
           #     cpu: 2
           #     nvidia.com/gpu: 0
           #     memory: 50Gi
-          machineLabels:
-            - name: my-label
-              value: foo
-            - name: my-rolling-label
-              value: bar
-              triggerRollingOnUpdate: true
 ```
-
-### MachineLabels
-
-The `machineLabels` section in the worker group configuration allows specifying additional labels. These labels are added to the machine instances only, but not to the node object. Additionally, they have an optional `triggerRollingOnUpdate` field. If it is set to `true`, changing the label value will trigger a rolling of all machines of this worker pool.
 
 ### Node Templates
 
