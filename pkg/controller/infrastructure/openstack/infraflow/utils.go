@@ -59,7 +59,7 @@ func (fctx *FlowContext) defaultSecurityGroupName() string {
 }
 
 func (fctx *FlowContext) workerCIDR() string {
-	//nolint:staticcheck // SA1019: needed for migration purposes
+	//nolint:staticcheck // SA1019: deprecated will be removed later
 	s := fctx.config.Networks.Worker
 	if workers := fctx.config.Networks.Workers; workers != "" {
 		s = workers

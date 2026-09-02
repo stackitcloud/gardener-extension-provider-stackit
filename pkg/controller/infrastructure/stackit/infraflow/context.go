@@ -164,8 +164,11 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 	status.Networks.ID = ptr.Deref(fctx.state.Get(IdentifierNetwork), "")
 	status.Networks.Name = ptr.Deref(fctx.state.Get(NameNetwork), "")
 
+	//nolint:staticcheck // SA1019: TODO
+	// TODO we need to save this in a different place as we need this later in the status of the Infrastructure Object for ACLs
 	status.Networks.Router.ExternalFixedIPs = fctx.state.GetObject(IdentifierEgressCIDRs).([]string)
 	// backwards compatibility change for the deprecated field
+	//nolint:staticcheck // SA1019: needed for migration purposes
 	if len(status.Networks.Router.ExternalFixedIPs) > 0 {
 		//nolint:staticcheck // SA1019: needed for migration purposes
 		status.Networks.Router.IP = status.Networks.Router.ExternalFixedIPs[0]
@@ -179,7 +182,6 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	// TODO: Remove once migrated fully to IaaS API
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
-		//nolint:staticcheck // SA1019: Will be removed once OpenStack mcm support is dropped.
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,

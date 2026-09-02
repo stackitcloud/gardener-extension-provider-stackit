@@ -15,9 +15,14 @@ import (
 type InfrastructureConfig struct {
 	metav1.TypeMeta `json:",inline"`
 	// FloatingPoolName contains the FloatingPoolName name in which LoadBalancer FIPs should be created.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
 	FloatingPoolName string `json:"floatingPoolName"`
 	// FloatingPoolSubnetName contains the fixed name of subnet or matching name pattern for subnet
 	// in the Floating IP Pool where the router should be attached to.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	// +optional
 	FloatingPoolSubnetName *string `json:"floatingPoolSubnetName,omitempty"`
 	// Networks is the OpenStack specific network configuration
@@ -27,6 +32,8 @@ type InfrastructureConfig struct {
 // Networks holds information about the Kubernetes and infrastructure networks.
 type Networks struct {
 	// Router indicates whether to use an existing router or create a new one.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	// +optional
 	Router *Router `json:"router,omitempty"`
 	// Worker is a CIDRs of a worker subnet (private) to create (used for the VMs).
@@ -39,6 +46,8 @@ type Networks struct {
 	// +optional
 	ID *string `json:"id,omitempty"`
 	// SubnetID is the ID of an existing subnet.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	// +optional
 	SubnetID *string `json:"subnetId,omitempty"`
 	// ShareNetwork holds information about the share network (used for shared file systems like NFS)
@@ -91,8 +100,12 @@ type NetworkStatus struct {
 	// Name is the Network name.
 	Name string `json:"name"`
 	// FloatingPool contains information about the floating pool.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	FloatingPool FloatingPoolStatus `json:"floatingPool"`
 	// Router contains information about the Router and related resources.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	Router RouterStatus `json:"router"`
 	// DNSServer contains the networks configured dnsServers
 	// +optional
@@ -109,30 +122,48 @@ type NetworkStatus struct {
 }
 
 // RouterStatus contains information about a generated Router or resources attached to an existing Router.
+//
+// Deprecated: OpenStack-only; not used for STACKIT.
 type RouterStatus struct {
 	// ID is the Router id.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	ID string `json:"id"`
 	// IP is the router ip.
 	//
-	// Deprecated: use ExternalFixedIPs instead.
+	// Deprecated: use ExternalFixedIPs instead. OpenStack-only; not used for STACKIT.
 	IP string `json:"ip"`
 	// ExternalFixedIPs is the list of the router's assigned external fixed IPs.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	ExternalFixedIPs []string `json:"externalFixedIP"`
 }
 
 // FloatingPoolStatus contains information about the floating pool.
+//
+// Deprecated: OpenStack-only; not used for STACKIT.
 type FloatingPoolStatus struct {
 	// ID is the floating pool id.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	ID string `json:"id"`
 	// Name is the floating pool name.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	Name string `json:"name"`
 }
 
 // ShareNetworkStatus contains information about a generated ShareNetwork
+//
+// Deprecated: OpenStack-only; not used for STACKIT.
 type ShareNetworkStatus struct {
 	// ID is the Network id.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	ID string `json:"id"`
 	// Name is the Network name.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	Name string `json:"name"`
 }
 
@@ -145,13 +176,21 @@ const (
 )
 
 // Subnet is an OpenStack subnet related to a Network.
+//
+// Deprecated: OpenStack-only; not used for STACKIT.
 type Subnet struct {
 	// Purpose is a logical description of the subnet.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	Purpose Purpose `json:"purpose"`
 	// ID is the subnet id.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	ID string `json:"id"`
 	// DNSNameservers specifies the DNS nameservers for the subnet.
 	// Nil if DNSNameservers could not be queried.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
 	// +optional
 	DNSNameservers *[]string `json:"dnsNameservers,omitempty"`
 }

@@ -93,7 +93,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 
 		Context("floating pools constraints", func() {
 			It("should forbid unsupported pools", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
 					{
 						Name:   "",
@@ -117,7 +116,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 			})
 
 			It("should forbid duplicates regions and domains in pools", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.Constraints.FloatingPools = []stackitv1alpha1.FloatingPool{
 					{
 						Name:   "foo",
@@ -170,9 +168,7 @@ var _ = Describe("CloudProfileConfig validation", func() {
 
 		Context("keystone url validation", func() {
 			It("should forbid keystone urls with missing keys", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.KeyStoneURL = ""
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.KeyStoneURLs = []stackitv1alpha1.KeyStoneURL{{}}
 
 				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, capabilityDefinitions, fldPath)
@@ -187,9 +183,7 @@ var _ = Describe("CloudProfileConfig validation", func() {
 			})
 
 			It("should forbid duplicate regions for keystone urls", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.KeyStoneURL = ""
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.KeyStoneURLs = []stackitv1alpha1.KeyStoneURL{
 					{
 						Region: "foo",
@@ -211,7 +205,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 		})
 
 		It("should forbid invalid keystone CA Certs", func() {
-			//nolint:staticcheck // SA1019: needed for migration purposes
 			cloudProfileConfig.KeyStoneCACert = new("foo")
 
 			errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, capabilityDefinitions, fldPath)
@@ -237,7 +230,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 
 		Context("dhcp domain validation", func() {
 			It("should forbid not specifying a value when the key is present", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.DHCPDomain = new("")
 
 				errorList := ValidateCloudProfileConfig(cloudProfileConfig, machineImages, capabilityDefinitions, fldPath)
@@ -552,7 +544,6 @@ var _ = Describe("CloudProfileConfig validation", func() {
 
 		Context("server group policy validation", func() {
 			It("should forbid empty server group policy", func() {
-				//nolint:staticcheck // SA1019: needed for migration purposes
 				cloudProfileConfig.ServerGroupPolicies = []string{
 					"affinity",
 					"",
