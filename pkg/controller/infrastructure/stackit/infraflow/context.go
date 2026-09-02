@@ -25,10 +25,6 @@ import (
 
 const (
 
-	// NameFloatingNetwork is the key for the floating network name
-	NameFloatingNetwork = "FloatingNetworkName"
-	// IdentifierFloatingNetwork is the key for the floating network id
-	IdentifierFloatingNetwork = "FloatingNetwork"
 	// IdentifierNetwork is the key for the network id
 	IdentifierNetwork = "Network"
 	// NameNetwork is the name of the network
@@ -164,9 +160,6 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 	status := &stackitv1alpha1.InfrastructureStatus{
 		TypeMeta: infrainternal.StatusTypeMeta,
 	}
-
-	status.Networks.FloatingPool.ID = ptr.Deref(fctx.state.Get(IdentifierFloatingNetwork), "")
-	status.Networks.FloatingPool.Name = ptr.Deref(fctx.state.Get(NameFloatingNetwork), "")
 
 	status.Networks.ID = ptr.Deref(fctx.state.Get(IdentifierNetwork), "")
 	status.Networks.Name = ptr.Deref(fctx.state.Get(NameNetwork), "")

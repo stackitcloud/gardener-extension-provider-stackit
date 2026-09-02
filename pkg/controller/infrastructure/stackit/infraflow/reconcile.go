@@ -39,16 +39,9 @@ func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	g := flow.NewGraph("STACKIT infrastructure reconciliation")
 
-	ensureExternalNetwork := fctx.AddTask(g, "ensure external network",
-		fctx.ensureExternalNetwork,
-		shared.Timeout(defaultTimeout),
-		shared.DoIf(fctx.hasOpenStackCredentials),
-	)
-
 	ensureNetwork := fctx.AddTask(g, "ensure isolated network",
 		fctx.ensureNetwork,
-		shared.Timeout(defaultTimeout),
-		shared.Dependencies(ensureExternalNetwork))
+		shared.Timeout(defaultTimeout))
 
 	_ = fctx.AddTask(g, "ensure openstack subnet id",
 		fctx.ensureOpenStackSubnetID,
@@ -80,19 +73,6 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
 
 	return g
-}
-
-func (fctx *FlowContext) ensureExternalNetwork(ctx context.Context) error {
-	externalNetwork, err := fctx.networking.GetExternalNetworkByName(ctx, fctx.config.FloatingPoolName)
-	if err != nil {
-		return err
-	}
-	if externalNetwork == nil {
-		return fmt.Errorf("external network for floating pool name %s not found", fctx.config.FloatingPoolName)
-	}
-	fctx.state.Set(IdentifierFloatingNetwork, externalNetwork.ID)
-	fctx.state.Set(NameFloatingNetwork, externalNetwork.Name)
-	return nil
 }
 
 func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
