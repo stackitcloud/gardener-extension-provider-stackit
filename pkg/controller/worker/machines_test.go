@@ -26,6 +26,7 @@ import (
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	iaas2 "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -40,6 +41,7 @@ import (
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	mockstackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock"
 )
 
 var _ = Describe("Machines", func() {
@@ -49,6 +51,8 @@ var _ = Describe("Machines", func() {
 		ctrl         *gomock.Controller
 		c            client.Client
 		chartApplier *mockkubernetes.MockChartApplier
+
+		mockStackitClient *mockstackitclient.MockFactory
 
 		workerDelegate genericworkeractuator.WorkerDelegate
 		scheme         *runtime.Scheme
@@ -905,6 +909,97 @@ var _ = Describe("Machines", func() {
 					result, err := workerDelegate.GenerateMachineDeployments(ctx)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result).To(Equal(machineDeployments))
+				})
+
+				Context("MCM migration", func() {
+					BeforeEach(func() {
+						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, useStackitMCM))
+						//DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
+						mockStackitClient = mockstackitclient.NewMockFactory(ctrl)
+						workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockStackitClient)
+					})
+
+					It("should migrate the machine controller manager", func() {
+						By("creating a machine")
+						machine := &machinev1alpha1.Machine{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "machine-1",
+								Namespace: w.Namespace,
+							},
+							Spec: machinev1alpha1.MachineSpec{
+								Class: machinev1alpha1.ClassSpec{
+									Name: "machineclass",
+								},
+								ProviderID: "openstack:///RegionOne/server-123",
+							},
+						}
+
+						Expect(c.Create(ctx, machine)).To(Succeed())
+
+						By("creating a machine class")
+						machineClassPath := filepath.Join("internal", "machineclass")
+						if useStackitMCM {
+							machineClassPath = filepath.Join("internal", "machineclass-stackit")
+						}
+
+						chartApplier.
+							EXPECT().
+							ApplyFromEmbeddedFS(
+								ctx,
+								charts.InternalChart,
+								machineClassPath,
+								w.Namespace,
+								"machineclass",
+								kubernetes.Values(machineClasses),
+							).
+							Return(nil)
+
+						Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
+
+						By("enabling the feature gate")
+						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
+						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
+
+						mockstackitclient.NewMockIaaSClient(ctrl).EXPECT().UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      machine.Name,
+								"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).Return(nil, nil)
+
+						By("checking for the migrated machine")
+						migratedMachine := &machinev1alpha1.Machine{}
+
+						Expect(c.Get(ctx, client.ObjectKey{
+							Name:      "machine-1",
+							Namespace: w.Namespace,
+						}, migratedMachine)).To(Succeed())
+
+						Expect(migratedMachine.Spec.ProviderID).
+							To(Equal("stackit://project-id-123/server-123"))
+
+						Expect(migratedMachine.Annotations).
+							To(HaveKeyWithValue("stackit.cloud/migrated-machine", "true"))
+
+						// TODO: how do i check this, as the annotation will get removed soon after the migration
+						//Expect(migratedMachine.Annotations).
+						//	NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
+
+						By("checking for the worker")
+						migratedWorker := &extensionsv1alpha1.Worker{}
+
+						Expect(c.Get(ctx, client.ObjectKey{
+							Name:      w.Name,
+							Namespace: w.Namespace,
+						}, migratedWorker)).To(Succeed())
+
+						Expect(migratedWorker.Annotations).
+							To(HaveKeyWithValue(
+								"stackit.cloud/machine-controller-manager-migrated",
+								"true",
+							))
+					})
 				})
 
 				Context("Machine Labels", func() {
