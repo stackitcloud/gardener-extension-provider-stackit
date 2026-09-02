@@ -38,15 +38,12 @@ var _ = Describe("InfrastructureConfig validation", func() {
 	})
 
 	Describe("#ValidateInfrastructureConfig", func() {
-		It("should forbid invalid floating pool name configuration", func() {
+		It("should allow empty floating pool name configuration", func() {
 			infrastructureConfig.FloatingPoolName = ""
 
 			errorList := ValidateInfrastructureConfig(infrastructureConfig, &nodes, nilPath)
 
-			Expect(errorList).To(ConsistOfFields(Fields{
-				"Type":  Equal(field.ErrorTypeRequired),
-				"Field": Equal("floatingPoolName"),
-			}))
+			Expect(errorList).To(BeEmpty())
 		})
 
 		It("should forbid invalid router id configuration", func() {
@@ -239,42 +236,5 @@ var _ = Describe("InfrastructureConfig validation", func() {
 				"Field": Equal("floatingPoolSubnetName"),
 			}))))
 		})
-	})
-
-	Describe("#ValidateInfrastructureConfigAgainstCloudProfile", func() {
-		var cloudProfileConfig *stackitv1alpha1.CloudProfileConfig
-
-		BeforeEach(func() {
-			cloudProfileConfig = &stackitv1alpha1.CloudProfileConfig{
-				Constraints: stackitv1alpha1.Constraints{
-					FloatingPools: []stackitv1alpha1.FloatingPool{
-						{
-							Name: floatingPoolName1,
-						},
-					},
-				},
-			}
-		})
-
-		It("should validate that the floating pool name exists in the cloud profile", func() {
-			oldInfrastructureConfig := infrastructureConfig.DeepCopy()
-			infrastructureConfig.FloatingPoolName = "does-for-sure-not-exist-in-cloudprofile"
-
-			errorList := ValidateInfrastructureConfigAgainstCloudProfile(oldInfrastructureConfig, infrastructureConfig, cloudProfileConfig, nilPath)
-			Expect(errorList).To(ConsistOfFields(Fields{
-				"Type":     Equal(field.ErrorTypeNotSupported),
-				"Field":    Equal("floatingPoolName"),
-				"BadValue": Equal("does-for-sure-not-exist-in-cloudprofile"),
-			}))
-		})
-
-		It("should not validate anything if the floating pool name was not changed", func() {
-			infrastructureConfig.FloatingPoolName = "does-for-sure-not-exist-in-cloudprofile"
-			oldInfrastructureConfig := infrastructureConfig.DeepCopy()
-
-			errorList := ValidateInfrastructureConfigAgainstCloudProfile(oldInfrastructureConfig, infrastructureConfig, cloudProfileConfig, nilPath)
-			Expect(errorList).To(BeEmpty())
-		})
-
 	})
 })

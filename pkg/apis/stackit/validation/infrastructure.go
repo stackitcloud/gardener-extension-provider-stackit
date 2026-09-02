@@ -5,8 +5,6 @@
 package validation
 
 import (
-	"slices"
-
 	cidrvalidation "github.com/gardener/gardener/pkg/utils/validation/cidr"
 	"github.com/google/uuid"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -18,10 +16,6 @@ import (
 // ValidateInfrastructureConfig validates a InfrastructureConfig object.
 func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, nodesCIDR *string, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-
-	if len(infra.FloatingPoolName) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("floatingPoolName"), "must provide the name of a floating pool"))
-	}
 
 	networksPath := fldPath.Child("networks")
 
@@ -104,24 +98,8 @@ func ValidateInfrastructureConfigUpdate(oldConfig, newConfig *stackitv1alpha1.In
 }
 
 // ValidateInfrastructureConfigAgainstCloudProfile validates the given InfrastructureConfig against constraints in the given CloudProfile.
-func ValidateInfrastructureConfigAgainstCloudProfile(oldInfra, infra *stackitv1alpha1.InfrastructureConfig, cloudProfileConfig *stackitv1alpha1.CloudProfileConfig, fldPath *field.Path) field.ErrorList {
+func ValidateInfrastructureConfigAgainstCloudProfile(_, _ *stackitv1alpha1.InfrastructureConfig, _ *stackitv1alpha1.CloudProfileConfig, _ *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if oldInfra == nil || oldInfra.FloatingPoolName != infra.FloatingPoolName {
-		//nolint:staticcheck // SA1019: needed for migration purposes
-		allErrs = append(allErrs, validateFloatingPoolNameConstraints(cloudProfileConfig.Constraints.FloatingPools, infra.FloatingPoolName, fldPath.Child("floatingPoolName")))
-	}
-
 	return allErrs
-}
-
-func validateFloatingPoolNameConstraints(fps []stackitv1alpha1.FloatingPool, name string, fldPath *field.Path) *field.Error {
-	availablePoolNames := make([]string, 0, len(fps))
-	for _, fp := range fps {
-		availablePoolNames = append(availablePoolNames, fp.Name)
-	}
-	if !slices.Contains(availablePoolNames, name) {
-		return field.NotSupported(fldPath, name, availablePoolNames)
-	}
-	return nil
 }
