@@ -71,7 +71,7 @@ var _ = Describe("Machines", func() {
 	Context("workerDelegate", func() {
 
 		BeforeEach(func() {
-			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil, "")
+			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil, "", nil)
 		})
 
 		Describe("#TestLabelNormalization", func() {
@@ -572,7 +572,7 @@ var _ = Describe("Machines", func() {
 					WithStatusSubresource(&extensionsv1alpha1.Worker{}).
 					Build()
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain, nil)
 			})
 
 			Describe("machine images", func() {
@@ -842,7 +842,7 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should return the expected machine deployments for profile image types", func() {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 					// Test workerDelegate.DeployMachineClasses()
 
@@ -881,7 +881,7 @@ var _ = Describe("Machines", func() {
 
 				It("should return the expected machine deployments for profile image types with id", func() {
 					// setup(region, "", machineImageID, archARM)
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, customLabelDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, customLabelDomain, nil)
 					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
@@ -924,7 +924,7 @@ var _ = Describe("Machines", func() {
 							w.Spec.Pools[0].ProviderConfig = &runtime.RawExtension{
 								Raw: encode(workerConfig),
 							}
-							workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+							workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 							result, err := workerDelegate.GenerateMachineDeployments(ctx)
 							Expect(err).NotTo(HaveOccurred())
@@ -974,7 +974,7 @@ var _ = Describe("Machines", func() {
 			It("should fail because the infrastructure status cannot be decoded", func() {
 				w.Spec.InfrastructureProviderStatus = &runtime.RawExtension{}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -986,7 +986,7 @@ var _ = Describe("Machines", func() {
 					Raw: encode(&stackitv1alpha1.InfrastructureStatus{}),
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -996,7 +996,7 @@ var _ = Describe("Machines", func() {
 			It("should fail because the machine image for this cloud profile cannot be found", func() {
 				clusterWithoutImages.CloudProfile.Name = "another-cloud-profile"
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -1017,7 +1017,7 @@ var _ = Describe("Machines", func() {
 					NodeConditions:         testNodeConditions,
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
@@ -1040,7 +1040,7 @@ var _ = Describe("Machines", func() {
 					ScaleDownUtilizationThreshold:    new("0.5"),
 				}
 				w.Spec.Pools[1].ClusterAutoscaler = nil
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1108,7 +1108,7 @@ var _ = Describe("Machines", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: new(int32(4)),
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1119,7 +1119,7 @@ var _ = Describe("Machines", func() {
 
 			It("should set autoPreserveFailedMachineMax to 0 per zone when machineControllerManagerSettings is nil", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = nil
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1132,7 +1132,7 @@ var _ = Describe("Machines", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: nil,
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
