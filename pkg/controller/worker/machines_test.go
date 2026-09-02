@@ -560,6 +560,7 @@ var _ = Describe("Machines", func() {
 				fakeScheme := runtime.NewScheme()
 				Expect(corev1.AddToScheme(fakeScheme)).To(Succeed())
 				Expect(extensionsv1alpha1.AddToScheme(fakeScheme)).To(Succeed())
+				Expect(machinev1alpha1.AddToScheme(fakeScheme)).To(Succeed())
 				c = fakeclient.NewClientBuilder().
 					WithScheme(fakeScheme).
 					WithObjects(
@@ -960,13 +961,33 @@ var _ = Describe("Machines", func() {
 						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
 						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
 
-						mockstackitclient.NewMockIaaSClient(ctrl).EXPECT().UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
-							Labels: map[string]any{
-								"mcm.gardener.cloud/machine":      machine.Name,
-								"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
-								"mcm.gardener.cloud/role":         "node",
-							},
-						}).Return(nil, nil)
+						//mockstackitclient.NewMockIaaSClient(ctrl).EXPECT().UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+						//	Labels: map[string]any{
+						//		"mcm.gardener.cloud/machine":      machine.Name,
+						//		"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+						//		"mcm.gardener.cloud/role":         "node",
+						//	},
+						//}).Return(nil, nil)
+
+						mockIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
+
+						mockStackitClient.EXPECT().
+							IaaS(ctx, c, w.Spec.SecretRef).
+							Return(mockIaaSClient, nil)
+
+						mockIaaSClient.EXPECT().
+							ProjectID().
+							Return("project-id-123")
+
+						mockIaaSClient.EXPECT().
+							UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+								Labels: map[string]any{
+									"mcm.gardener.cloud/machine":      machine.Name,
+									"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+									"mcm.gardener.cloud/role":         "node",
+								},
+							}).
+							Return(nil, nil)
 
 						By("checking for the migrated machine")
 						migratedMachine := &machinev1alpha1.Machine{}

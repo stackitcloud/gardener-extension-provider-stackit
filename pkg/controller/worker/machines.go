@@ -77,6 +77,7 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	}
 
 	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
+		fmt.Println("Migrating Stackit Machine Controller Manager to Gardener Machine Controller Manager...")
 		err = w.migrateMachines(ctx)
 		if err != nil {
 			return err
