@@ -269,7 +269,7 @@ spec:
 
 Workload identity allows pods in a shoot cluster to authenticate against STACKIT APIs without static service account credentials. When enabled, the extension deploys the `stackit-pod-identity-webhook` into the shoot's control plane and a corresponding `MutatingWebhookConfiguration` into the shoot cluster.
 
-For newly created pods, the webhook injects a projected ServiceAccount token and configures the STACKIT SDK for secretless authentication. The [`stackit-pod-identity-webhook`](https://github.com/stackitcloud/stackit-pod-identity-webhook#supported-annotations) project defines the supported ServiceAccount annotations and their defaults.
+For newly created pods, the webhook injects a projected ServiceAccount token and configures the STACKIT SDK for secretless authentication. The [`stackit-pod-identity-webhook`](https://github.com/stackitcloud/stackit-pod-identity-webhook) project defines the supported ServiceAccount annotations and their defaults.
 
 The webhook is only deployed when both of the following conditions are met:
 
