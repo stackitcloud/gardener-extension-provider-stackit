@@ -26,9 +26,9 @@ For information on our workflows, see:
 - [Usage guide](docs/usage/usage.md)
 - [Operations guide](docs/operations/operations.md)
 - [Deployment](docs/operations/deployment.md)
-- [Development guide](docs/development.md)
-- [Testing guide](docs/testing.md)
-- [Release procedure](docs/releases.md)
+- [Development guide](docs/development/development.md)
+- [Testing guide](docs/development/testing.md)
+- [Release procedure](docs/development/releases.md)
 
 ## Feedback and Support
 

@@ -39,6 +39,82 @@ The service account must be granted the STACKIT permissions required by the depl
 | `iaas.network.admin`          | bastion and infrastructure controller                                                   |
 | `iaas.isolated-network.admin` | infrastructure controller                                                               |
 
+## Workload identity
+
+Workload identity allows pods in a shoot cluster to authenticate against STACKIT APIs without static service account credentials. When enabled, the extension deploys the `stackit-pod-identity-webhook` into the shoot's control plane and a corresponding `MutatingWebhookConfiguration` into the shoot cluster.
+
+For newly created pods, the webhook injects a projected ServiceAccount token and configures the STACKIT SDK for secretless authentication.
+
+The webhook is only deployed when both of the following conditions are met:
+
+- `EnableSTACKITWorkloadIdentity` feature gate is enabled on the extension (see the [deployment documentation](../operations/deployment.md#enabling-workload-identity))
+- Shoot uses a service account token issuer
+
+### Configure a service account token issuer
+
+The shoot must use a service account token issuer. This requirement is met by exactly one of the following two mutually exclusive options:
+
+**Managed issuer** – annotate the shoot with `authentication.gardener.cloud/issuer=managed`:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: my-shoot
+  namespace: garden-my-project
+  annotations:
+    authentication.gardener.cloud/issuer: "managed"
+```
+
+The managed issuer requires the Gardener Discovery Server to be deployed. Do not set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` together with this annotation. Annotating the shoot does not trigger reconciliation immediately, so annotate with `gardener.cloud/operation=reconcile` or wait for the maintenance window.
+
+**Custom issuer** – set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` to a valid `https` URL:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: my-shoot
+  namespace: garden-my-project
+  annotations:
+spec:
+  kubernetes:
+    kubeAPIServer:
+      serviceAccountConfig:
+        issuer: https://my-issuer.example.com
+```
+
+### Establish trust with STACKIT
+
+Workload identity only works if the STACKIT identity provider is configured to trust your cluster's service account issuer:
+
+1. In the STACKIT Portal, configure [Service Account Federation](https://docs.stackit.cloud/platform/access-and-identity/service-accounts/how-tos/manage-service-account-federations/) for the STACKIT Service Account that your workloads will assume.
+2. Provide the cluster's `serviceAccountIssuer` URL. The issuer can be retrieved from the shoot's status:
+
+   ```bash
+   kubectl -n <project> get shoot <shoot> -o jsonpath='{.status.advertisedAddresses[?(@.name=="service-account-issuer")].url}'
+   ```
+
+3. Create an assertion mapping on the `sub` claim to restrict the STACKIT Service Account to a specific Kubernetes `ServiceAccount`, formatted exactly as `system:serviceaccount:<namespace>:<name>`.
+
+### Configure your workloads
+
+Enable workload identity for a `ServiceAccount` by annotating it with `workload-identity.stackit.cloud/service-account-email`:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app
+  namespace: default
+  annotations:
+    workload-identity.stackit.cloud/service-account-email: "<stackit-service-account-email>"
+```
+
+The webhook then injects the projected token volume and the required environment variables (such as `STACKIT_SERVICE_ACCOUNT_EMAIL`) into pods that use this `ServiceAccount`. See the [documentation](https://github.com/stackitcloud/stackit-pod-identity-webhook#serviceaccount-annotations) for the full list of supported annotations and their defaults.
+
+To exclude a pod or namespace from the webhook, set the `workload-identity.stackit.cloud/skip-pod-identity-webhook` label on the pod or namespace.
+
 ## `InfrastructureConfig`
 
 The infrastructure configuration mainly describes how the network layout looks like in order to create the shoot worker nodes in a later step.
@@ -56,25 +132,27 @@ spec:
     infrastructureConfig:
       apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
-      floatingPoolName: MY-FLOATING-POOL
       networks:
         workers: 10.250.0.0/19
 ```
-
-The `floatingPoolName` is the name of the floating pool (external network) you want to use for your shoot. It is a required field. If you don't know which floating pools are available, look them up in the respective `CloudProfile`.
 
 The `networks.workers` section describes the CIDR for the (isolated) network that is used for all shoot worker nodes, i.e., VMs which later run your applications. You can freely choose this CIDR and it is your responsibility to properly design the network layout to suit your needs.
 
 Instead of creating a new network, you can reuse an existing network by specifying its ID via `networks.id`:
 
 ```yaml
-provider:
-  infrastructureConfig:
-    apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
-    kind: InfrastructureConfig
-    floatingPoolName: MY-FLOATING-POOL
-    networks:
-      id: 12345678-abcd-efef-08af-0123456789ab
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: johndoe-stackit
+  namespace: garden-dev
+spec:
+  provider:
+    infrastructureConfig:
+      apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
+      kind: InfrastructureConfig
+      networks:
+        id: 12345678-abcd-efef-08af-0123456789ab
 ```
 
 When `networks.id` is set, the `networks.workers` CIDR must not be set. The `networks.id` value must be a valid STACKIT network ID (UUID).
@@ -85,18 +163,23 @@ When `networks.id` is set, the `networks.workers` CIDR must not be set. The `net
 The optional `networks.dnsServers` field overrides the DNS servers configured in the `CloudProfile` (`CloudProfileConfig.dnsServers`) and is used when the worker network is created:
 
 ```yaml
-provider:
-  infrastructureConfig:
-    apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
-    kind: InfrastructureConfig
-    floatingPoolName: MY-FLOATING-POOL
-    networks:
-      workers: 10.250.0.0/19
-      dnsServers:
-        - 1.1.1.1
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: johndoe-stackit
+  namespace: garden-dev
+spec:
+  provider:
+    infrastructureConfig:
+      apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
+      kind: InfrastructureConfig
+      networks:
+        workers: 10.250.0.0/19
+        dnsServers:
+          - 1.1.1.1
 ```
 
-The `floatingPoolName` and the whole `networks` section are immutable after cluster creation.
+The whole `networks` section is immutable after cluster creation.
 
 ## `ControlPlaneConfig`
 
@@ -207,7 +290,7 @@ spec:
       #   - 203.0.113.0/24
 ```
 
-- `loadBalancer.planID` specifies the service plan (size) of the load balancer. Currently supported plans are `p10`, `p50`, `p250`, `p750`. It defaults to `p10`.
+- `loadBalancer.planID` specifies the service plan (size) of the load balancer. Defaults to `p10`. Check the [STACKIT Load Balancer documentation](https://docs.stackit.cloud/products/network/load-balancing-and-content-delivery/network-load-balancer/reference/service-plans/) for all supported plans.
 - `loadBalancer.accessControl.allowedSourceRanges` restricts which source IP ranges (CIDRs) may reach the load balancer. An empty or missing list means no source-IP restriction is applied.
 
 ## Example `Shoot` manifest
@@ -230,7 +313,6 @@ spec:
     infrastructureConfig:
       apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
       kind: InfrastructureConfig
-      floatingPoolName: MY-FLOATING-POOL
       networks:
         workers: 10.250.0.0/19
     controlPlaneConfig:
@@ -250,7 +332,7 @@ spec:
         zones:
           - eu01-1
   networking:
-    nodes: 10.250.0.0/16
+    nodes: 10.250.0.0/19
     type: calico
   kubernetes:
     version: 1.33.0
@@ -258,108 +340,8 @@ spec:
     autoUpdate:
       kubernetesVersion: true
       machineImageVersion: true
-  addons:
-    kubernetesDashboard:
-      enabled: true
-    nginxIngress:
-      enabled: true
 ```
-
-## Workload identity
-
-Workload identity allows pods in a shoot cluster to authenticate against STACKIT APIs without static service account credentials. When enabled, the extension deploys the `stackit-pod-identity-webhook` into the shoot's control plane and a corresponding `MutatingWebhookConfiguration` into the shoot cluster.
-
-For newly created pods, the webhook injects a projected ServiceAccount token and configures the STACKIT SDK for secretless authentication. The [`stackit-pod-identity-webhook`](https://github.com/stackitcloud/stackit-pod-identity-webhook) project defines the supported ServiceAccount annotations and their defaults.
-
-The webhook is only deployed when both of the following conditions are met:
-
-- `EnableSTACKITWorkloadIdentity` feature gate is enabled on the extension (see the [deployment documentation](../operations/deployment.md#enabling-workload-identity))
-- Shoot uses a service account token issuer
-
-### Configure a service account token issuer
-
-The shoot must use a service account token issuer. This requirement is met by exactly one of the following two mutually exclusive options:
-
-**Managed issuer** – annotate the shoot with `authentication.gardener.cloud/issuer=managed`:
-
-```yaml
-apiVersion: core.gardener.cloud/v1beta1
-kind: Shoot
-metadata:
-  name: my-shoot
-  namespace: garden-my-project
-  annotations:
-    authentication.gardener.cloud/issuer: "managed"
-```
-
-The managed issuer requires the Gardener Discovery Server to be deployed. Do not set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` together with this annotation. Annotating the shoot does not trigger reconciliation immediately, so annotate with `gardener.cloud/operation=reconcile` or wait for the maintenance window.
-
-**Custom issuer** – set `spec.kubernetes.kubeAPIServer.serviceAccountConfig.issuer` to a valid `https` URL:
-
-```yaml
-spec:
-  kubernetes:
-    kubeAPIServer:
-      serviceAccountConfig:
-        issuer: https://my-issuer.example.com
-```
-
-### Establish trust with STACKIT
-
-Workload identity only works if the STACKIT identity provider is configured to trust your cluster's service account issuer:
-
-1. In the STACKIT Portal, configure [Service Account Federation](https://docs.stackit.cloud/platform/access-and-identity/service-accounts/how-tos/manage-service-account-federations/) for the STACKIT Service Account that your workloads will assume.
-2. Provide the cluster's `serviceAccountIssuer` URL. The issuer can be retrieved from the shoot's status:
-
-   ```bash
-   kubectl -n <project> get shoot <shoot> -o jsonpath='{.status.advertisedAddresses[?(@.name=="service-account-issuer")].url}'
-   ```
-
-3. Create an assertion mapping on the `sub` claim to restrict the STACKIT Service Account to a specific Kubernetes `ServiceAccount`, formatted exactly as `system:serviceaccount:<namespace>:<name>`.
-
-### Configure your workloads
-
-Enable workload identity for a `ServiceAccount` by annotating it with `workload-identity.stackit.cloud/service-account-email`:
-
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: app
-  namespace: default
-  annotations:
-    workload-identity.stackit.cloud/service-account-email: "<stackit-service-account-email>"
-```
-
-The webhook then injects the projected token volume and the required environment variables (such as `STACKIT_SERVICE_ACCOUNT_EMAIL`) into pods that use this `ServiceAccount`. See the [STACKIT workload identity documentation](https://docs.stackit.cloud/products/runtime/kubernetes-engine/how-tos/workload-identity/) for the full list of supported annotations and their defaults.
-
-To exclude a pod or namespace from the webhook, set the `workload-identity.stackit.cloud/skip-pod-identity-webhook` label on the pod or namespace.
 
 ## CSI volume provisioners
 
 By default, every STACKIT shoot cluster is deployed with the STACKIT CSI driver, which uses the `block-storage.csi.stackit.cloud` provisioner.
-
-## DNS records
-
-The extension supports the `DNSRecord` resource of type `stackit`. An example looks as follows:
-
-```yaml
-apiVersion: extensions.gardener.cloud/v1alpha1
-kind: DNSRecord
-metadata:
-  name: dnsrecord-external
-  namespace: shoot--foobar--stackit
-spec:
-  type: stackit
-  secretRef:
-    name: dnsrecord-external
-    namespace: shoot--foobar--stackit
-  name: api.example.foobar.shoot.example.com
-  recordType: A # Use A, CNAME, or TXT
-  values: # list of IP addresses for A records, a single hostname for CNAME records, or a list of texts for TXT records.
-    - 1.2.3.4
-  # zone: some-zone-uuid
-  # ttl: 120
-```
-
-The referenced `Secret` contains the same `project-id` and `serviceaccount.json` fields as the [provider secret](#provider-secret-data). If `zone` is not set, the extension looks up the matching hosted zone by listing the zones of the project and matching against the record name; the resolved zone ID is persisted in the `DNSRecord` status. The STACKIT DNS API is global, so the region is not used to select an endpoint. The `ttl` field defaults to `120` seconds and must be within the STACKIT-allowed range of `60` to `99999999` seconds.
