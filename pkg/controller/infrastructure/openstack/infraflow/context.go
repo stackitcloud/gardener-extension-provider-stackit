@@ -192,9 +192,7 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	status.Networks.Router.ID = ptr.Deref(fctx.state.Get(IdentifierRouter), "")
 	status.Networks.Router.ExternalFixedIPs = fctx.state.GetObject(IdentifierEgressCIDRs).([]string)
-	// backwards compatibility change for the deprecated field
 	if len(status.Networks.Router.ExternalFixedIPs) > 0 {
-		//nolint:staticcheck // SA1019: needed for migration purposes
 		status.Networks.Router.IP = status.Networks.Router.ExternalFixedIPs[0]
 	}
 
@@ -205,7 +203,6 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 	}
 
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
-		//nolint:staticcheck // SA1019: Keep support for OpenStack mcm until we completely drop it
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,

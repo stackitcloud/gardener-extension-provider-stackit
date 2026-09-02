@@ -69,11 +69,11 @@ func (c *Config) ApplyETCDStorage(etcdStorage *config.ETCDStorage) {
 
 // ApplyRegistryCaches sets the given Registry Cache configurations.
 func (c *Config) ApplyRegistryCaches(regCaches *[]config.RegistryCacheConfiguration) {
-	//nolint:staticcheck // SA1019: needed for migration purposes
+	//nolint:staticcheck // SA1019: deprecated will be removed later
 	if len(c.Config.RegistryCaches) == 0 {
 		return
 	}
-	//nolint:staticcheck // SA1019: needed for migration purposes
+	//nolint:staticcheck // SA1019: deprecated will be removed later
 	*regCaches = c.Config.RegistryCaches
 }
 

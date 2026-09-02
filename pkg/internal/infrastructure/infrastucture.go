@@ -148,7 +148,7 @@ func WorkersCIDR(config *stackitv1alpha1.InfrastructureConfig) string {
 	workersCIDR := config.Networks.Workers
 	// Backwards compatibility - remove this code in a future version.
 	if workersCIDR == "" {
-		//nolint:staticcheck // SA1019: needed for migration purposes
+		//nolint:staticcheck // SA1019: deprecated will be removed later
 		workersCIDR = config.Networks.Worker
 	}
 
@@ -168,6 +168,8 @@ func PatchProviderStatusAndState(
 	if status != nil {
 		infra.Status.ProviderStatus = &runtime.RawExtension{Object: status}
 		infra.Status.NodesCIDR = nodesCIDR
+		//nolint:staticcheck // SA1019: TODO
+		// TODO: We need a different source for this as the Router is deprecated
 		infra.Status.EgressCIDRs = utils.ComputeEgressCIDRs(status.Networks.Router.ExternalFixedIPs)
 	}
 

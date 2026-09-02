@@ -24,6 +24,7 @@ import (
 	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -43,7 +44,12 @@ func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 
 	state := fctx.computeInfrastructureState()
 	status := fctx.computeInfrastructureStatus()
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, state)
+	var egressCIDRs []string
+	if status != nil {
+		egressCIDRs = utils.ComputeEgressCIDRs(status.Networks.Router.ExternalFixedIPs)
+	}
+
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, egressCIDRs, state)
 }
 
 func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
@@ -162,8 +168,7 @@ func (fctx *FlowContext) ensureNewRouter(ctx context.Context, externalNetworkID 
 	desired := &access.Router{
 		Name:              fctx.defaultRouterName(),
 		ExternalNetworkID: externalNetworkID,
-		//nolint:staticcheck // SA1019: needed for migration purposes
-		EnableSNAT: fctx.cloudProfileConfig.UseSNAT,
+		EnableSNAT:        fctx.cloudProfileConfig.UseSNAT,
 	}
 	current, err := fctx.findExistingRouter(ctx)
 	if err != nil {
@@ -210,7 +215,6 @@ func (fctx *FlowContext) findFloatingPoolSubnetName() *string {
 	}
 
 	// Second: Check if the CloudProfile contains a default floating subnet and use it.
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	if floatingPool, err := helper.FindFloatingPool(fctx.cloudProfileConfig.Constraints.FloatingPools, fctx.config.FloatingPoolName, fctx.infra.Spec.Region, nil); err == nil && floatingPool.DefaultFloatingSubnet != nil {
 		return floatingPool.DefaultFloatingSubnet
 	}
