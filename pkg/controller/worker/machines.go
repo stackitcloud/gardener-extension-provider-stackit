@@ -146,6 +146,7 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		}
 
 		machineLabels := map[string]string{}
+		//nolint:staticcheck
 		for _, pair := range workerConfig.MachineLabels {
 			machineLabels[pair.Name] = pair.Value
 		}
@@ -310,6 +311,7 @@ func (w *workerDelegate) generateWorkerPoolHash(pool extensionsv1alpha1.WorkerPo
 	var additionalHashData []string
 
 	var pairs []string
+	//nolint:staticcheck
 	for _, pair := range workerConfig.MachineLabels {
 		if pair.TriggerRollingOnUpdate {
 			pairs = append(pairs, pair.Name+"="+pair.Value)
