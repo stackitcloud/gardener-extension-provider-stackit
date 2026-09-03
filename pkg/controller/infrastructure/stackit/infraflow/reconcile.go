@@ -16,6 +16,7 @@ import (
 	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -33,7 +34,7 @@ func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 
 	state := fctx.computeInfrastructureState()
 	status := fctx.computeInfrastructureStatus()
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, state)
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, fctx.egressCIDRs, state)
 }
 
 func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
@@ -400,7 +401,6 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 }
 
 func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
-	var result []string
 	networkID := fctx.state.Get(IdentifierNetwork)
 	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
 	if err != nil {
@@ -412,8 +412,7 @@ func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 	}
 	routerIP, ok := network.Ipv4.GetPublicIpOk()
 	if ok && routerIP != nil {
-		result = append(result, *routerIP)
-		fctx.state.SetObject(IdentifierEgressCIDRs, result)
+		fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{*routerIP})
 		return nil
 	}
 	return fmt.Errorf("egress IP not found for network: %s", network.GetId())

@@ -37,8 +37,6 @@ const (
 	NameSecGroup = "SecurityGroupName"
 	// IdentifierSubnet is the key for the subnet id
 	IdentifierSubnet = "Subnet"
-	// IdentifierEgressCIDRs is the key for the slice containing egress CIDRs strings.
-	IdentifierEgressCIDRs = "EgressCIDRs"
 	// NameKeyPair is the key for the name of the EC2 key pair resource
 	NameKeyPair = "KeyPair"
 )
@@ -73,6 +71,7 @@ type FlowContext struct {
 	networking              osclient.Networking
 	isSNAShoot              bool
 	nodesCIDR               *string
+	egressCIDRs             []string
 	dnsNameservers          *[]string
 	stackitLB               stackitclient.LoadBalancingClient
 	stackitALB              stackitclient.ApplicationLoadBalancingClient
@@ -152,8 +151,8 @@ func NewFlowContext(ctx context.Context, opts Opts) (*FlowContext, error) {
 }
 
 func (fctx *FlowContext) persistState(ctx context.Context) error {
-	// status is nil such that there's no need to pass the nodesCIDR
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, fctx.computeInfrastructureState())
+	// status is nil such that there's no need to pass the nodesCIDR and egressCIDRs
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, nil, fctx.computeInfrastructureState())
 }
 
 func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.InfrastructureStatus {
@@ -163,16 +162,6 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	status.Networks.ID = ptr.Deref(fctx.state.Get(IdentifierNetwork), "")
 	status.Networks.Name = ptr.Deref(fctx.state.Get(NameNetwork), "")
-
-	//nolint:staticcheck // SA1019: TODO
-	// TODO we need to save this in a different place as we need this later in the status of the Infrastructure Object for ACLs
-	status.Networks.Router.ExternalFixedIPs = fctx.state.GetObject(IdentifierEgressCIDRs).([]string)
-	// backwards compatibility change for the deprecated field
-	//nolint:staticcheck // SA1019: needed for migration purposes
-	if len(status.Networks.Router.ExternalFixedIPs) > 0 {
-		//nolint:staticcheck // SA1019: needed for migration purposes
-		status.Networks.Router.IP = status.Networks.Router.ExternalFixedIPs[0]
-	}
 
 	status.Node.KeyName = ptr.Deref(fctx.state.Get(NameKeyPair), "")
 

@@ -24,7 +24,6 @@ import (
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -162,15 +161,14 @@ func PatchProviderStatusAndState(
 	infra *extensionsv1alpha1.Infrastructure,
 	status *stackitv1alpha1.InfrastructureStatus,
 	nodesCIDR *string,
+	egressCIDRs []string,
 	state *runtime.RawExtension,
 ) error {
 	patch := client.MergeFrom(infra.DeepCopy())
 	if status != nil {
 		infra.Status.ProviderStatus = &runtime.RawExtension{Object: status}
 		infra.Status.NodesCIDR = nodesCIDR
-		//nolint:staticcheck // SA1019: TODO
-		// TODO: We need a different source for this as the Router is deprecated
-		infra.Status.EgressCIDRs = utils.ComputeEgressCIDRs(status.Networks.Router.ExternalFixedIPs)
+		infra.Status.EgressCIDRs = egressCIDRs
 	}
 
 	if state != nil {
