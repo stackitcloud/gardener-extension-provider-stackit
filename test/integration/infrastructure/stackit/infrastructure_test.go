@@ -640,17 +640,6 @@ func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, provide
 	net, err := iaasClient.GetNetworkById(ctx, providerStatus.Networks.ID)
 	Expect(err).NotTo(HaveOccurred())
 
-	var externalFixedIPs []string
-	ip, ok := net.Ipv4.GetPublicIpOk()
-	if ok && ip != nil {
-		externalFixedIPs = append(externalFixedIPs, *ip)
-	}
-
-	// verify router ip in status
-	Expect(ip).NotTo(BeNil())
-	Expect(*ip).NotTo(BeEmpty())
-	Expect(providerStatus.Networks.Router.ExternalFixedIPs).To(ContainElements(externalFixedIPs))
-
 	// network is created
 	Expect(err).NotTo(HaveOccurred())
 	Expect(net).NotTo(BeNil())
@@ -672,7 +661,11 @@ func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, provide
 	infrastructureIdentifier.keyPair = new(keyPair.GetName())
 
 	// verify egressCIDRs
-	Expect(infraStatus.EgressCIDRs).To(ContainElements(utils.ComputeEgressCIDRs(providerStatus.Networks.Router.ExternalFixedIPs)))
+	ip, ok := net.Ipv4.GetPublicIpOk()
+	Expect(ok).To(BeTrue())
+	Expect(ip).NotTo(BeNil())
+	Expect(*ip).NotTo(BeEmpty())
+	Expect(infraStatus.EgressCIDRs).To(ContainElements(utils.ComputeEgressCIDRs([]string{*ip})))
 
 	return infrastructureIdentifier, providerStatus
 }

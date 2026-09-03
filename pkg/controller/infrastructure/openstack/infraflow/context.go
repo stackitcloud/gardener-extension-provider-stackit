@@ -163,8 +163,8 @@ func NewFlowContext(ctx context.Context, opts Opts) (*FlowContext, error) {
 }
 
 func (fctx *FlowContext) persistState(ctx context.Context) error {
-	// status is nil such that there's no need to pass the nodesCIDR
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, fctx.computeInfrastructureState())
+	// status is nil such that there's no need to pass the nodesCIDR and egressCIDRs
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, nil, fctx.computeInfrastructureState())
 }
 
 func (fctx *FlowContext) computeInfrastructureState() *runtime.RawExtension {
