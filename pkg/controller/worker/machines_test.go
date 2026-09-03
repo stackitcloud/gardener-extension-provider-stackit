@@ -912,117 +912,6 @@ var _ = Describe("Machines", func() {
 					Expect(result).To(Equal(machineDeployments))
 				})
 
-				Context("MCM migration", func() {
-					BeforeEach(func() {
-						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, useStackitMCM))
-						//DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
-						mockStackitClient = mockstackitclient.NewMockFactory(ctrl)
-						workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockStackitClient)
-					})
-
-					It("should migrate the machine controller manager", func() {
-						By("creating a machine")
-						machine := &machinev1alpha1.Machine{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "machine-1",
-								Namespace: w.Namespace,
-							},
-							Spec: machinev1alpha1.MachineSpec{
-								Class: machinev1alpha1.ClassSpec{
-									Name: "machineclass",
-								},
-								ProviderID: "openstack:///RegionOne/server-123",
-							},
-						}
-
-						Expect(c.Create(ctx, machine)).To(Succeed())
-
-						By("creating a machine class")
-						machineClassPath := filepath.Join("internal", "machineclass")
-						if useStackitMCM {
-							machineClassPath = filepath.Join("internal", "machineclass-stackit")
-						}
-
-						chartApplier.
-							EXPECT().
-							ApplyFromEmbeddedFS(
-								ctx,
-								charts.InternalChart,
-								machineClassPath,
-								w.Namespace,
-								"machineclass",
-								kubernetes.Values(machineClasses),
-							).
-							Return(nil)
-
-						Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
-
-						By("enabling the feature gate")
-						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
-						DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
-
-						//mockstackitclient.NewMockIaaSClient(ctrl).EXPECT().UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
-						//	Labels: map[string]any{
-						//		"mcm.gardener.cloud/machine":      machine.Name,
-						//		"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
-						//		"mcm.gardener.cloud/role":         "node",
-						//	},
-						//}).Return(nil, nil)
-
-						mockIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
-
-						mockStackitClient.EXPECT().
-							IaaS(ctx, c, w.Spec.SecretRef).
-							Return(mockIaaSClient, nil)
-
-						mockIaaSClient.EXPECT().
-							ProjectID().
-							Return("project-id-123")
-
-						mockIaaSClient.EXPECT().
-							UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
-								Labels: map[string]any{
-									"mcm.gardener.cloud/machine":      machine.Name,
-									"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
-									"mcm.gardener.cloud/role":         "node",
-								},
-							}).
-							Return(nil, nil)
-
-						By("checking for the migrated machine")
-						migratedMachine := &machinev1alpha1.Machine{}
-
-						Expect(c.Get(ctx, client.ObjectKey{
-							Name:      "machine-1",
-							Namespace: w.Namespace,
-						}, migratedMachine)).To(Succeed())
-
-						Expect(migratedMachine.Spec.ProviderID).
-							To(Equal("stackit://project-id-123/server-123"))
-
-						Expect(migratedMachine.Annotations).
-							To(HaveKeyWithValue("stackit.cloud/migrated-machine", "true"))
-
-						// TODO: how do i check this, as the annotation will get removed soon after the migration
-						//Expect(migratedMachine.Annotations).
-						//	NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
-
-						By("checking for the worker")
-						migratedWorker := &extensionsv1alpha1.Worker{}
-
-						Expect(c.Get(ctx, client.ObjectKey{
-							Name:      w.Name,
-							Namespace: w.Namespace,
-						}, migratedWorker)).To(Succeed())
-
-						Expect(migratedWorker.Annotations).
-							To(HaveKeyWithValue(
-								"stackit.cloud/machine-controller-manager-migrated",
-								"true",
-							))
-					})
-				})
-
 				Context("Machine Labels", func() {
 					It("should consider rolling machine labels for the worker pool hash", func() {
 						// setup(region, machineImage, "")
@@ -1083,6 +972,182 @@ var _ = Describe("Machines", func() {
 						Expect(className2).NotTo(Equal(className3))
 						Expect(className3).NotTo(Equal(className4))
 					})
+				})
+			})
+
+			Context("MCM migration", func() {
+				var (
+					defaultMachineClass map[string]any
+					machineClasses      map[string]any
+				)
+
+				BeforeEach(func() {
+					defaultMachineClass = map[string]any{
+						"region":          region,
+						"keyName":         keyName,
+						"networkID":       networkID,
+						"podNetworkCIDRs": []string{podCIDR},
+						"securityGroups":  []string{securityGroupName},
+						"tags": map[string]string{
+							fmt.Sprintf("kubernetes.io-cluster-%s", technicalID): "1",
+							"kubernetes.io-role-node":                            "1",
+						},
+						"secret": map[string]any{
+							"cloudConfig": string(userData),
+						},
+						"operatingSystem": map[string]any{
+							"operatingSystemName":    machineImageName,
+							"operatingSystemVersion": strings.ReplaceAll(machineImageVersion, "+", "_"),
+						},
+					}
+
+					if useStackitMCM {
+						securityGroupID := "sg-12345"
+						// STACKIT uses security group IDs and simplified tags
+						defaultMachineClass["securityGroups"] = []string{securityGroupID}
+						defaultMachineClass["tags"] = map[string]string{
+							"kubernetes.io/cluster": technicalID,
+						}
+						// Note: subnetID is NOT included for STACKIT
+					} else {
+						// OpenStack uses security group names, full tags, and subnetID
+						defaultMachineClass["securityGroups"] = []string{securityGroupName}
+						defaultMachineClass["tags"] = map[string]string{
+							fmt.Sprintf("kubernetes.io-cluster-%s", technicalID): "1",
+							"kubernetes.io-role-node":                            "1",
+						}
+						defaultMachineClass["subnetID"] = subnetID
+					}
+
+					var (
+						machineClassPool1Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool1Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+						machineClassPool2Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool2Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+						machineClassPool3Zone1 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone1)
+						machineClassPool3Zone2 = addKeyValueToMap(defaultMachineClass, "availabilityZone", zone2)
+					)
+
+					machineClasses = map[string]any{"machineClasses": []map[string]any{
+						machineClassPool1Zone1,
+						machineClassPool1Zone2,
+						machineClassPool2Zone1,
+						machineClassPool2Zone2,
+						machineClassPool3Zone1,
+						machineClassPool3Zone2,
+					}}
+
+					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, useStackitMCM))
+
+					mockStackitClient = mockstackitclient.NewMockFactory(ctrl)
+					if cluster.Shoot.Annotations == nil {
+						cluster.Shoot.Annotations = map[string]string{}
+					}
+
+					cluster.Shoot.Annotations[feature.ShootMigrateSTACKITMachineControllerManager] = "true"
+					workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockStackitClient)
+				})
+
+				It("should migrate the machine controller manager", func() {
+					By("creating a machine")
+					machine := &machinev1alpha1.Machine{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "machine-1",
+							Namespace: w.Namespace,
+						},
+						Spec: machinev1alpha1.MachineSpec{
+							Class: machinev1alpha1.ClassSpec{
+								Name: "machineclass",
+							},
+							ProviderID: "openstack:///RegionOne/server-123",
+						},
+					}
+
+					Expect(c.Create(ctx, machine)).To(Succeed())
+
+					By("creating a machine class")
+					machineClassPath := filepath.Join("internal", "machineclass")
+					if useStackitMCM {
+						machineClassPath = filepath.Join("internal", "machineclass-stackit")
+					}
+
+					chartApplier.
+						EXPECT().
+						ApplyFromEmbeddedFS(
+							ctx,
+							charts.InternalChart,
+							machineClassPath,
+							w.Namespace,
+							"machineclass",
+							kubernetes.Values(machineClasses),
+						).
+						Return(nil)
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
+
+					By("enabling the feature gate")
+					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
+					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.MigrateSTACKITMachineControllerManager, true))
+
+					//mockstackitclient.NewMockIaaSClient(ctrl).EXPECT().UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+					//	Labels: map[string]any{
+					//		"mcm.gardener.cloud/machine":      machine.Name,
+					//		"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+					//		"mcm.gardener.cloud/role":         "node",
+					//	},
+					//}).Return(nil, nil)
+
+					mockIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
+
+					mockStackitClient.EXPECT().
+						IaaS(ctx, c, w.Spec.SecretRef).
+						Return(mockIaaSClient, nil)
+
+					mockIaaSClient.EXPECT().
+						ProjectID().
+						Return("project-id-123")
+
+					mockIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      machine.Name,
+								"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, nil)
+
+					By("checking for the migrated machine")
+					migratedMachine := &machinev1alpha1.Machine{}
+
+					Expect(c.Get(ctx, client.ObjectKey{
+						Name:      "machine-1",
+						Namespace: w.Namespace,
+					}, migratedMachine)).To(Succeed())
+
+					Expect(migratedMachine.Spec.ProviderID).
+						To(Equal("stackit://project-id-123/server-123"))
+
+					Expect(migratedMachine.Annotations).
+						To(HaveKeyWithValue("stackit.cloud/migrated-machine", "true"))
+
+					// TODO: how do i check this, as the annotation will get removed soon after the migration
+					//Expect(migratedMachine.Annotations).
+					//	NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
+
+					By("checking for the worker")
+					migratedWorker := &extensionsv1alpha1.Worker{}
+
+					Expect(c.Get(ctx, client.ObjectKey{
+						Name:      w.Name,
+						Namespace: w.Namespace,
+					}, migratedWorker)).To(Succeed())
+
+					Expect(migratedWorker.Annotations).
+						To(HaveKeyWithValue(
+							"stackit.cloud/machine-controller-manager-migrated",
+							"true",
+						))
 				})
 			})
 

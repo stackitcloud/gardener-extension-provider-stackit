@@ -76,8 +76,9 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 		return err
 	}
 
+	fmt.Println("Deploying OpenStack machine classes...")
 	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
-		fmt.Println("Migrating Stackit Machine Controller Manager to Gardener Machine Controller Manager...")
+		fmt.Println("Migrating Stackit Machine Controller Manager to Gardener Machine Controller Manager...") // TODO: remove later
 		err = w.migrateMachines(ctx)
 		if err != nil {
 			return err
