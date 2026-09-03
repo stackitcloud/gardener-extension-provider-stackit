@@ -889,6 +889,8 @@ boolean
 
 <p>
 FloatingPoolStatus contains information about the floating pool.
+
+Deprecated: OpenStack-only; not used for STACKIT.
 </p>
 
 <table>
@@ -908,7 +910,7 @@ string
 </em>
 </td>
 <td>
-<p>ID is the floating pool id.</p>
+<p>ID is the floating pool id.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -919,7 +921,7 @@ string
 </em>
 </td>
 <td>
-<p>Name is the floating pool name.</p>
+<p>Name is the floating pool name.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 
@@ -952,7 +954,8 @@ string
 </em>
 </td>
 <td>
-<p>FloatingPoolName contains the FloatingPoolName name in which LoadBalancer FIPs should be created.</p>
+<em>(Optional)</em>
+<p>FloatingPoolName contains the FloatingPoolName name in which LoadBalancer FIPs should be created.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -964,7 +967,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>FloatingPoolSubnetName contains the fixed name of subnet or matching name pattern for subnet<br />in the Floating IP Pool where the router should be attached to.</p>
+<p>FloatingPoolSubnetName contains the fixed name of subnet or matching name pattern for subnet<br />in the Floating IP Pool where the router should be attached to.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1562,7 +1565,7 @@ string
 </em>
 </td>
 <td>
-<p>FloatingPool contains information about the floating pool.</p>
+<p>FloatingPool contains information about the floating pool.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1573,7 +1576,7 @@ string
 </em>
 </td>
 <td>
-<p>Router contains information about the Router and related resources.</p>
+<p>Router contains information about the Router and related resources.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1646,7 +1649,7 @@ Networks holds information about the Kubernetes and infrastructure networks.
 </td>
 <td>
 <em>(Optional)</em>
-<p>Router indicates whether to use an existing router or create a new one.</p>
+<p>Router indicates whether to use an existing router or create a new one.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1692,7 +1695,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>SubnetID is the ID of an existing subnet.</p>
+<p>SubnetID is the ID of an existing subnet.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1882,6 +1885,8 @@ string
 
 <p>
 RouterStatus contains information about a generated Router or resources attached to an existing Router.
+
+Deprecated: OpenStack-only; not used for STACKIT.
 </p>
 
 <table>
@@ -1901,7 +1906,7 @@ string
 </em>
 </td>
 <td>
-<p>ID is the Router id.</p>
+<p>ID is the Router id.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1912,7 +1917,7 @@ string
 </em>
 </td>
 <td>
-<p>IP is the router ip.<br />Deprecated: use ExternalFixedIPs instead.</p>
+<p>IP is the router ip.<br />Deprecated: use ExternalFixedIPs instead. OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -1923,7 +1928,7 @@ string array
 </em>
 </td>
 <td>
-<p>ExternalFixedIPs is the list of the router's assigned external fixed IPs.</p>
+<p>ExternalFixedIPs is the list of the router's assigned external fixed IPs.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 
@@ -2132,6 +2137,8 @@ boolean
 
 <p>
 ShareNetworkStatus contains information about a generated ShareNetwork
+
+Deprecated: OpenStack-only; not used for STACKIT.
 </p>
 
 <table>
@@ -2151,7 +2158,7 @@ string
 </em>
 </td>
 <td>
-<p>ID is the Network id.</p>
+<p>ID is the Network id.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -2162,7 +2169,7 @@ string
 </em>
 </td>
 <td>
-<p>Name is the Network name.</p>
+<p>Name is the Network name.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 
@@ -2351,6 +2358,8 @@ string
 
 <p>
 Subnet is an OpenStack subnet related to a Network.
+
+Deprecated: OpenStack-only; not used for STACKIT.
 </p>
 
 <table>
@@ -2370,7 +2379,7 @@ Subnet is an OpenStack subnet related to a Network.
 </em>
 </td>
 <td>
-<p>Purpose is a logical description of the subnet.</p>
+<p>Purpose is a logical description of the subnet.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -2381,7 +2390,7 @@ string
 </em>
 </td>
 <td>
-<p>ID is the subnet id.</p>
+<p>ID is the subnet id.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 <tr>
@@ -2393,7 +2402,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>DNSNameservers specifies the DNS nameservers for the subnet.<br />Nil if DNSNameservers could not be queried.</p>
+<p>DNSNameservers specifies the DNS nameservers for the subnet.<br />Nil if DNSNameservers could not be queried.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 
