@@ -69,6 +69,9 @@ type WorkerConfig struct {
 	NodeTemplate *extensionsv1alpha1.NodeTemplate `json:"nodeTemplate,omitempty"`
 
 	// MachineLabels define key value pairs to add to machines.
+	//
+	// Deprecated: OpenStack-only; not used for STACKIT.
+	// +optional
 	MachineLabels []MachineLabel `json:"machineLabels,omitempty"`
 }
 

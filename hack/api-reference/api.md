@@ -2437,7 +2437,8 @@ WorkerConfig contains configuration data for a worker pool.
 </em>
 </td>
 <td>
-<p>MachineLabels define key value pairs to add to machines.</p>
+<em>(Optional)</em>
+<p>MachineLabels define key value pairs to add to machines.<br />Deprecated: OpenStack-only; not used for STACKIT.</p>
 </td>
 </tr>
 
