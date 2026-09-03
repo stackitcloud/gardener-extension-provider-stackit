@@ -16,6 +16,7 @@ import (
 	infrainternal "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/internal/infrastructure"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -33,22 +34,15 @@ func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 
 	state := fctx.computeInfrastructureState()
 	status := fctx.computeInfrastructureStatus()
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, state)
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, status, fctx.nodesCIDR, fctx.egressCIDRs, state)
 }
 
 func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	g := flow.NewGraph("STACKIT infrastructure reconciliation")
 
-	ensureExternalNetwork := fctx.AddTask(g, "ensure external network",
-		fctx.ensureExternalNetwork,
-		shared.Timeout(defaultTimeout),
-		shared.DoIf(fctx.hasOpenStackCredentials),
-	)
-
 	ensureNetwork := fctx.AddTask(g, "ensure isolated network",
 		fctx.ensureNetwork,
-		shared.Timeout(defaultTimeout),
-		shared.Dependencies(ensureExternalNetwork))
+		shared.Timeout(defaultTimeout))
 
 	_ = fctx.AddTask(g, "ensure openstack subnet id",
 		fctx.ensureOpenStackSubnetID,
@@ -80,19 +74,6 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
 
 	return g
-}
-
-func (fctx *FlowContext) ensureExternalNetwork(ctx context.Context) error {
-	externalNetwork, err := fctx.networking.GetExternalNetworkByName(ctx, fctx.config.FloatingPoolName)
-	if err != nil {
-		return err
-	}
-	if externalNetwork == nil {
-		return fmt.Errorf("external network for floating pool name %s not found", fctx.config.FloatingPoolName)
-	}
-	fctx.state.Set(IdentifierFloatingNetwork, externalNetwork.ID)
-	fctx.state.Set(NameFloatingNetwork, externalNetwork.Name)
-	return nil
 }
 
 func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
@@ -420,7 +401,6 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 }
 
 func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
-	var result []string
 	networkID := fctx.state.Get(IdentifierNetwork)
 	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
 	if err != nil {
@@ -432,8 +412,7 @@ func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 	}
 	routerIP, ok := network.Ipv4.GetPublicIpOk()
 	if ok && routerIP != nil {
-		result = append(result, *routerIP)
-		fctx.state.SetObject(IdentifierEgressCIDRs, result)
+		fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{*routerIP})
 		return nil
 	}
 	return fmt.Errorf("egress IP not found for network: %s", network.GetId())

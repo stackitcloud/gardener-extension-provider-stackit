@@ -24,7 +24,6 @@ import (
 
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
 const (
@@ -148,7 +147,7 @@ func WorkersCIDR(config *stackitv1alpha1.InfrastructureConfig) string {
 	workersCIDR := config.Networks.Workers
 	// Backwards compatibility - remove this code in a future version.
 	if workersCIDR == "" {
-		//nolint:staticcheck // SA1019: needed for migration purposes
+		//nolint:staticcheck // SA1019: deprecated will be removed later
 		workersCIDR = config.Networks.Worker
 	}
 
@@ -162,13 +161,14 @@ func PatchProviderStatusAndState(
 	infra *extensionsv1alpha1.Infrastructure,
 	status *stackitv1alpha1.InfrastructureStatus,
 	nodesCIDR *string,
+	egressCIDRs []string,
 	state *runtime.RawExtension,
 ) error {
 	patch := client.MergeFrom(infra.DeepCopy())
 	if status != nil {
 		infra.Status.ProviderStatus = &runtime.RawExtension{Object: status}
 		infra.Status.NodesCIDR = nodesCIDR
-		infra.Status.EgressCIDRs = utils.ComputeEgressCIDRs(status.Networks.Router.ExternalFixedIPs)
+		infra.Status.EgressCIDRs = egressCIDRs
 	}
 
 	if state != nil {

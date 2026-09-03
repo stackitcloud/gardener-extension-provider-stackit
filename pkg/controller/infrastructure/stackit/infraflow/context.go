@@ -25,10 +25,6 @@ import (
 
 const (
 
-	// NameFloatingNetwork is the key for the floating network name
-	NameFloatingNetwork = "FloatingNetworkName"
-	// IdentifierFloatingNetwork is the key for the floating network id
-	IdentifierFloatingNetwork = "FloatingNetwork"
 	// IdentifierNetwork is the key for the network id
 	IdentifierNetwork = "Network"
 	// NameNetwork is the name of the network
@@ -41,8 +37,6 @@ const (
 	NameSecGroup = "SecurityGroupName"
 	// IdentifierSubnet is the key for the subnet id
 	IdentifierSubnet = "Subnet"
-	// IdentifierEgressCIDRs is the key for the slice containing egress CIDRs strings.
-	IdentifierEgressCIDRs = "EgressCIDRs"
 	// NameKeyPair is the key for the name of the EC2 key pair resource
 	NameKeyPair = "KeyPair"
 )
@@ -77,6 +71,7 @@ type FlowContext struct {
 	networking              osclient.Networking
 	isSNAShoot              bool
 	nodesCIDR               *string
+	egressCIDRs             []string
 	dnsNameservers          *[]string
 	stackitLB               stackitclient.LoadBalancingClient
 	stackitALB              stackitclient.ApplicationLoadBalancingClient
@@ -156,8 +151,8 @@ func NewFlowContext(ctx context.Context, opts Opts) (*FlowContext, error) {
 }
 
 func (fctx *FlowContext) persistState(ctx context.Context) error {
-	// status is nil such that there's no need to pass the nodesCIDR
-	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, fctx.computeInfrastructureState())
+	// status is nil such that there's no need to pass the nodesCIDR and egressCIDRs
+	return infrainternal.PatchProviderStatusAndState(ctx, fctx.client, fctx.infra, nil, nil, nil, fctx.computeInfrastructureState())
 }
 
 func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.InfrastructureStatus {
@@ -165,18 +160,8 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 		TypeMeta: infrainternal.StatusTypeMeta,
 	}
 
-	status.Networks.FloatingPool.ID = ptr.Deref(fctx.state.Get(IdentifierFloatingNetwork), "")
-	status.Networks.FloatingPool.Name = ptr.Deref(fctx.state.Get(NameFloatingNetwork), "")
-
 	status.Networks.ID = ptr.Deref(fctx.state.Get(IdentifierNetwork), "")
 	status.Networks.Name = ptr.Deref(fctx.state.Get(NameNetwork), "")
-
-	status.Networks.Router.ExternalFixedIPs = fctx.state.GetObject(IdentifierEgressCIDRs).([]string)
-	// backwards compatibility change for the deprecated field
-	if len(status.Networks.Router.ExternalFixedIPs) > 0 {
-		//nolint:staticcheck // SA1019: needed for migration purposes
-		status.Networks.Router.IP = status.Networks.Router.ExternalFixedIPs[0]
-	}
 
 	status.Node.KeyName = ptr.Deref(fctx.state.Get(NameKeyPair), "")
 
@@ -186,7 +171,6 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 
 	// TODO: Remove once migrated fully to IaaS API
 	if v := fctx.state.Get(IdentifierSubnet); v != nil {
-		//nolint:staticcheck // SA1019: Will be removed once OpenStack mcm support is dropped.
 		status.Networks.Subnets = []stackitv1alpha1.Subnet{
 			{
 				Purpose:        stackitv1alpha1.PurposeNodes,

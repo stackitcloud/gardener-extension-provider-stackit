@@ -96,7 +96,6 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	var subnet *stackitv1alpha1.Subnet
 	// There is no subnet resource in the IaaS API. The machine-controller-manager-provider-stackit do not require this field.
 	if !feature.UseStackitMachineControllerManager(w.cluster) {
-		//nolint:staticcheck // SA1019: Will be removed once we drop OpenStack API support
 		subnet, err = helper.FindSubnetByPurpose(infrastructureStatus.Networks.Subnets, stackitv1alpha1.PurposeNodes)
 		if err != nil {
 			return err

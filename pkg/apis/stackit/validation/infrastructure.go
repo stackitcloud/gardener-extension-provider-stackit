@@ -21,12 +21,12 @@ func ValidateInfrastructureConfig(infra *stackitv1alpha1.InfrastructureConfig, n
 
 	// check InfrastructureConfig.networks.worker(s) is a valid cidr and not be set if a network id is provided.
 	var workerCIDR cidrvalidation.CIDR
-	//nolint:staticcheck // SA1019: needed for migration purposes
+	//nolint:staticcheck // SA1019: deprecated will be removed later
 	if infra.Networks.Worker != "" {
-		//nolint:staticcheck // SA1019: needed for migration purposes
+		//nolint:staticcheck // SA1019: deprecated will be removed later
 		workerCIDR = cidrvalidation.NewCIDR(infra.Networks.Worker, networksPath.Child("worker"))
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRParse(workerCIDR)...)
-		//nolint:staticcheck // SA1019: needed for migration purposes
+		//nolint:staticcheck // SA1019: deprecated will be removed later
 		allErrs = append(allErrs, cidrvalidation.ValidateCIDRIsCanonical(networksPath.Child("worker"), infra.Networks.Worker)...)
 		if infra.Networks.ID != nil {
 			allErrs = append(allErrs, field.Forbidden(networksPath.Child("worker"), "cant be set if a network id is provided"))

@@ -660,9 +660,7 @@ func getConfigChartValues(
 		values["applicationCredentialName"] = osCredentials.ApplicationCredentialName
 		values["applicationCredentialSecret"] = osCredentials.ApplicationCredentialSecret
 		values["region"] = cp.Spec.Region
-		//nolint:staticcheck // SA1019: needed for migration purposes
 		values["requestTimeout"] = cloudProfileConfig.RequestTimeout
-		//nolint:staticcheck // SA1019: needed for migration purposes
 		values["ignoreVolumeAZ"] = cloudProfileConfig.IgnoreVolumeAZ != nil && *cloudProfileConfig.IgnoreVolumeAZ
 		// detect internal network.
 		// See https://github.com/kubernetes/cloud-provider-openstack/blob/v1.22.1/docs/openstack-cloud-controller-manager/using-openstack-cloud-controller-manager.md#networking
@@ -1285,8 +1283,7 @@ func (vp *valuesProvider) getControlPlaneShootChartCSIValues(ctx context.Context
 	values := map[string]any{
 		"enabled":                    getCSIDriver(cpConfig) == stackitv1alpha1.OPENSTACK,
 		"rescanBlockStorageOnResize": cloudProfileConfig.RescanBlockStorageOnResize != nil && *cloudProfileConfig.RescanBlockStorageOnResize,
-		//nolint:staticcheck // SA1019: needed for migration purposes
-		"nodeVolumeAttachLimit": cloudProfileConfig.NodeVolumeAttachLimit,
+		"nodeVolumeAttachLimit":      cloudProfileConfig.NodeVolumeAttachLimit,
 	}
 
 	if userAgentHeader != nil {

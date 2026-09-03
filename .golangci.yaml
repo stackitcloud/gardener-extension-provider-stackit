@@ -94,6 +94,9 @@ linters:
       - linters:
           - nolintlint
         text: "should be written without leading space as `//nolint" # don't require machine-readable nolint directives (i.e. with no leading space)
+      - linters:
+          - staticcheck
+        text: "SA1019:.*OpenStack-only; not used for STACKIT."
     paths:
       - zz_generated\..*\.go$
 
