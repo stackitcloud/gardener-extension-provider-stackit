@@ -13,22 +13,43 @@ It also contains optional default values for DNS servers that shall be used for 
 
 ### `machineImages`
 
-For each machine image version, region-specific image IDs are mapped using the `regions` field. An optional `architecture` field can be specified per region entry, which specifies the CPU architecture of the machine on which the given machine image can be used. It defaults to `amd64`.
+The `machineImages` field maps the machine images declared in `.spec.machineImages` of the `CloudProfile` to region-specific image IDs.
+
+With `spec.machineCapabilities` in the `CloudProfile` (available since Gardener *v1.131.0*), map every `capabilityFlavor` of `.spec.machineImages[].versions` to a corresponding `capabilityFlavors` entry in the `CloudProfileConfig`. Each entry groups region-specific image IDs under a set of `capabilities` (e.g., `architecture`):
 
 ```yaml
-apiVersion: core.gardener.cloud/v1beta1
-kind: CloudProfile
-metadata:
-  name: stackit
-spec:
-  machineImages:
-    - name: ubuntu
-      versions:
-        - version: "22.04"
-          regions:
-            - name: eu01
-              id: <image-id>
-              architecture: amd64
+apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
+kind: CloudProfileConfig
+machineImages:
+  - name: ubuntu
+    versions:
+      - version: "22.04"
+        capabilityFlavors:
+          - capabilities:
+              architecture: [amd64]
+            regions:
+              - name: eu01
+                id: <image-id>
+          - capabilities:
+              architecture: [arm64]
+            regions:
+              - name: eu01
+                id: <image-id>
+```
+
+If `spec.machineCapabilities` is not used, the legacy `architectures` field in `.spec.machineImages[].versions` is used instead. In that case, region-specific image IDs are mapped using the `regions` field, with an optional `architecture` field per region entry specifying the CPU architecture (defaults to `amd64`):
+
+```yaml
+apiVersion: stackit.provider.extensions.gardener.cloud/v1alpha1
+kind: CloudProfileConfig
+machineImages:
+  - name: ubuntu
+    versions:
+      - version: "22.04"
+        regions:
+          - name: eu01
+            id: <image-id>
+            architecture: amd64
 ```
 
 An optional `image` field at the version level can be used as a fallback (image name) if no region mapping is found. This fallback only works for the `amd64` architecture and is strongly discouraged; prefer explicit image IDs.
@@ -70,6 +91,9 @@ kind: CloudProfile
 metadata:
   name: stackit
 spec:
+  machineCapabilities:
+    - name: architecture
+      values: [amd64, arm64]
   type: stackit
   kubernetes:
     versions:
@@ -78,11 +102,16 @@ spec:
     - name: ubuntu
       versions:
         - version: "22.04"
+          capabilityFlavors:
+            - architecture: [amd64]
+            - architecture: [arm64]
   machineTypes:
     - name: <machine-type>
       cpu: "4"
       gpu: "0"
       memory: 8Gi
+      capabilities:
+        architecture: [amd64]
       storage:
         type: storage_premium_perf4
         size: 40Gi
@@ -97,10 +126,17 @@ spec:
       - name: ubuntu
         versions:
           - version: "22.04"
-            regions:
-              - name: eu01
-                id: <image-id>
-                architecture: amd64
+            capabilityFlavors:
+              - capabilities:
+                  architecture: [amd64]
+                regions:
+                  - name: eu01
+                    id: <image-id>
+              - capabilities:
+                  architecture: [arm64]
+                regions:
+                  - name: eu01
+                    id: <image-id>
     dnsServers:
       - 1.1.1.1
     rescanBlockStorageOnResize: true
