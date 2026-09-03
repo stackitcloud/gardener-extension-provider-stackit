@@ -38,6 +38,13 @@ allowApplicationLoadBalancerController: true
 
 When this flag is `false` (the default), any shoot attempting to enable the ALB controller will be rejected by the admission webhook with a validation error.
 
+When ALB support is enabled, the `EnsureSTACKITALBDeletion` feature gate should also be enabled on the provider extension. It ensures that Application Load Balancers belonging to a shoot are deleted during cluster deletion; without it, remaining ALBs block the cluster deletion until they are removed manually. The feature gate is `Alpha` and defaults to `false`. Enable it via the `featureGates` value in the `gardener-extension-provider-stackit` chart:
+
+```yaml
+featureGates:
+  EnsureSTACKITALBDeletion: true
+```
+
 ## gardener-extension-provider-stackit
 
 ### Enabling Workload Identity
