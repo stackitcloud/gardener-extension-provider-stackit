@@ -76,9 +76,7 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("Deploying OpenStack machine classes...")
 	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
-		fmt.Println("Migrating Stackit Machine Controller Manager to Gardener Machine Controller Manager...") // TODO: remove later
 		err = w.migrateMachines(ctx)
 		if err != nil {
 			return err
@@ -445,6 +443,9 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 
 	for _, m := range migrateMachines {
 		patchAnnotations := client.MergeFrom(m.DeepCopy())
+		if m.Annotations == nil {
+			m.Annotations = make(map[string]string)
+		}
 		m.Annotations[shouldMigrateMachineAnnotation] = "true"
 		m.Annotations[migratedMachineAnnotation] = "true"
 		err = w.seedClient.Patch(ctx, &m, patchAnnotations)
