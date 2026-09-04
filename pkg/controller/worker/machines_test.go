@@ -1071,6 +1071,83 @@ var _ = Describe("Machines", func() {
 							"true",
 						))
 				})
+
+				It("should retry a machine after an IaaS API failure without touching migrated machines", func() {
+					migratedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, migratedMachine)).To(Succeed())
+					migratedMachine.Spec.ProviderID = "stackit://project-id-123/server-123"
+					migratedMachine.Annotations = map[string]string{"stackit.cloud/migrated-machine": "true"}
+					Expect(c.Update(ctx, migratedMachine)).To(Succeed())
+					expectedMigratedMachine := migratedMachine.DeepCopy()
+
+					pendingMachine := &machinev1alpha1.Machine{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "machine-2",
+							Namespace:   w.Namespace,
+							Annotations: map[string]string{"stackit.cloud/machine-should-be-migrated": "true", "stackit.cloud/migrated-machine": "true"},
+						},
+						Spec: machinev1alpha1.MachineSpec{
+							Class:      machinev1alpha1.ClassSpec{Name: "machineclass"},
+							ProviderID: "stackit://project-id-123/server-456",
+						},
+					}
+					Expect(c.Create(ctx, pendingMachine)).To(Succeed())
+
+					failingIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
+					mockStackitClient.EXPECT().
+						IaaS(ctx, c, w.Spec.SecretRef).
+						Return(failingIaaSClient, nil)
+					failingIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					failingIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      pendingMachine.Name,
+								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, fmt.Errorf("temporary IaaS API failure"))
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(MatchError(ContainSubstring("temporary IaaS API failure")))
+
+					failedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: pendingMachine.Name, Namespace: pendingMachine.Namespace}, failedMachine)).To(Succeed())
+					Expect(failedMachine.Annotations).To(HaveKeyWithValue("stackit.cloud/machine-should-be-migrated", "true"))
+
+					unchangedMigratedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, unchangedMigratedMachine)).To(Succeed())
+					Expect(unchangedMigratedMachine).To(Equal(expectedMigratedMachine))
+
+					retryIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
+					mockStackitClient.EXPECT().
+						IaaS(ctx, c, w.Spec.SecretRef).
+						Return(retryIaaSClient, nil)
+					retryIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					retryIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      pendingMachine.Name,
+								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, nil)
+					chartApplier.EXPECT().
+						ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join("internal", "machineclass-stackit"), w.Namespace, "machineclass", gomock.Any()).
+						Return(nil)
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
+
+					retriedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: pendingMachine.Name, Namespace: pendingMachine.Namespace}, retriedMachine)).To(Succeed())
+					Expect(retriedMachine.Annotations).NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, unchangedMigratedMachine)).To(Succeed())
+					Expect(unchangedMigratedMachine).To(Equal(expectedMigratedMachine))
+
+					migratedWorker := &extensionsv1alpha1.Worker{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: w.Name, Namespace: w.Namespace}, migratedWorker)).To(Succeed())
+					Expect(migratedWorker.Annotations).To(HaveKeyWithValue("stackit.cloud/machine-controller-manager-migrated", "true"))
+				})
 			})
 
 			It("should fail because the infrastructure status cannot be decoded", func() {
