@@ -36,6 +36,7 @@ type IaaSClient interface {
 
 	CreateServer(ctx context.Context, payload iaas.CreateServerPayload) (*iaas.Server, error)
 	DeleteServer(ctx context.Context, serverId string) error
+	UpdateServer(ctx context.Context, serverId string, payload iaas.UpdateServerPayload) (*iaas.Server, error)
 	GetServerByName(ctx context.Context, name string) ([]iaas.Server, error)
 
 	CreatePublicIp(ctx context.Context, payload iaas.CreatePublicIPPayload) (*iaas.PublicIp, error)
@@ -286,6 +287,10 @@ func (c iaasClient) CreateServer(ctx context.Context, payload iaas.CreateServerP
 
 func (c iaasClient) DeleteServer(ctx context.Context, serverId string) error {
 	return c.Client.DeleteServer(ctx, c.projectID, c.region, serverId).Execute()
+}
+
+func (c iaasClient) UpdateServer(ctx context.Context, serverId string, payload iaas.UpdateServerPayload) (*iaas.Server, error) {
+	return c.Client.UpdateServer(ctx, c.projectID, c.region, serverId).UpdateServerPayload(payload).Execute()
 }
 
 // GetServerByName finds the first server with the given name.
