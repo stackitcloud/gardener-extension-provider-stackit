@@ -1066,6 +1066,43 @@ var _ = Describe("Machines", func() {
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUnreadyTimeAnnotation]).To(Equal("3m0s"))
 				Expect(result[1].ClusterAutoscalerAnnotations[extensionsv1alpha1.ScaleDownUtilizationThresholdAnnotation]).To(Equal("0.5"))
 			})
+			DescribeTable("customLabelDomain in machineclass helm chart",
+				func(customDomain string) {
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
+
+					machineClassPath := filepath.Join("internal", "machineclass")
+					if useStackitMCM {
+						machineClassPath = filepath.Join("internal", "machineclass-stackit")
+					}
+
+					chartApplier.
+						EXPECT().
+						ApplyFromEmbeddedFS(
+							ctx,
+							charts.InternalChart,
+							machineClassPath,
+							namespace,
+							"machineclass",
+							gomock.Any(),
+						).
+						Return(nil)
+
+					err := workerDelegate.DeployMachineClasses(ctx)
+					Expect(err).NotTo(HaveOccurred())
+				},
+				Entry("with default kubernetes.io domain",
+					"kubernetes.io",
+				),
+				Entry("with custom ske.stackit.cloud domain",
+					"ske.stackit.cloud",
+				),
+				Entry("with custom example.com domain",
+					"example.com",
+				),
+				Entry("with empty domain",
+					"",
+				),
+			)
 			It("should distribute autoPreserveFailedMachineMax across zones", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: new(int32(4)),
