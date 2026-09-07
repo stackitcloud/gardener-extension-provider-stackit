@@ -1249,7 +1249,7 @@ var _ = Describe("Machines", func() {
 			})
 			DescribeTable("customLabelDomain in machineclass helm chart",
 				func(customDomain string) {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain, nil)
 
 					machineClassPath := filepath.Join("internal", "machineclass")
 					if useStackitMCM {
