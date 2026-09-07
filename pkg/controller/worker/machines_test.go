@@ -33,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -1160,7 +1159,7 @@ var _ = Describe("Machines", func() {
 					},
 					{
 						Name:         machineTypeArm,
-						Architecture: ptr.To(archARM),
+						Architecture: new(archARM),
 						Capabilities: capabilitiesArm,
 					},
 				}
@@ -1172,7 +1171,7 @@ var _ = Describe("Machines", func() {
 
 				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain)
 
-				var capturedMachineClasses []map[string]interface{}
+				var capturedMachineClasses []map[string]any
 				chartApplier.
 					EXPECT().
 					ApplyFromEmbeddedFS(
@@ -1188,8 +1187,8 @@ var _ = Describe("Machines", func() {
 						for _, o := range opts {
 							o.MutateApplyOptions(applyOpts)
 						}
-						if values, ok := applyOpts.Values.(map[string]interface{}); ok {
-							if classes, ok := values["machineClasses"].([]map[string]interface{}); ok {
+						if values, ok := applyOpts.Values.(map[string]any); ok {
+							if classes, ok := values["machineClasses"].([]map[string]any); ok {
 								capturedMachineClasses = classes
 							}
 						}
