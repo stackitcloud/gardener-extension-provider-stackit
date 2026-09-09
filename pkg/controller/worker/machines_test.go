@@ -984,6 +984,9 @@ var _ = Describe("Machines", func() {
 
 					mockIaaSClient = mockstackitclient.NewMockIaaSClient(ctrl)
 
+					if cluster.Shoot.Annotations == nil {
+						cluster.Shoot.Annotations = map[string]string{}
+					}
 					cluster.Shoot.Annotations[feature.ShootMigrateSTACKITMachineControllerManager] = "true"
 					workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockIaaSClient)
 
