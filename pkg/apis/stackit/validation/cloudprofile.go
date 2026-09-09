@@ -30,7 +30,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 
 	floatingPoolPath := fldPath.Child("constraints", "floatingPools")
 	combinationFound := sets.NewString()
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	for i, pool := range cloudProfile.Constraints.FloatingPools {
 		idxPath := floatingPoolPath.Index(i)
 		if len(pool.Name) == 0 {
@@ -71,7 +70,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 	}
 	allErrs = append(allErrs, validateMachineImageMapping(machineImages, cloudProfile, capabilityDefinitions, field.NewPath("spec").Child("machineImages"))...)
 
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	if ca := cloudProfile.KeyStoneCACert; ca != nil && len(*ca) > 0 {
 		_, err := utils.DecodeCertificate([]byte(*ca))
 		if err != nil {
@@ -80,7 +78,6 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 	}
 
 	regionsFound := sets.NewString()
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	for i, val := range cloudProfile.KeyStoneURLs {
 		idxPath := fldPath.Child("keyStoneURLs").Index(i)
 
@@ -111,13 +108,11 @@ func ValidateCloudProfileConfig(cloudProfile *stackitv1alpha1.CloudProfileConfig
 		}
 	}
 
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	if cloudProfile.DHCPDomain != nil && len(*cloudProfile.DHCPDomain) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("dhcpDomain"), "must provide a dhcp domain when the key is specified"))
 	}
 
 	serverGroupPath := fldPath.Child("serverGroupPolicies")
-	//nolint:staticcheck // SA1019: needed for migration purposes
 	for i, policy := range cloudProfile.ServerGroupPolicies {
 		idxPath := serverGroupPath.Index(i)
 

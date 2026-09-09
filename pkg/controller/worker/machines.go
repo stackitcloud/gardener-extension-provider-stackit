@@ -96,7 +96,6 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 	var subnet *stackitv1alpha1.Subnet
 	// There is no subnet resource in the IaaS API. The machine-controller-manager-provider-stackit do not require this field.
 	if !feature.UseStackitMachineControllerManager(w.cluster) {
-		//nolint:staticcheck // SA1019: Will be removed once we drop OpenStack API support
 		subnet, err = helper.FindSubnetByPurpose(infrastructureStatus.Networks.Subnets, stackitv1alpha1.PurposeNodes)
 		if err != nil {
 			return err
@@ -146,7 +145,6 @@ func (w *workerDelegate) generateMachineConfig(ctx context.Context) error {
 		}
 
 		machineLabels := map[string]string{}
-		//nolint:staticcheck
 		for _, pair := range workerConfig.MachineLabels {
 			machineLabels[pair.Name] = pair.Value
 		}
@@ -311,7 +309,6 @@ func (w *workerDelegate) generateWorkerPoolHash(pool extensionsv1alpha1.WorkerPo
 	var additionalHashData []string
 
 	var pairs []string
-	//nolint:staticcheck
 	for _, pair := range workerConfig.MachineLabels {
 		if pair.TriggerRollingOnUpdate {
 			pairs = append(pairs, pair.Name+"="+pair.Value)
