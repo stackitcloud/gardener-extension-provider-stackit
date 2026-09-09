@@ -432,7 +432,10 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		allMachines     machinev1alpha1.MachineList
 		migrateMachines []machinev1alpha1.Machine
 	)
-	var openStackProviderIDPattern = regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`)
+	var (
+		openStackProviderIDPattern = regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`)
+		stackitProviderIDPattern   = regexp.MustCompile(`^stackit://[^/]+/([^/]+)$`)
+	)
 
 	const stackitProviderID = "stackit://"
 
@@ -468,6 +471,11 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 
 		if m.Spec.ProviderID != "" {
 			matches := openStackProviderIDPattern.FindStringSubmatch(m.Spec.ProviderID)
+			if len(matches) != 2 {
+				// A retry can resume, after the provider ID was already converted but
+				// before updating the server labels completed.
+				matches = stackitProviderIDPattern.FindStringSubmatch(m.Spec.ProviderID)
+			}
 			if len(matches) != 2 {
 				return fmt.Errorf(
 					"migrateMachines: malformed machine provider ID: %s",
