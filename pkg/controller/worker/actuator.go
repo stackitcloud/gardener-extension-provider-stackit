@@ -74,6 +74,10 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 	}
 
 	stackitClient := stackitclient.New(stackit.DetermineRegion(cluster), cluster)
+	iaasClient, err := stackitClient.IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
+	if err != nil {
+		return nil, err
+	}
 
 	return NewWorkerDelegate(
 		d.seedClient,
@@ -85,7 +89,7 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 		worker,
 		cluster,
 		d.customLabelDomain,
-		stackitClient,
+		iaasClient,
 	)
 }
 
@@ -107,7 +111,7 @@ type workerDelegate struct {
 	machineImages      []stackitv1alpha1.MachineImage
 
 	openstackClient openstackclient.Factory
-	stackitClient   stackitclient.Factory
+	iaaSClient      stackitclient.IaaSClient
 }
 
 // NewWorkerDelegate creates a new context for a worker reconciliation.
@@ -121,7 +125,7 @@ func NewWorkerDelegate(
 	worker *extensionsv1alpha1.Worker,
 	cluster *extensionscontroller.Cluster,
 	customLabelDomain string,
-	stackitClient stackitclient.Factory,
+	iaaSClient stackitclient.IaaSClient,
 ) (genericactuator.WorkerDelegate, error) {
 	config, err := helper.CloudProfileConfigFromCluster(cluster)
 	if err != nil {
@@ -140,6 +144,6 @@ func NewWorkerDelegate(
 		cluster:            cluster,
 		worker:             worker,
 		customLabelDomain:  customLabelDomain,
-		stackitClient:      stackitClient,
+		iaaSClient:         iaaSClient,
 	}, nil
 }

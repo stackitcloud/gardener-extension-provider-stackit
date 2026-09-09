@@ -53,7 +53,7 @@ var _ = Describe("Machines", func() {
 		c            client.Client
 		chartApplier *mockkubernetes.MockChartApplier
 
-		mockStackitClient *mockstackitclient.MockFactory
+		mockIaaSClient *mockstackitclient.MockIaaSClient
 
 		workerDelegate genericworkeractuator.WorkerDelegate
 		scheme         *runtime.Scheme
@@ -982,13 +982,10 @@ var _ = Describe("Machines", func() {
 				BeforeEach(func() {
 					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
 
-					mockStackitClient = mockstackitclient.NewMockFactory(ctrl)
-					if cluster.Shoot.Annotations == nil {
-						cluster.Shoot.Annotations = map[string]string{}
-					}
+					mockIaaSClient = mockstackitclient.NewMockIaaSClient(ctrl)
 
 					cluster.Shoot.Annotations[feature.ShootMigrateSTACKITMachineControllerManager] = "true"
-					workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockStackitClient)
+					workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockIaaSClient)
 
 					machine = &machinev1alpha1.Machine{
 						ObjectMeta: metav1.ObjectMeta{
@@ -1019,12 +1016,6 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should migrate the machine controller manager", func() {
-					mockIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
-
-					mockStackitClient.EXPECT().
-						IaaS(ctx, c, w.Spec.SecretRef).
-						Return(mockIaaSClient, nil)
-
 					mockIaaSClient.EXPECT().
 						ProjectID().
 						Return("project-id-123")
@@ -1094,12 +1085,8 @@ var _ = Describe("Machines", func() {
 					}
 					Expect(c.Create(ctx, pendingMachine)).To(Succeed())
 
-					failingIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
-					mockStackitClient.EXPECT().
-						IaaS(ctx, c, w.Spec.SecretRef).
-						Return(failingIaaSClient, nil)
-					failingIaaSClient.EXPECT().ProjectID().Return("project-id-123")
-					failingIaaSClient.EXPECT().
+					mockIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					mockIaaSClient.EXPECT().
 						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
 							Labels: map[string]any{
 								"mcm.gardener.cloud/machine":      pendingMachine.Name,
@@ -1119,12 +1106,8 @@ var _ = Describe("Machines", func() {
 					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, unchangedMigratedMachine)).To(Succeed())
 					Expect(unchangedMigratedMachine).To(Equal(expectedMigratedMachine))
 
-					retryIaaSClient := mockstackitclient.NewMockIaaSClient(ctrl)
-					mockStackitClient.EXPECT().
-						IaaS(ctx, c, w.Spec.SecretRef).
-						Return(retryIaaSClient, nil)
-					retryIaaSClient.EXPECT().ProjectID().Return("project-id-123")
-					retryIaaSClient.EXPECT().
+					mockIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					mockIaaSClient.EXPECT().
 						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
 							Labels: map[string]any{
 								"mcm.gardener.cloud/machine":      pendingMachine.Name,

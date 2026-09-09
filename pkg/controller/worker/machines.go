@@ -25,7 +25,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gardenutils "github.com/gardener/gardener/pkg/utils"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
-	iaas2 "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -428,8 +428,13 @@ func EnsureUniformMachineImages(images []stackitv1alpha1.MachineImage, definitio
 }
 
 func (w *workerDelegate) migrateMachines(ctx context.Context) error {
-	var allMachines machinev1alpha1.MachineList
-	var migrateMachines []machinev1alpha1.Machine
+	var (
+		allMachines     machinev1alpha1.MachineList
+		migrateMachines []machinev1alpha1.Machine
+	)
+	var openStackProviderIDPattern = regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`)
+
+	const stackitProviderID = "stackit://"
 
 	err := w.seedClient.List(ctx, &allMachines, &client.ListOptions{Namespace: w.worker.Namespace})
 	if err != nil {
@@ -449,11 +454,6 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		return w.markWorkerAsMigrated(ctx)
 	}
 
-	iaas, err := w.stackitClient.IaaS(ctx, w.seedClient, w.worker.Spec.SecretRef)
-	if err != nil {
-		return err
-	}
-
 	for _, m := range migrateMachines {
 		patchAnnotations := client.MergeFrom(m.DeepCopy())
 		if m.Annotations == nil {
@@ -467,20 +467,24 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		}
 
 		if m.Spec.ProviderID != "" {
-			providerIDParts := strings.Split(m.Spec.ProviderID, "/")
-			if len(providerIDParts) == 0 {
-				return fmt.Errorf("migrateMachines: malformed machine provider ID: %s", m.Spec.ProviderID)
+			matches := openStackProviderIDPattern.FindStringSubmatch(m.Spec.ProviderID)
+			if len(matches) != 2 {
+				return fmt.Errorf(
+					"migrateMachines: malformed machine provider ID: %s",
+					m.Spec.ProviderID,
+				)
 			}
-			serverID := providerIDParts[len(providerIDParts)-1]
+			// capture server ID from provider ID
+			serverID := matches[1]
 
 			patch := client.MergeFrom(m.DeepCopy())
-			m.Spec.ProviderID = fmt.Sprintf("stackit://%s/%s", iaas.ProjectID(), serverID)
+			m.Spec.ProviderID = fmt.Sprintf("%s%s/%s", stackitProviderID, w.iaaSClient.ProjectID(), serverID)
 			err = w.seedClient.Patch(ctx, &m, patch)
 			if err != nil {
 				return err
 			}
 
-			_, err = iaas.UpdateServer(ctx, serverID, iaas2.UpdateServerPayload{
+			_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
 				Labels: map[string]any{
 					//	// TODO refine labels
 					"mcm.gardener.cloud/machine":      m.Name,
