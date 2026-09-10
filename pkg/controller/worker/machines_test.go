@@ -1335,7 +1335,7 @@ var _ = Describe("Machines", func() {
 					machineClassPath = filepath.Join("internal", "machineclass-stackit")
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain, nil)
 
 				var capturedMachineClasses []map[string]any
 				chartApplier.
