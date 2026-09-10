@@ -6,6 +6,7 @@ package worker_test
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -1138,6 +1139,72 @@ var _ = Describe("Machines", func() {
 				Expect(result).NotTo(BeNil())
 				Expect(result[0].AutoPreserveFailedMachineMax).To(Equal(int32(0)))
 				Expect(result[1].AutoPreserveFailedMachineMax).To(Equal(int32(0)))
+			})
+			It("should use storage type and size from cloud profile machine type as default when no pool volume is specified", func() {
+				premiumStorageSize := resource.MustParse("64Gi")
+				clusterWithPremiumMachineType := &extensionscontroller.Cluster{
+					CloudProfile: cluster.CloudProfile.DeepCopy(),
+					Shoot:        cluster.Shoot,
+					Seed:         cluster.Seed,
+				}
+				clusterWithPremiumMachineType.CloudProfile.Spec.MachineTypes = []gardencorev1beta1.MachineType{
+					{
+						Name:         machineType,
+						Capabilities: capabilitiesAmd,
+						Storage: &gardencorev1beta1.MachineTypeStorage{
+							Class:       "standard",
+							StorageSize: &premiumStorageSize,
+							Type:        "premium",
+						},
+					},
+					{
+						Name:         machineTypeArm,
+						Architecture: new(archARM),
+						Capabilities: capabilitiesArm,
+					},
+				}
+
+				machineClassPath := filepath.Join("internal", "machineclass")
+				if useStackitMCM {
+					machineClassPath = filepath.Join("internal", "machineclass-stackit")
+				}
+
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain)
+
+				var capturedMachineClasses []map[string]any
+				chartApplier.
+					EXPECT().
+					ApplyFromEmbeddedFS(
+						ctx,
+						charts.InternalChart,
+						machineClassPath,
+						namespace,
+						"machineclass",
+						gomock.AssignableToTypeOf(kubernetes.Values(nil)),
+					).
+					DoAndReturn(func(_ context.Context, _ embed.FS, _, _, _ string, opts ...kubernetes.ApplyOption) error {
+						applyOpts := &kubernetes.ApplyOptions{}
+						for _, o := range opts {
+							o.MutateApplyOptions(applyOpts)
+						}
+						if values, ok := applyOpts.Values.(map[string]any); ok {
+							if classes, ok := values["machineClasses"].([]map[string]any); ok {
+								capturedMachineClasses = classes
+							}
+						}
+						return nil
+					})
+
+				err := workerDelegate.DeployMachineClasses(ctx)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(capturedMachineClasses).NotTo(BeEmpty())
+				for _, class := range capturedMachineClasses {
+					if class["machineType"] == machineType {
+						Expect(class).To(HaveKeyWithValue("rootDiskType", "premium"), "expected rootDiskType to be set from cloud profile storage type")
+						Expect(class).To(HaveKeyWithValue("rootDiskSize", 64), "expected rootDiskSize to be set from cloud profile storage size")
+					}
+				}
 			})
 		},
 			Entry("with capabilities and using imageIDs", true, false, false),
