@@ -42,6 +42,8 @@ const (
 	shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
 	migratedMachineAnnotation      = "stackit.cloud/migrated-machine"
 	workerMigratedAnnotation       = "stackit.cloud/machine-controller-manager-migrated"
+
+	stackitProviderID = "stackit://"
 )
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
@@ -432,12 +434,6 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		allMachines     machinev1alpha1.MachineList
 		migrateMachines []machinev1alpha1.Machine
 	)
-	var (
-		openStackProviderIDPattern = regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`)
-		stackitProviderIDPattern   = regexp.MustCompile(`^stackit://[^/]+/([^/]+)$`)
-	)
-
-	const stackitProviderID = "stackit://"
 
 	err := w.seedClient.List(ctx, &allMachines, &client.ListOptions{Namespace: w.worker.Namespace})
 	if err != nil {
@@ -470,20 +466,10 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		}
 
 		if m.Spec.ProviderID != "" {
-			matches := openStackProviderIDPattern.FindStringSubmatch(m.Spec.ProviderID)
-			if len(matches) != 2 {
-				// A retry can resume, after the provider ID was already converted but
-				// before updating the server labels completed.
-				matches = stackitProviderIDPattern.FindStringSubmatch(m.Spec.ProviderID)
+			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
+			if err != nil {
+				return fmt.Errorf("migrateMachines: %w", err)
 			}
-			if len(matches) != 2 {
-				return fmt.Errorf(
-					"migrateMachines: malformed machine provider ID: %s",
-					m.Spec.ProviderID,
-				)
-			}
-			// capture server ID from provider ID
-			serverID := matches[1]
 
 			patch := client.MergeFrom(m.DeepCopy())
 			m.Spec.ProviderID = fmt.Sprintf("%s%s/%s", stackitProviderID, w.iaaSClient.ProjectID(), serverID)
@@ -494,7 +480,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 
 			_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
 				Labels: map[string]any{
-					//	// TODO refine labels
+					// TODO refine labels
 					"mcm.gardener.cloud/machine":      m.Name,
 					"mcm.gardener.cloud/machineclass": m.Spec.Class.Name,
 					"mcm.gardener.cloud/role":         "node",
@@ -526,4 +512,20 @@ func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
 	w.worker.Annotations[workerMigratedAnnotation] = "true"
 
 	return w.seedClient.Patch(ctx, w.worker, patchWorker)
+}
+
+func serverIDFromProviderID(providerID string) (string, error) {
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`),
+		regexp.MustCompile(`^stackit://[^/]+/([^/]+)$`),
+	}
+
+	for _, pattern := range patterns {
+		matches := pattern.FindStringSubmatch(providerID)
+		if len(matches) == 2 {
+			return matches[1], nil
+		}
+	}
+
+	return "", fmt.Errorf("malformed machine provider ID: %s", providerID)
 }
