@@ -516,14 +516,20 @@ func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
 
 func serverIDFromProviderID(providerID string) (string, error) {
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`^openstack:///[^/]+/([^/]+)$`),
-		regexp.MustCompile(`^stackit://[^/]+/([^/]+)$`),
+		regexp.MustCompile(`^openstack:///[^/]+/(?P<serverID>[^/]+)$`),
+		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
 	}
 
 	for _, pattern := range patterns {
-		matches := pattern.FindStringSubmatch(providerID)
-		if len(matches) == 2 {
-			return matches[1], nil
+		match := pattern.FindStringSubmatch(providerID)
+		if len(match) == 0 {
+			continue
+		}
+
+		for i, name := range pattern.SubexpNames() {
+			if name == "serverID" {
+				return match[i], nil
+			}
 		}
 	}
 
