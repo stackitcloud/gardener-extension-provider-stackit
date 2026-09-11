@@ -514,13 +514,19 @@ func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
 	return w.seedClient.Patch(ctx, w.worker, patchWorker)
 }
 
-func serverIDFromProviderID(providerID string) (string, error) {
-	patterns := []*regexp.Regexp{
+var (
+	providerIDPatterns []*regexp.Regexp
+)
+
+func init() {
+	providerIDPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`^openstack:///[^/]+/(?P<serverID>[^/]+)$`),
 		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
 	}
+}
 
-	for _, pattern := range patterns {
+func serverIDFromProviderID(providerID string) (string, error) {
+	for _, pattern := range providerIDPatterns {
 		match := pattern.FindStringSubmatch(providerID)
 		if len(match) == 0 {
 			continue
