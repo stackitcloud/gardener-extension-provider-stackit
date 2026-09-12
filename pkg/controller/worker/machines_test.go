@@ -27,6 +27,7 @@ import (
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	iaas2 "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -41,6 +42,7 @@ import (
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	mockstackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock"
 )
 
 var _ = Describe("Machines", func() {
@@ -50,6 +52,8 @@ var _ = Describe("Machines", func() {
 		ctrl         *gomock.Controller
 		c            client.Client
 		chartApplier *mockkubernetes.MockChartApplier
+
+		mockIaaSClient *mockstackitclient.MockIaaSClient
 
 		workerDelegate genericworkeractuator.WorkerDelegate
 		scheme         *runtime.Scheme
@@ -71,7 +75,7 @@ var _ = Describe("Machines", func() {
 	Context("workerDelegate", func() {
 
 		BeforeEach(func() {
-			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil, "")
+			workerDelegate, _ = NewWorkerDelegate(nil, scheme, nil, "", nil, nil, "", nil)
 		})
 
 		Describe("#TestLabelNormalization", func() {
@@ -557,6 +561,7 @@ var _ = Describe("Machines", func() {
 				fakeScheme := runtime.NewScheme()
 				Expect(corev1.AddToScheme(fakeScheme)).To(Succeed())
 				Expect(extensionsv1alpha1.AddToScheme(fakeScheme)).To(Succeed())
+				Expect(machinev1alpha1.AddToScheme(fakeScheme)).To(Succeed())
 				c = fakeclient.NewClientBuilder().
 					WithScheme(fakeScheme).
 					WithObjects(
@@ -572,7 +577,7 @@ var _ = Describe("Machines", func() {
 					WithStatusSubresource(&extensionsv1alpha1.Worker{}).
 					Build()
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain, nil)
 			})
 
 			Describe("machine images", func() {
@@ -842,7 +847,7 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should return the expected machine deployments for profile image types", func() {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 					// Test workerDelegate.DeployMachineClasses()
 
@@ -881,7 +886,7 @@ var _ = Describe("Machines", func() {
 
 				It("should return the expected machine deployments for profile image types with id", func() {
 					// setup(region, "", machineImageID, archARM)
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, customLabelDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", workerWithRegion, clusterWithRegion, customLabelDomain, nil)
 					clusterWithRegion.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 					// Test workerDelegate.DeployMachineClasses()
@@ -924,7 +929,7 @@ var _ = Describe("Machines", func() {
 							w.Spec.Pools[0].ProviderConfig = &runtime.RawExtension{
 								Raw: encode(workerConfig),
 							}
-							workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+							workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 							result, err := workerDelegate.GenerateMachineDeployments(ctx)
 							Expect(err).NotTo(HaveOccurred())
@@ -971,10 +976,171 @@ var _ = Describe("Machines", func() {
 				})
 			})
 
+			Context("MCM migration", func() {
+				var machine *machinev1alpha1.Machine
+
+				BeforeEach(func() {
+					DeferCleanup(testutils.WithFeatureGate(feature.MutableGate, feature.UseSTACKITMachineControllerManager, true))
+
+					mockIaaSClient = mockstackitclient.NewMockIaaSClient(ctrl)
+
+					if cluster.Shoot.Annotations == nil {
+						cluster.Shoot.Annotations = map[string]string{}
+					}
+					cluster.Shoot.Annotations[feature.ShootMigrateSTACKITMachineControllerManager] = "true"
+					workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, mockIaaSClient)
+
+					machine = &machinev1alpha1.Machine{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "machine-1",
+							Namespace: w.Namespace,
+						},
+						Spec: machinev1alpha1.MachineSpec{
+							Class: machinev1alpha1.ClassSpec{
+								Name: "machineclass",
+							},
+							ProviderID: "openstack:///RegionOne/server-123",
+						},
+					}
+
+					Expect(c.Create(ctx, machine)).To(Succeed())
+
+					chartApplier.
+						EXPECT().
+						ApplyFromEmbeddedFS(
+							ctx,
+							charts.InternalChart,
+							filepath.Join("internal", "machineclass-stackit"),
+							w.Namespace,
+							"machineclass",
+							gomock.Any(),
+						).
+						Return(nil)
+				})
+
+				It("should migrate the machine controller manager", func() {
+					mockIaaSClient.EXPECT().
+						ProjectID().
+						Return("project-id-123")
+
+					mockIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      machine.Name,
+								"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, nil)
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
+
+					By("checking for the migrated machine")
+					migratedMachine := &machinev1alpha1.Machine{}
+
+					Expect(c.Get(ctx, client.ObjectKey{
+						Name:      "machine-1",
+						Namespace: w.Namespace,
+					}, migratedMachine)).To(Succeed())
+
+					Expect(migratedMachine.Spec.ProviderID).
+						To(Equal("stackit://project-id-123/server-123"))
+
+					Expect(migratedMachine.Annotations).
+						To(HaveKeyWithValue("stackit.cloud/migrated-machine", "true"))
+
+					Expect(migratedMachine.Annotations).
+						NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
+
+					By("checking for the worker")
+					migratedWorker := &extensionsv1alpha1.Worker{}
+
+					Expect(c.Get(ctx, client.ObjectKey{
+						Name:      w.Name,
+						Namespace: w.Namespace,
+					}, migratedWorker)).To(Succeed())
+
+					Expect(migratedWorker.Annotations).
+						To(HaveKeyWithValue(
+							"stackit.cloud/machine-controller-manager-migrated",
+							"true",
+						))
+				})
+
+				It("should retry a machine after an IaaS API failure without touching migrated machines", func() {
+					migratedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, migratedMachine)).To(Succeed())
+					migratedMachine.Spec.ProviderID = "stackit://project-id-123/server-123"
+					migratedMachine.Annotations = map[string]string{"stackit.cloud/migrated-machine": "true"}
+					Expect(c.Update(ctx, migratedMachine)).To(Succeed())
+					expectedMigratedMachine := migratedMachine.DeepCopy()
+
+					pendingMachine := &machinev1alpha1.Machine{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "machine-2",
+							Namespace:   w.Namespace,
+							Annotations: map[string]string{"stackit.cloud/machine-should-be-migrated": "true", "stackit.cloud/migrated-machine": "true"},
+						},
+						Spec: machinev1alpha1.MachineSpec{
+							Class:      machinev1alpha1.ClassSpec{Name: "machineclass"},
+							ProviderID: "stackit://project-id-123/server-456",
+						},
+					}
+					Expect(c.Create(ctx, pendingMachine)).To(Succeed())
+
+					mockIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					mockIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      pendingMachine.Name,
+								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, fmt.Errorf("temporary IaaS API failure"))
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(MatchError(ContainSubstring("temporary IaaS API failure")))
+
+					failedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: pendingMachine.Name, Namespace: pendingMachine.Namespace}, failedMachine)).To(Succeed())
+					Expect(failedMachine.Annotations).To(HaveKeyWithValue("stackit.cloud/machine-should-be-migrated", "true"))
+
+					unchangedMigratedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, unchangedMigratedMachine)).To(Succeed())
+					Expect(unchangedMigratedMachine).To(Equal(expectedMigratedMachine))
+
+					mockIaaSClient.EXPECT().ProjectID().Return("project-id-123")
+					mockIaaSClient.EXPECT().
+						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
+							Labels: map[string]any{
+								"mcm.gardener.cloud/machine":      pendingMachine.Name,
+								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
+								"mcm.gardener.cloud/role":         "node",
+							},
+						}).
+						Return(nil, nil)
+					chartApplier.EXPECT().
+						ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join("internal", "machineclass-stackit"), w.Namespace, "machineclass", gomock.Any()).
+						Return(nil)
+
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
+
+					retriedMachine := &machinev1alpha1.Machine{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: pendingMachine.Name, Namespace: pendingMachine.Namespace}, retriedMachine)).To(Succeed())
+					Expect(retriedMachine.Annotations).NotTo(HaveKey("stackit.cloud/machine-should-be-migrated"))
+					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, unchangedMigratedMachine)).To(Succeed())
+					Expect(unchangedMigratedMachine).To(Equal(expectedMigratedMachine))
+
+					migratedWorker := &extensionsv1alpha1.Worker{}
+					Expect(c.Get(ctx, client.ObjectKey{Name: w.Name, Namespace: w.Namespace}, migratedWorker)).To(Succeed())
+					Expect(migratedWorker.Annotations).To(HaveKeyWithValue("stackit.cloud/machine-controller-manager-migrated", "true"))
+				})
+			})
+
 			It("should fail because the infrastructure status cannot be decoded", func() {
 				w.Spec.InfrastructureProviderStatus = &runtime.RawExtension{}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -986,7 +1152,7 @@ var _ = Describe("Machines", func() {
 					Raw: encode(&stackitv1alpha1.InfrastructureStatus{}),
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -996,7 +1162,7 @@ var _ = Describe("Machines", func() {
 			It("should fail because the machine image for this cloud profile cannot be found", func() {
 				clusterWithoutImages.CloudProfile.Name = "another-cloud-profile"
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithoutImages, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).To(HaveOccurred())
@@ -1017,7 +1183,7 @@ var _ = Describe("Machines", func() {
 					NodeConditions:         testNodeConditions,
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				resultSettings := result[0].MachineConfiguration
@@ -1040,7 +1206,7 @@ var _ = Describe("Machines", func() {
 					ScaleDownUtilizationThreshold:    new("0.5"),
 				}
 				w.Spec.Pools[1].ClusterAutoscaler = nil
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1069,7 +1235,7 @@ var _ = Describe("Machines", func() {
 			})
 			DescribeTable("customLabelDomain in machineclass helm chart",
 				func(customDomain string) {
-					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain)
+					workerDelegate, _ := NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customDomain, nil)
 
 					machineClassPath := filepath.Join("internal", "machineclass")
 					if useStackitMCM {
@@ -1108,7 +1274,7 @@ var _ = Describe("Machines", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: new(int32(4)),
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1119,7 +1285,7 @@ var _ = Describe("Machines", func() {
 
 			It("should set autoPreserveFailedMachineMax to 0 per zone when machineControllerManagerSettings is nil", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = nil
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1132,7 +1298,7 @@ var _ = Describe("Machines", func() {
 				w.Spec.Pools[0].MachineControllerManagerSettings = &gardencorev1beta1.MachineControllerManagerSettings{
 					AutoPreserveFailedMachineMax: nil,
 				}
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, cluster, customLabelDomain, nil)
 
 				result, err := workerDelegate.GenerateMachineDeployments(ctx)
 				Expect(err).NotTo(HaveOccurred())
@@ -1169,7 +1335,7 @@ var _ = Describe("Machines", func() {
 					machineClassPath = filepath.Join("internal", "machineclass-stackit")
 				}
 
-				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain)
+				workerDelegate, _ = NewWorkerDelegate(c, scheme, chartApplier, "", w, clusterWithPremiumMachineType, customLabelDomain, nil)
 
 				var capturedMachineClasses []map[string]any
 				chartApplier.

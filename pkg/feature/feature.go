@@ -22,8 +22,12 @@ const (
 	UseSTACKITAPIInfrastructureController featuregate.Feature = "UseSTACKITAPIInfrastructureController"
 	// UseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes.
 	UseSTACKITMachineControllerManager featuregate.Feature = "UseSTACKITMachineControllerManager"
+	// MigrateSTACKITMachineControllerManager Migrates the existing openstack machines to stackit. Only works if feature gate UseSTACKITMachineControllerManager is enabled.
+	MigrateSTACKITMachineControllerManager featuregate.Feature = "MigrateSTACKITMachineControllerManager"
 	// ShootUseSTACKITMachineControllerManager Uses the STACKIT machine controller Manager to manage nodes for a specific Shoot.
 	ShootUseSTACKITMachineControllerManager = "shoot.gardener.cloud/use-stackit-machine-controller-manager"
+	// ShootMigrateSTACKITMachineControllerManager Migrates the existing openstack machines to stackit. Only works if feature gate UseSTACKITMachineControllerManager is enabled.
+	ShootMigrateSTACKITMachineControllerManager = "shoot.gardener.cloud/migrate-stackit-machine-controller-manager"
 	// ShootUseSTACKITAPIInfrastructureController Uses the STACKIT API to create the shoot resources instead of OpenStack for a specific Shoot.
 	ShootUseSTACKITAPIInfrastructureController = "shoot.gardener.cloud/use-stackit-api-infrastructure-controller"
 	// EnableSTACKITWorkloadIdentity activates the deployment of the stackit-pod-identity-webhook to enable workload identity injection into pods.
@@ -44,11 +48,12 @@ var (
 	Gate featuregate.FeatureGate = MutableGate
 
 	allGates = map[featuregate.Feature]featuregate.FeatureSpec{
-		EnsureSTACKITLBDeletion:               {Default: true, PreRelease: featuregate.Alpha},
-		EnsureSTACKITALBDeletion:              {Default: false, PreRelease: featuregate.Alpha},
-		UseSTACKITAPIInfrastructureController: {Default: true, PreRelease: featuregate.Alpha},
-		UseSTACKITMachineControllerManager:    {Default: true, PreRelease: featuregate.Alpha},
-		EnableSTACKITWorkloadIdentity:         {Default: false, PreRelease: featuregate.Alpha},
+		EnsureSTACKITLBDeletion:                {Default: true, PreRelease: featuregate.Alpha},
+		EnsureSTACKITALBDeletion:               {Default: false, PreRelease: featuregate.Alpha},
+		UseSTACKITAPIInfrastructureController:  {Default: true, PreRelease: featuregate.Alpha},
+		UseSTACKITMachineControllerManager:     {Default: true, PreRelease: featuregate.Alpha},
+		EnableSTACKITWorkloadIdentity:          {Default: false, PreRelease: featuregate.Alpha},
+		MigrateSTACKITMachineControllerManager: {Default: false, PreRelease: featuregate.Alpha},
 	}
 )
 
@@ -80,4 +85,21 @@ func UseStackitAPIInfrastructureController(cluster *extensionscontroller.Cluster
 		}
 	}
 	return Gate.Enabled(UseSTACKITAPIInfrastructureController)
+}
+
+func MigrateStackitMachineControllerManager(cluster *extensionscontroller.Cluster) bool {
+	if !UseStackitMachineControllerManager(cluster) {
+		return false
+	}
+
+	if cluster != nil && cluster.Shoot != nil {
+		annotation, ok := cluster.Shoot.Annotations[ShootMigrateSTACKITMachineControllerManager]
+		if ok {
+			enabledByAnnotation, err := strconv.ParseBool(annotation)
+			if err == nil {
+				return enabledByAnnotation
+			}
+		}
+	}
+	return Gate.Enabled(MigrateSTACKITMachineControllerManager)
 }
