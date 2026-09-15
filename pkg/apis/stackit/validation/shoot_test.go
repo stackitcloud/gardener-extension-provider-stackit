@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package validator_test
+package validation_test
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,7 +23,6 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -49,7 +49,7 @@ var _ = Describe("NamespacedCloudProfile Validator", func() {
 			Client: fakeClient,
 			Scheme: scheme,
 		}
-		shootValidator = validator.NewShootValidator(fakeManager, true)
+		shootValidator = validation.NewShootValidator(fakeManager, true)
 
 		infrastructureConfig = v1alpha1.InfrastructureConfig{
 			FloatingPoolName: "floating-pool",

@@ -3,6 +3,7 @@ package validator
 import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -37,8 +38,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Path: "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
 			NewCloudProfileValidator(mgr): {{Obj: &core.CloudProfile{}}},
-			NewShootValidator(mgr, DefaultAddOptions.AllowApplicationLoadBalancerController): {{Obj: &core.Shoot{}}},
-			NewNamespacedCloudProfileValidator(mgr):                                          {{Obj: &core.NamespacedCloudProfile{}}},
+			validation.NewShootValidator(mgr, DefaultAddOptions.AllowApplicationLoadBalancerController): {{Obj: &core.Shoot{}}},
+			validation.NewNamespacedCloudProfileValidator(mgr):                                          {{Obj: &core.NamespacedCloudProfile{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
