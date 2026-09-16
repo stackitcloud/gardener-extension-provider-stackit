@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package validator
+package validation
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
-	stackitvalidation "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 )
 
 // NewShootValidator returns a new instance of a shoot validator.
@@ -55,9 +54,9 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 
 	allErrs := field.ErrorList{}
 
-	allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, s.allowApplicationLoadBalancerController, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
+	allErrs = append(allErrs, ValidateControlPlaneConfig(cpConfig, shoot.Spec.Kubernetes.Version, s.allowApplicationLoadBalancerController, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 
-	allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfig(infraConfig, ptr.Deref(shoot.Spec.Networking, core.Networking{}).Nodes, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
+	allErrs = append(allErrs, ValidateInfrastructureConfig(infraConfig, ptr.Deref(shoot.Spec.Networking, core.Networking{}).Nodes, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
 
 	if oldObj != nil {
 		oldShoot, ok := oldObj.(*core.Shoot)
@@ -75,8 +74,8 @@ func (s *shoot) Validate(_ context.Context, newObj, oldObj client.Object) error 
 			return err
 		}
 
-		allErrs = append(allErrs, stackitvalidation.ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
-		allErrs = append(allErrs, stackitvalidation.ValidateControlPlaneConfigUpdate(oldCpConfig, cpConfig, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
+		allErrs = append(allErrs, ValidateInfrastructureConfigUpdate(oldInfraConfig, infraConfig, field.NewPath("spec").Child("provider").Child("infrastructureConfig"))...)
+		allErrs = append(allErrs, ValidateControlPlaneConfigUpdate(oldCpConfig, cpConfig, field.NewPath("spec").Child("provider").Child("controlPlaneConfig"))...)
 	}
 
 	return allErrs.ToAggregate()

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package validator
+package validation
 
 import (
 	"context"
@@ -25,7 +25,6 @@ import (
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 )
 
 // NewNamespacedCloudProfileValidator returns a new instance of a namespaced cloud profile validator.
@@ -102,12 +101,12 @@ func (p *namespacedCloudProfile) validateMachineImages(providerConfig *stackitv1
 	machineImagesPath := field.NewPath("spec.providerConfig.machineImages")
 	for i, machineImage := range providerConfig.MachineImages {
 		idxPath := machineImagesPath.Index(i)
-		allErrs = append(allErrs, validation.ValidateProviderMachineImage(machineImage, parentSpec.MachineCapabilities, idxPath)...)
+		allErrs = append(allErrs, ValidateProviderMachineImage(machineImage, parentSpec.MachineCapabilities, idxPath)...)
 	}
 
 	profileImages := gardener.NewCoreImagesContext(machineImages)
 	parentImages := gardener.NewV1beta1ImagesContext(parentSpec.MachineImages)
-	providerImages := validation.NewProviderImagesContext(providerConfig.MachineImages)
+	providerImages := NewProviderImagesContext(providerConfig.MachineImages)
 
 	for _, machineImage := range profileImages.Images {
 		// Check that for each new image version defined in the NamespacedCloudProfile, the image is also defined in the providerConfig.

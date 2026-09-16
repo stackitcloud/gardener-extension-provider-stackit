@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package validator_test
+package validation_test
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/admission/validator"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/install"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 )
 
 var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabilitiesCloudProfile bool) {
@@ -57,7 +57,7 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 		}
 		namespace = "garden-dev"
 
-		namespacedCloudProfileValidator = validator.NewNamespacedCloudProfileValidator(fakeManager)
+		namespacedCloudProfileValidator = validation.NewNamespacedCloudProfileValidator(fakeManager)
 		namespacedCloudProfile = &core.NamespacedCloudProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "profile-1",

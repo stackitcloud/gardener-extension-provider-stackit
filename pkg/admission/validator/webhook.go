@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/validation"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 )
 
@@ -37,8 +38,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Path: "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
 			NewCloudProfileValidator(mgr): {{Obj: &core.CloudProfile{}}},
-			NewShootValidator(mgr, DefaultAddOptions.AllowApplicationLoadBalancerController): {{Obj: &core.Shoot{}}},
-			NewNamespacedCloudProfileValidator(mgr):                                          {{Obj: &core.NamespacedCloudProfile{}}},
+			validation.NewShootValidator(mgr, DefaultAddOptions.AllowApplicationLoadBalancerController): {{Obj: &core.Shoot{}}},
+			validation.NewNamespacedCloudProfileValidator(mgr):                                          {{Obj: &core.NamespacedCloudProfile{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
