@@ -21,7 +21,7 @@ const (
 	ubuntu2604VersionPrefix = "2604"
 	ntpInstallUnitName      = "install-ntp-client.service"
 	ntpInstallDropInName    = "99-skip-ntp-install.conf"
-	ntpInstallDropInContent = "" //TODO (viragvoros)
+	ntpInstallDropInContent = "[Service]\nExecStart=\nExecStart=/bin/true\n"
 )
 
 type ntpMutator struct {
