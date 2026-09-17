@@ -469,28 +469,30 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 			return fmt.Errorf("cannot migrate machine %s: providerID is empty (provisioning in progress)", m.Name)
 		}
 
-		serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
-		if err != nil {
-			return fmt.Errorf("migrateMachines: %w", err)
-		}
+		if m.Spec.ProviderID != "" {
+			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
+			if err != nil {
+				return fmt.Errorf("migrateMachines: %w", err)
+			}
 
-		patch := client.MergeFrom(m.DeepCopy())
-		m.Spec.ProviderID = fmt.Sprintf("%s%s/%s", stackitProviderID, w.iaaSClient.ProjectID(), serverID)
-		err = w.seedClient.Patch(ctx, &m, patch)
-		if err != nil {
-			return err
-		}
+			patch := client.MergeFrom(m.DeepCopy())
+			m.Spec.ProviderID = fmt.Sprintf("%s%s/%s", stackitProviderID, w.iaaSClient.ProjectID(), serverID)
+			err = w.seedClient.Patch(ctx, &m, patch)
+			if err != nil {
+				return err
+			}
 
-		_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
-			Labels: map[string]any{
-				// TODO refine labels
-				"mcm.gardener.cloud/machine":      m.Name,
-				"mcm.gardener.cloud/machineclass": m.Spec.Class.Name,
-				"mcm.gardener.cloud/role":         "node",
-			},
-		})
-		if err != nil {
-			return err
+			_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
+				Labels: map[string]any{
+					// TODO refine labels
+					"mcm.gardener.cloud/machine":      m.Name,
+					"mcm.gardener.cloud/machineclass": m.Spec.Class.Name,
+					"mcm.gardener.cloud/role":         "node",
+				},
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		patchRemoveMigrationAnnotation := client.MergeFrom(m.DeepCopy())
