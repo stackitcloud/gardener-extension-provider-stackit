@@ -338,6 +338,52 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 	return nil
 }
 
+// EnsureOperatingSystemConfig ensures that needed OperatingSystemConfig mutations are done.
+func (e *ensurer) EnsureOperatingSystemConfig(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *extensionsv1alpha1.OperatingSystemConfig) error {
+	if newObj.Spec.Type != "ubuntu" || newObj.Spec.Purpose != extensionsv1alpha1.OperatingSystemConfigPurposeReconcile {
+		return nil
+	}
+
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	override := false
+	if cluster.Shoot != nil {
+		for _, pool := range cluster.Shoot.Spec.Provider.Workers {
+			if pool.Machine.Image != nil &&
+				pool.Machine.Image.Name == "ubuntu" &&
+				pool.Machine.Image.Version != nil &&
+				strings.HasPrefix(*pool.Machine.Image.Version, "2604") {
+				override = true
+				break
+			}
+		}
+	}
+
+	if !override {
+		return nil
+	}
+
+	var (
+		scriptPermissions uint32 = 0o744
+	)
+
+	installNtpScript := extensionsv1alpha1.File{
+		Path:        "/opt/gardener/bin/install-ntp.sh",
+		Permissions: &scriptPermissions,
+		Content: extensionsv1alpha1.FileContent{
+			Inline: &extensionsv1alpha1.FileContentInline{
+				Data: "#!/usr/bin/env bash\necho \"NTP installation disabled by provider webhook\"\nexit 0\n",
+			},
+		},
+	}
+
+	newObj.Spec.Files = extensionswebhook.EnsureFileWithPath(newObj.Spec.Files, installNtpScript)
+	return nil
+}
+
 // addAdditionalFilesForResolvConfOptions writes the script to update `/etc/resolv.conf` from
 // `/run/systemd/resolve/resolv.conf` and adds an options line to it.
 func (e *ensurer) addAdditionalFilesForResolvConfOptions(options []string, newObj *[]extensionsv1alpha1.File) {
