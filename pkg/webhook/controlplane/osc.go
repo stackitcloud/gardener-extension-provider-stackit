@@ -24,16 +24,16 @@ const (
 	ntpInstallDropInContent = "[Service]\nExecStart=\nExecStart=/bin/true\n"
 )
 
-type ntpMutator struct {
+type customMutator struct {
 	extensionswebhook.Mutator
 	client client.Client
 }
 
-func newNTPMutator(delegate extensionswebhook.Mutator, c client.Client) extensionswebhook.Mutator {
-	return &ntpMutator{Mutator: delegate, client: c}
+func newCustomMutator(delegate extensionswebhook.Mutator, c client.Client) extensionswebhook.Mutator {
+	return &customMutator{Mutator: delegate, client: c}
 }
 
-func (m *ntpMutator) Mutate(ctx context.Context, newObj, oldObj client.Object) error {
+func (m *customMutator) Mutate(ctx context.Context, newObj, oldObj client.Object) error {
 	if err := m.Mutator.Mutate(ctx, newObj, oldObj); err != nil {
 		return err
 	}

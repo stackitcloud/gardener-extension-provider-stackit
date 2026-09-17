@@ -43,7 +43,7 @@ func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) (*extensionsw
 			{Obj: &extensionsv1alpha1.OperatingSystemConfig{}},
 		},
 		ObjectSelector: &metav1.LabelSelector{MatchLabels: map[string]string{v1beta1constants.LabelExtensionProviderMutatedByControlplaneWebhook: "true"}},
-		Mutator: newNTPMutator(genericmutator.NewMutator(mgr, NewEnsurer(opts.RegistryCaches, logger), oscutils.NewUnitSerializer(),
+		Mutator: newCustomMutator(genericmutator.NewMutator(mgr, NewEnsurer(opts.RegistryCaches, logger), oscutils.NewUnitSerializer(),
 			kubelet.NewConfigCodec(fciCodec), fciCodec, logger), mgr.GetClient()),
 	})
 }
