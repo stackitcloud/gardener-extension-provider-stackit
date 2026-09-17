@@ -437,7 +437,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 
 	err := w.seedClient.List(ctx, &allMachines, &client.ListOptions{Namespace: w.worker.Namespace})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list machines in namespace %s: %w", w.worker.Namespace, err)
 	}
 
 	for i := range allMachines.Items {
@@ -536,6 +536,10 @@ func serverIDFromProviderID(providerID string) (string, error) {
 			if name == "serverID" {
 				return match[i], nil
 			}
+		}
+
+		if idx := pattern.SubexpIndex("serverID"); idx >= 0 && idx < len(match) {
+			return match[idx], nil
 		}
 	}
 
