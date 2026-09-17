@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("#ensureNTPInstallDisabled", func() {
@@ -33,7 +32,7 @@ var _ = Describe("#ensureNTPInstallDisabled", func() {
 		return gardencorev1beta1.Worker{
 			Name: name,
 			Machine: gardencorev1beta1.Machine{
-				Image: &gardencorev1beta1.ShootMachineImage{Name: image, Version: ptr.To(version)},
+				Image: &gardencorev1beta1.ShootMachineImage{Name: image, Version: new(version)},
 			},
 		}
 	}
@@ -86,7 +85,7 @@ var _ = Describe("#ensureNTPInstallDisabled", func() {
 	})
 	It("should keep existing units", func() {
 		osc = oscForPool("resolute")
-		existing := extensionsv1alpha1.Unit{Name: "dummy.service", Content: ptr.To("dummy")}
+		existing := extensionsv1alpha1.Unit{Name: "dummy.service", Content: new("dummy")}
 		osc.Spec.Units = []extensionsv1alpha1.Unit{existing}
 
 		ensureNTPInstallDisabled(osc, cluster)
