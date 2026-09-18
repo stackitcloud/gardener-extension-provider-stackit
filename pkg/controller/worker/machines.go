@@ -79,8 +79,7 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	}
 
 	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
-		err = w.migrateMachines(ctx)
-		if err != nil {
+		if err := w.migrateMachines(ctx); err != nil {
 			return err
 		}
 	}
@@ -458,17 +457,21 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		if m.Annotations == nil {
 			m.Annotations = make(map[string]string)
 		}
+		// This annotation is deleted when the server is updated, otherwise its incomplete migrated machine.
 		m.Annotations[shouldMigrateMachineAnnotation] = "true"
+		// The MCM needs to get and delete the NICs of the machine, as they were created separately which needs dedicated deletion
 		m.Annotations[migratedMachineAnnotation] = "true"
 		err = w.seedClient.Patch(ctx, &m, patchAnnotations)
 		if err != nil {
 			return err
 		}
 
-		if m.Spec.ProviderID == "" {
-			return fmt.Errorf("cannot migrate machine %s: providerID is empty (provisioning in progress)", m.Name)
-		}
-
+		// It is okay to skip machine without a provider ID, as there is a fallback to get
+		// the server by name in case there is no providerID during deletion by the MCM.
+		// Normally this is done with a label containing the machine name and a label selector.
+		// In case of a migrated machine with the stackit.cloud/migrated-machine annotation the deletion needs
+		// to get all servers and filters internally. This is needed as servers that are migrated during the creation
+		// are maybe created in the infrastructure but has no providerID.
 		if m.Spec.ProviderID != "" {
 			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
 			if err != nil {
@@ -485,9 +488,9 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 			_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
 				Labels: map[string]any{
 					// TODO refine labels
-					"mcm.gardener.cloud/machine":      m.Name,
-					"mcm.gardener.cloud/machineclass": m.Spec.Class.Name,
-					"mcm.gardener.cloud/role":         "node",
+					"kubernetes.io/machine":      m.Name,
+					"kubernetes.io/machineclass": m.Spec.Class.Name,
+					"kubernetes.io/role":         "node",
 				},
 			})
 			if err != nil {
