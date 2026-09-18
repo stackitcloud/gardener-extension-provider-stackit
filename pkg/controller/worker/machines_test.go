@@ -1026,9 +1026,9 @@ var _ = Describe("Machines", func() {
 					mockIaaSClient.EXPECT().
 						UpdateServer(ctx, "server-123", iaas2.UpdateServerPayload{
 							Labels: map[string]any{
-								"mcm.gardener.cloud/machine":      machine.Name,
-								"mcm.gardener.cloud/machineclass": machine.Spec.Class.Name,
-								"mcm.gardener.cloud/role":         "node",
+								"kubernetes.io/machine":      machine.Name,
+								"kubernetes.io/machineclass": machine.Spec.Class.Name,
+								"kubernetes.io/role":         "node",
 							},
 						}).
 						Return(nil, nil)
@@ -1092,9 +1092,9 @@ var _ = Describe("Machines", func() {
 					mockIaaSClient.EXPECT().
 						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
 							Labels: map[string]any{
-								"mcm.gardener.cloud/machine":      pendingMachine.Name,
-								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
-								"mcm.gardener.cloud/role":         "node",
+								"kubernetes.io/machine":      pendingMachine.Name,
+								"kubernetes.io/machineclass": pendingMachine.Spec.Class.Name,
+								"kubernetes.io/role":         "node",
 							},
 						}).
 						Return(nil, fmt.Errorf("temporary IaaS API failure"))
@@ -1113,9 +1113,9 @@ var _ = Describe("Machines", func() {
 					mockIaaSClient.EXPECT().
 						UpdateServer(ctx, "server-456", iaas2.UpdateServerPayload{
 							Labels: map[string]any{
-								"mcm.gardener.cloud/machine":      pendingMachine.Name,
-								"mcm.gardener.cloud/machineclass": pendingMachine.Spec.Class.Name,
-								"mcm.gardener.cloud/role":         "node",
+								"kubernetes.io/machine":      pendingMachine.Name,
+								"kubernetes.io/machineclass": pendingMachine.Spec.Class.Name,
+								"kubernetes.io/role":         "node",
 							},
 						}).
 						Return(nil, nil)
