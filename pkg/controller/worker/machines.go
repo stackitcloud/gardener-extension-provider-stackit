@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -24,6 +25,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gardenutils "github.com/gardener/gardener/pkg/utils"
 	machinev1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -34,6 +36,14 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	stackitutils "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
+)
+
+const (
+	shouldMigrateMachineAnnotation = "stackit.cloud/machine-should-be-migrated"
+	migratedMachineAnnotation      = "stackit.cloud/migrated-machine"
+	workerMigratedAnnotation       = "stackit.cloud/machine-controller-manager-migrated"
+
+	stackitProviderID = "stackit://"
 )
 
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
@@ -63,7 +73,18 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	if feature.UseStackitMachineControllerManager(w.cluster) {
 		chartPath = "machineclass-stackit"
 	}
-	return w.seedChartApplier.ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join(charts.InternalChartsPath, chartPath), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]any{"machineClasses": w.machineClasses}))
+	err := w.seedChartApplier.ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join(charts.InternalChartsPath, chartPath), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]any{"machineClasses": w.machineClasses}))
+	if err != nil {
+		return err
+	}
+
+	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
+		if err := w.migrateMachines(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GenerateMachineDeployments generates the configuration for the desired machine deployments.
@@ -405,4 +426,123 @@ func EnsureUniformMachineImages(images []stackitv1alpha1.MachineImage, definitio
 		}, definitions)
 	}
 	return uniformMachineImages
+}
+
+func (w *workerDelegate) migrateMachines(ctx context.Context) error {
+	var (
+		allMachines     machinev1alpha1.MachineList
+		migrateMachines []machinev1alpha1.Machine
+	)
+
+	err := w.seedClient.List(ctx, &allMachines, &client.ListOptions{Namespace: w.worker.Namespace})
+	if err != nil {
+		return fmt.Errorf("failed to list machines in namespace %s: %w", w.worker.Namespace, err)
+	}
+
+	for i := range allMachines.Items {
+		// ignore error as default is false
+		migrateAnnotation, _ := strconv.ParseBool(allMachines.Items[i].Annotations[shouldMigrateMachineAnnotation])
+		if !strings.HasPrefix(allMachines.Items[i].Spec.ProviderID, "stackit://") || migrateAnnotation {
+			migrateMachines = append(migrateMachines, allMachines.Items[i])
+		}
+	}
+
+	if len(migrateMachines) == 0 {
+		// no old openstack machine
+		return w.markWorkerAsMigrated(ctx)
+	}
+
+	for _, m := range migrateMachines {
+		patchAnnotations := client.MergeFrom(m.DeepCopy())
+		if m.Annotations == nil {
+			m.Annotations = make(map[string]string)
+		}
+		// This annotation is deleted when the server is updated, otherwise its incomplete migrated machine.
+		m.Annotations[shouldMigrateMachineAnnotation] = "true"
+		// The MCM needs to get and delete the NICs of the machine, as they were created separately which needs dedicated deletion
+		m.Annotations[migratedMachineAnnotation] = "true"
+		err = w.seedClient.Patch(ctx, &m, patchAnnotations)
+		if err != nil {
+			return err
+		}
+
+		// It is okay to skip machine without a provider ID, as there is a fallback to get
+		// the server by name in case there is no providerID during deletion by the MCM.
+		// Normally this is done with a label containing the machine name and a label selector.
+		// In case of a migrated machine with the stackit.cloud/migrated-machine annotation the deletion needs
+		// to get all servers and filters internally. This is needed as servers that are migrated during the creation
+		// are maybe created in the infrastructure but has no providerID.
+		if m.Spec.ProviderID != "" {
+			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
+			if err != nil {
+				return fmt.Errorf("migrateMachines: %w", err)
+			}
+
+			patch := client.MergeFrom(m.DeepCopy())
+			m.Spec.ProviderID = fmt.Sprintf("%s%s/%s", stackitProviderID, w.iaaSClient.ProjectID(), serverID)
+			err = w.seedClient.Patch(ctx, &m, patch)
+			if err != nil {
+				return err
+			}
+
+			_, err = w.iaaSClient.UpdateServer(ctx, serverID, iaas.UpdateServerPayload{
+				Labels: map[string]any{
+					// TODO refine labels
+					"kubernetes.io/machine":      m.Name,
+					"kubernetes.io/machineclass": m.Spec.Class.Name,
+					"kubernetes.io/role":         "node",
+				},
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		patchRemoveMigrationAnnotation := client.MergeFrom(m.DeepCopy())
+		delete(m.Annotations, shouldMigrateMachineAnnotation)
+		err = w.seedClient.Patch(ctx, &m, patchRemoveMigrationAnnotation)
+		if err != nil {
+			return err
+		}
+	}
+
+	return w.markWorkerAsMigrated(ctx)
+}
+
+func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
+	patchWorker := client.MergeFrom(w.worker.DeepCopy())
+
+	if w.worker.Annotations == nil {
+		w.worker.Annotations = make(map[string]string)
+	}
+
+	w.worker.Annotations[workerMigratedAnnotation] = "true"
+
+	return w.seedClient.Patch(ctx, w.worker, patchWorker)
+}
+
+var (
+	providerIDPatterns []*regexp.Regexp
+)
+
+func init() {
+	providerIDPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`^openstack:///[^/]+/(?P<serverID>[^/]+)$`),
+		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
+	}
+}
+
+func serverIDFromProviderID(providerID string) (string, error) {
+	for _, pattern := range providerIDPatterns {
+		match := pattern.FindStringSubmatch(providerID)
+		if len(match) == 0 {
+			continue
+		}
+
+		if idx := pattern.SubexpIndex("serverID"); idx >= 0 && idx < len(match) {
+			return match[idx], nil
+		}
+	}
+
+	return "", fmt.Errorf("malformed machine provider ID: %s", providerID)
 }
