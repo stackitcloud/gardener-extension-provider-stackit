@@ -34,7 +34,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.15.2
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.26.0
 	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.21.0
-	go.uber.org/atomic v1.11.0
+	go.uber.org/atomic v1.12.0
 	go.uber.org/mock v0.6.0
 	k8s.io/api v0.36.4
 	k8s.io/apiextensions-apiserver v0.36.4
