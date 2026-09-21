@@ -48,7 +48,9 @@ func (l applicationLoadBalancingClient) ProjectID() string {
 }
 
 func (l applicationLoadBalancingClient) ListLoadBalancers(ctx context.Context) ([]alb.LoadBalancer, error) {
-	lbResponse, err := l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
+	lbResponse, err := execute(ctx, func(ctx context.Context) (*alb.ListLoadBalancersResponse, error) {
+		return l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +58,8 @@ func (l applicationLoadBalancingClient) ListLoadBalancers(ctx context.Context) (
 }
 
 func (l applicationLoadBalancingClient) DeleteLoadBalancer(ctx context.Context, name string) error {
-	_, err := l.Client.DeleteLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (map[string]any, error) {
+		return l.Client.DeleteLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	})
 	return err
 }

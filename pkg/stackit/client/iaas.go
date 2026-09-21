@@ -59,7 +59,9 @@ func (c iaasClient) UpdateSecurityGroupRules(ctx context.Context, group *iaas.Se
 		rule := &group.GetRules()[i]
 		if desiredRule := findMatchingRule(*rule, desiredRules); desiredRule == nil {
 			if allowDelete == nil || allowDelete(rule) {
-				if err = c.Client.DeleteSecurityGroupRule(ctx, c.projectID, c.region, group.GetId(), rule.GetId()).Execute(); err != nil {
+				if _, err = execute(ctx, func(ctx context.Context) (any, error) {
+					return nil, c.Client.DeleteSecurityGroupRule(ctx, c.projectID, c.region, group.GetId(), rule.GetId()).Execute()
+				}); err != nil {
 					err = fmt.Errorf("error deleting rule for security group %s: %s", rule.GetId(), err)
 					return
 				}
@@ -91,7 +93,9 @@ func (c iaasClient) UpdateSecurityGroupRules(ctx context.Context, group *iaas.Se
 		if portRange, ok := rule.GetPortRangeOk(); ok {
 			createOpts.PortRange = iaas.NewPortRange(portRange.GetMax(), portRange.GetMin())
 		}
-		if _, err = c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, group.GetId()).CreateSecurityGroupRulePayload(createOpts).Execute(); err != nil {
+		if _, err = execute(ctx, func(ctx context.Context) (*iaas.SecurityGroupRule, error) {
+			return c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, group.GetId()).CreateSecurityGroupRulePayload(createOpts).Execute()
+		}); err != nil {
 			err = fmt.Errorf("error creating rule %d for security group: %s", i, err)
 			return
 		}
@@ -101,7 +105,9 @@ func (c iaasClient) UpdateSecurityGroupRules(ctx context.Context, group *iaas.Se
 }
 
 func (c iaasClient) UpdateNetwork(ctx context.Context, networkId string, payload iaas.PartialUpdateNetworkPayload) (*iaas.Network, error) {
-	err := c.Client.PartialUpdateNetwork(ctx, c.projectID, c.region, networkId).PartialUpdateNetworkPayload(payload).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.PartialUpdateNetwork(ctx, c.projectID, c.region, networkId).PartialUpdateNetworkPayload(payload).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -109,11 +115,15 @@ func (c iaasClient) UpdateNetwork(ctx context.Context, networkId string, payload
 }
 
 func (c iaasClient) GetNetworkById(ctx context.Context, id string) (*iaas.Network, error) {
-	return c.Client.GetNetwork(ctx, c.projectID, c.region, id).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.Network, error) {
+		return c.Client.GetNetwork(ctx, c.projectID, c.region, id).Execute()
+	})
 }
 
 func (c iaasClient) GetNetworkByName(ctx context.Context, name string) ([]iaas.Network, error) {
-	networks, err := c.Client.ListNetworks(ctx, c.projectID, c.region).Execute()
+	networks, err := execute(ctx, func(ctx context.Context) (*iaas.NetworkListResponse, error) {
+		return c.Client.ListNetworks(ctx, c.projectID, c.region).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error listing security groups: %w", err)
 	}
@@ -152,11 +162,16 @@ func NewIaaSClient(region string, endpoints stackitv1alpha1.APIEndpoints, creden
 }
 
 func (c iaasClient) CreateIsolatedNetwork(ctx context.Context, payload iaas.CreateIsolatedNetworkPayload) (*iaas.Network, error) {
-	return c.Client.CreateIsolatedNetwork(ctx, c.projectID, c.region).CreateIsolatedNetworkPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.Network, error) {
+		return c.Client.CreateIsolatedNetwork(ctx, c.projectID, c.region).CreateIsolatedNetworkPayload(payload).Execute()
+	})
 }
 
 func (c iaasClient) DeleteNetwork(ctx context.Context, networkID string) error {
-	return c.Client.DeleteNetwork(ctx, c.projectID, c.region, networkID).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.DeleteNetwork(ctx, c.projectID, c.region, networkID).Execute()
+	})
+	return err
 }
 
 func (c iaasClient) ProjectID() string {
@@ -164,16 +179,23 @@ func (c iaasClient) ProjectID() string {
 }
 
 func (c iaasClient) CreateSecurityGroup(ctx context.Context, payload iaas.CreateSecurityGroupPayload) (*iaas.SecurityGroup, error) {
-	return c.Client.CreateSecurityGroup(ctx, c.projectID, c.region).CreateSecurityGroupPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.SecurityGroup, error) {
+		return c.Client.CreateSecurityGroup(ctx, c.projectID, c.region).CreateSecurityGroupPayload(payload).Execute()
+	})
 }
 
 func (c iaasClient) DeleteSecurityGroup(ctx context.Context, securityGroupId string) error {
-	return c.Client.DeleteSecurityGroup(ctx, c.projectID, c.region, securityGroupId).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.DeleteSecurityGroup(ctx, c.projectID, c.region, securityGroupId).Execute()
+	})
+	return err
 }
 
 // GetSecurityGroupByName finds the first security group with the given name.
 func (c iaasClient) GetSecurityGroupByName(ctx context.Context, name string) ([]iaas.SecurityGroup, error) {
-	securityGroups, err := c.Client.ListSecurityGroups(ctx, c.projectID, c.region).Execute()
+	securityGroups, err := execute(ctx, func(ctx context.Context) (*iaas.SecurityGroupListResponse, error) {
+		return c.Client.ListSecurityGroups(ctx, c.projectID, c.region).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error listing security groups: %w", err)
 	}
@@ -187,11 +209,15 @@ func (c iaasClient) GetSecurityGroupByName(ctx context.Context, name string) ([]
 }
 
 func (c iaasClient) GetSecurityGroupById(ctx context.Context, securityGroupId string) (*iaas.SecurityGroup, error) {
-	return c.Client.GetSecurityGroup(ctx, c.projectID, c.region, securityGroupId).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.SecurityGroup, error) {
+		return c.Client.GetSecurityGroup(ctx, c.projectID, c.region, securityGroupId).Execute()
+	})
 }
 
 func (c iaasClient) CreateSecurityGroupRule(ctx context.Context, securityGroupId string, wantedRule iaas.SecurityGroupRule) (*iaas.SecurityGroupRule, error) {
-	return c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRuleToCreatePayload(wantedRule)).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.SecurityGroupRule, error) {
+		return c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, securityGroupId).CreateSecurityGroupRulePayload(securityGroupRuleToCreatePayload(wantedRule)).Execute()
+	})
 }
 
 // ReconcileSecurityGroupRules updates the rules of the given security group to the desired state.
@@ -211,7 +237,9 @@ func (c iaasClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Lo
 			ruleLog.V(1).Info("Found existing security group rule")
 		} else {
 			// delete unwanted rule
-			if err := c.Client.DeleteSecurityGroupRule(ctx, c.projectID, c.region, securityGroup.GetId(), existingRule.GetId()).Execute(); err != nil {
+			if _, err := execute(ctx, func(ctx context.Context) (any, error) {
+				return nil, c.Client.DeleteSecurityGroupRule(ctx, c.projectID, c.region, securityGroup.GetId(), existingRule.GetId()).Execute()
+			}); err != nil {
 				return fmt.Errorf("error deleting unwanted security group rule %s in group %s: %w", existingRule.GetId(), securityGroup.GetId(), err)
 			}
 
@@ -226,9 +254,11 @@ func (c iaasClient) ReconcileSecurityGroupRules(ctx context.Context, log logr.Lo
 			continue
 		}
 
-		createdRule, err := c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, securityGroup.GetId()).
-			CreateSecurityGroupRulePayload(securityGroupRuleToCreatePayload(wantedRule)).
-			Execute()
+		createdRule, err := execute(ctx, func(ctx context.Context) (*iaas.SecurityGroupRule, error) {
+			return c.Client.CreateSecurityGroupRule(ctx, c.projectID, c.region, securityGroup.GetId()).
+				CreateSecurityGroupRulePayload(securityGroupRuleToCreatePayload(wantedRule)).
+				Execute()
+		})
 		if err != nil {
 			return fmt.Errorf("error creating security group rule %q in group %s: %w", wantedRule.GetDescription(), securityGroup.GetId(), err)
 		}
@@ -281,16 +311,23 @@ func securityGroupRuleToCreatePayload(rule iaas.SecurityGroupRule) iaas.CreateSe
 }
 
 func (c iaasClient) CreateServer(ctx context.Context, payload iaas.CreateServerPayload) (*iaas.Server, error) {
-	return c.Client.CreateServer(ctx, c.projectID, c.region).CreateServerPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.Server, error) {
+		return c.Client.CreateServer(ctx, c.projectID, c.region).CreateServerPayload(payload).Execute()
+	})
 }
 
 func (c iaasClient) DeleteServer(ctx context.Context, serverId string) error {
-	return c.Client.DeleteServer(ctx, c.projectID, c.region, serverId).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.DeleteServer(ctx, c.projectID, c.region, serverId).Execute()
+	})
+	return err
 }
 
 // GetServerByName finds the first server with the given name.
 func (c iaasClient) GetServerByName(ctx context.Context, name string) ([]iaas.Server, error) {
-	servers, err := c.Client.ListServers(ctx, c.projectID, c.region).Execute()
+	servers, err := execute(ctx, func(ctx context.Context) (*iaas.ServerListResponse, error) {
+		return c.Client.ListServers(ctx, c.projectID, c.region).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error listing servers: %w", err)
 	}
@@ -304,17 +341,24 @@ func (c iaasClient) GetServerByName(ctx context.Context, name string) ([]iaas.Se
 }
 
 func (c iaasClient) CreatePublicIp(ctx context.Context, payload iaas.CreatePublicIPPayload) (*iaas.PublicIp, error) {
-	return c.Client.CreatePublicIP(ctx, c.projectID, c.region).CreatePublicIPPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.PublicIp, error) {
+		return c.Client.CreatePublicIP(ctx, c.projectID, c.region).CreatePublicIPPayload(payload).Execute()
+	})
 }
 
 func (c iaasClient) DeletePublicIp(ctx context.Context, publicIpId string) error {
-	return c.Client.DeletePublicIP(ctx, c.projectID, c.region, publicIpId).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.DeletePublicIP(ctx, c.projectID, c.region, publicIpId).Execute()
+	})
+	return err
 }
 
 // GetPublicIpByLabels finds the first public IP that matches the given label selector. Public IPs don't have a name,
 // so matching by label is our best option.
 func (c iaasClient) GetPublicIpByLabels(ctx context.Context, selector stackit.LabelSelector) ([]iaas.PublicIp, error) {
-	publicIPs, err := c.Client.ListPublicIPs(ctx, c.projectID, c.region).Execute()
+	publicIPs, err := execute(ctx, func(ctx context.Context) (*iaas.PublicIpListResponse, error) {
+		return c.Client.ListPublicIPs(ctx, c.projectID, c.region).Execute()
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error listing public IPs: %w", err)
 	}
@@ -328,11 +372,16 @@ func (c iaasClient) GetPublicIpByLabels(ctx context.Context, selector stackit.La
 }
 
 func (c iaasClient) AddPublicIpToServer(ctx context.Context, serverId, publicIpId string) error {
-	return c.Client.AddPublicIpToServer(ctx, c.projectID, c.region, serverId, publicIpId).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.AddPublicIpToServer(ctx, c.projectID, c.region, serverId, publicIpId).Execute()
+	})
+	return err
 }
 
 func (c iaasClient) GetKeypair(ctx context.Context, name string) (*iaas.Keypair, error) {
-	keypair, err := c.Client.GetKeyPair(ctx, name).Execute()
+	keypair, err := execute(ctx, func(ctx context.Context) (*iaas.Keypair, error) {
+		return c.Client.GetKeyPair(ctx, name).Execute()
+	})
 	if IsNotFound(err) {
 		return nil, nil
 	}
@@ -340,11 +389,16 @@ func (c iaasClient) GetKeypair(ctx context.Context, name string) (*iaas.Keypair,
 }
 
 func (c iaasClient) CreateKeypair(ctx context.Context, name, publicKey string) (*iaas.Keypair, error) {
-	return c.Client.CreateKeyPair(ctx).CreateKeyPairPayload(iaas.CreateKeyPairPayload{Name: &name, PublicKey: publicKey}).Execute()
+	return execute(ctx, func(ctx context.Context) (*iaas.Keypair, error) {
+		return c.Client.CreateKeyPair(ctx).CreateKeyPairPayload(iaas.CreateKeyPairPayload{Name: &name, PublicKey: publicKey}).Execute()
+	})
 }
 
 func (c iaasClient) DeleteKeypair(ctx context.Context, name string) error {
-	return c.Client.DeleteKeyPair(ctx, name).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (any, error) {
+		return nil, c.Client.DeleteKeyPair(ctx, name).Execute()
+	})
+	return err
 }
 
 func IsolatedNetworkToPartialUpdate(network iaas.CreateIsolatedNetworkPayload) iaas.PartialUpdateNetworkPayload {

@@ -48,7 +48,9 @@ func (l applicationLoadBalancingCertificateClient) ProjectID() string {
 }
 
 func (l applicationLoadBalancingCertificateClient) ListApplicationLoadBalancerCertificates(ctx context.Context) ([]albcert.GetCertificateResponse, error) {
-	certResponse, err := l.Client.ListCertificates(ctx, l.projectID, l.region).Execute()
+	certResponse, err := execute(ctx, func(ctx context.Context) (*albcert.ListCertificatesResponse, error) {
+		return l.Client.ListCertificates(ctx, l.projectID, l.region).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +58,8 @@ func (l applicationLoadBalancingCertificateClient) ListApplicationLoadBalancerCe
 }
 
 func (l applicationLoadBalancingCertificateClient) DeleteApplicationLoadBalancerCertificates(ctx context.Context, id string) error {
-	_, err := l.Client.DeleteCertificate(ctx, l.projectID, l.region, id).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (map[string]any, error) {
+		return l.Client.DeleteCertificate(ctx, l.projectID, l.region, id).Execute()
+	})
 	return err
 }

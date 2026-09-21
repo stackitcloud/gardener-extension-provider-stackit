@@ -64,3 +64,14 @@ func IgnoreNotFoundError(err error) error {
 func IsConflictError(err error) bool {
 	return GetStatusCode(err) == http.StatusConflict
 }
+
+// WrapError wraps the error with an identifier but only if the error is not nil.
+func WrapError(err error, name, id string) error {
+	if err == nil {
+		return nil
+	}
+	if id == "" {
+		return err
+	}
+	return fmt.Errorf("[%s:%s]: %w", name, id, err)
+}
