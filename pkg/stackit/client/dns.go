@@ -52,7 +52,9 @@ type dnsClient struct {
 }
 
 func (c *dnsClient) ListZones(ctx context.Context) ([]DNSZone, error) {
-	dnsZonesResp, err := c.api.ListZones(ctx, c.projectID).Execute()
+	dnsZonesResp, err := execute(ctx, func(ctx context.Context) (*dns.ListZonesResponse, error) {
+		return c.api.ListZones(ctx, c.projectID).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +105,14 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 	}
 
 	if recordSet == nil {
-		_, err := c.api.CreateRecordSet(ctx, c.projectID, zoneID).CreateRecordSetPayload(dns.CreateRecordSetPayload{
-			Name:    name,
-			Records: wantedRecordsPayload,
-			Type:    *payloadType,
-			Ttl:     new(cacheTTL),
-		}).Execute()
+		_, err := execute(ctx, func(ctx context.Context) (*dns.RecordSetResponse, error) {
+			return c.api.CreateRecordSet(ctx, c.projectID, zoneID).CreateRecordSetPayload(dns.CreateRecordSetPayload{
+				Name:    name,
+				Records: wantedRecordsPayload,
+				Type:    *payloadType,
+				Ttl:     new(cacheTTL),
+			}).Execute()
+		})
 		if err != nil {
 			return fmt.Errorf("failed to create record set: %w", err)
 		}
@@ -120,11 +124,13 @@ func (c *dnsClient) CreateOrUpdateRecordSet(ctx context.Context,
 		return nil
 	}
 
-	_, err = c.api.PartialUpdateRecordSet(ctx, c.projectID, zoneID, recordSet.GetId()).PartialUpdateRecordSetPayload(dns.PartialUpdateRecordSetPayload{
-		Name:    &name,
-		Records: wantedRecordsPayload,
-		Ttl:     new(cacheTTL),
-	}).Execute()
+	_, err = execute(ctx, func(ctx context.Context) (*dns.Message, error) {
+		return c.api.PartialUpdateRecordSet(ctx, c.projectID, zoneID, recordSet.GetId()).PartialUpdateRecordSetPayload(dns.PartialUpdateRecordSetPayload{
+			Name:    &name,
+			Records: wantedRecordsPayload,
+			Ttl:     new(cacheTTL),
+		}).Execute()
+	})
 	if err != nil {
 		return fmt.Errorf("failed to update record set: %w", err)
 	}
@@ -146,7 +152,9 @@ func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordTyp
 		return nil
 	}
 
-	_, err = c.api.DeleteRecordSet(ctx, c.projectID, zoneID, recordSet.GetId()).Execute()
+	_, err = execute(ctx, func(ctx context.Context) (*dns.Message, error) {
+		return c.api.DeleteRecordSet(ctx, c.projectID, zoneID, recordSet.GetId()).Execute()
+	})
 	if err != nil {
 		return fmt.Errorf("failed to delete record set: %w", err)
 	}
@@ -154,7 +162,9 @@ func (c *dnsClient) DeleteRecordSet(ctx context.Context, zoneID, name, recordTyp
 }
 
 func (c *dnsClient) findRecordSet(ctx context.Context, zoneID, name string, recordType *dns.RecordSetType) (*dns.RecordSet, error) {
-	resp, err := c.api.ListRecordSets(ctx, c.projectID, zoneID).Execute()
+	resp, err := execute(ctx, func(ctx context.Context) (*dns.ListRecordSetsResponse, error) {
+		return c.api.ListRecordSets(ctx, c.projectID, zoneID).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
