@@ -38,7 +38,7 @@ var _ = Describe("LoadBalancingClient", func() {
 		response := loadbalancer.ListLoadBalancersResponse{
 			LoadBalancers: expectedLoadBalancers,
 		}
-		mockAPI.EXPECT().ListLoadBalancers(ctx, client.projectID, client.region).Return(loadbalancer.ApiListLoadBalancersRequest{ApiService: mockAPI})
+		mockAPI.EXPECT().ListLoadBalancers(gomock.Any(), client.projectID, client.region).Return(loadbalancer.ApiListLoadBalancersRequest{ApiService: mockAPI})
 		mockAPI.EXPECT().ListLoadBalancersExecute(gomock.Any()).Return(&response, nil)
 		actualLoadBalancers, err := client.ListLoadBalancers(ctx)
 		Expect(err).ToNot(HaveOccurred())
@@ -46,7 +46,7 @@ var _ = Describe("LoadBalancingClient", func() {
 	})
 
 	It("deletes a certain loadbalancer", func() {
-		mockAPI.EXPECT().DeleteLoadBalancer(ctx, client.projectID, client.region, "testLB").Return(loadbalancer.ApiDeleteLoadBalancerRequest{ApiService: mockAPI})
+		mockAPI.EXPECT().DeleteLoadBalancer(gomock.Any(), client.projectID, client.region, "testLB").Return(loadbalancer.ApiDeleteLoadBalancerRequest{ApiService: mockAPI})
 		mockAPI.EXPECT().DeleteLoadBalancerExecute(gomock.Any()).Return(nil, nil)
 		err := client.DeleteLoadBalancer(ctx, "testLB")
 		Expect(err).NotTo(HaveOccurred())
@@ -57,7 +57,7 @@ var _ = Describe("LoadBalancingClient", func() {
 		expectedLoadBalancer := &loadbalancer.LoadBalancer{
 			Name: new(name),
 		}
-		mockAPI.EXPECT().GetLoadBalancer(ctx, client.projectID, client.region, name).Return(loadbalancer.ApiGetLoadBalancerRequest{ApiService: mockAPI})
+		mockAPI.EXPECT().GetLoadBalancer(gomock.Any(), client.projectID, client.region, name).Return(loadbalancer.ApiGetLoadBalancerRequest{ApiService: mockAPI})
 		mockAPI.EXPECT().GetLoadBalancerExecute(gomock.Any()).Return(expectedLoadBalancer, nil)
 
 		actualLoadBalancer, err := client.GetLoadBalancer(ctx, "testLB")

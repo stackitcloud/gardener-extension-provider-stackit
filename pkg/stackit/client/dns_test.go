@@ -43,7 +43,7 @@ var _ = Describe("DNSClient", func() {
 					{Id: "zone2", DnsName: "example.org."},
 				},
 			}
-			mockAPI.EXPECT().ListZones(ctx, client.projectID).Return(dns.ApiListZonesRequest{ApiService: mockAPI})
+			mockAPI.EXPECT().ListZones(gomock.Any(), client.projectID).Return(dns.ApiListZonesRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().ListZonesExecute(gomock.Any()).Return(&response, nil)
 			actualZones, err := client.ListZones(ctx)
 			Expect(err).ToNot(HaveOccurred())
@@ -54,7 +54,7 @@ var _ = Describe("DNSClient", func() {
 	Describe("CreateOrUpdate Record", func() {
 		Context("with a supported record type", func() {
 			BeforeEach(func() {
-				mockAPI.EXPECT().ListRecordSets(ctx, client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().ListRecordSets(gomock.Any(), client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
 				mockAPI.EXPECT().ListRecordSetsExecute(gomock.Any()).Return(&dns.ListRecordSetsResponse{
 					RrSets: []dns.RecordSet{
 						{
@@ -78,14 +78,14 @@ var _ = Describe("DNSClient", func() {
 			})
 
 			It("should create a new record set if it does not exist", func() {
-				mockAPI.EXPECT().CreateRecordSet(ctx, client.projectID, "zone1").Return(dns.ApiCreateRecordSetRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().CreateRecordSet(gomock.Any(), client.projectID, "zone1").Return(dns.ApiCreateRecordSetRequest{ApiService: mockAPI})
 				mockAPI.EXPECT().CreateRecordSetExecute(gomock.Any()).Return(nil, nil)
 
 				Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "new.example.com.", string(dns.RECORDSETTYPE_A), []string{"1.1.1.1"}, 300)).To(Succeed())
 			})
 
 			It("should update the existing record set if it exists and records are different", func() {
-				mockAPI.EXPECT().PartialUpdateRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiPartialUpdateRecordSetRequest{ApiService: mockAPI})
+				mockAPI.EXPECT().PartialUpdateRecordSet(gomock.Any(), client.projectID, "zone1", "some-uuid").Return(dns.ApiPartialUpdateRecordSetRequest{ApiService: mockAPI})
 				mockAPI.EXPECT().PartialUpdateRecordSetExecute(gomock.Any()).Return(nil, nil)
 
 				Expect(client.CreateOrUpdateRecordSet(ctx, "zone1", "test.example.com.", string(dns.RECORDSETTYPE_A), []string{"4.4.4.4"}, 300)).To(Succeed())
@@ -103,7 +103,7 @@ var _ = Describe("DNSClient", func() {
 
 	Describe("Delete Record", func() {
 		BeforeEach(func() {
-			mockAPI.EXPECT().ListRecordSets(ctx, client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
+			mockAPI.EXPECT().ListRecordSets(gomock.Any(), client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().ListRecordSetsExecute(gomock.Any()).Return(&dns.ListRecordSetsResponse{
 				RrSets: []dns.RecordSet{{
 					Name:   "test.example.com.",
@@ -119,14 +119,14 @@ var _ = Describe("DNSClient", func() {
 		})
 
 		It("should delete the record set if it exists", func() {
-			mockAPI.EXPECT().DeleteRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
+			mockAPI.EXPECT().DeleteRecordSet(gomock.Any(), client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().DeleteRecordSetExecute(gomock.Any()).Return(nil, nil)
 
 			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com.", string(dns.RECORDSETTYPE_A))).To(Succeed())
 		})
 
 		It("should delete the record even if a non-FQDN is specified", func() {
-			mockAPI.EXPECT().DeleteRecordSet(ctx, client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
+			mockAPI.EXPECT().DeleteRecordSet(gomock.Any(), client.projectID, "zone1", "some-uuid").Return(dns.ApiDeleteRecordSetRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().DeleteRecordSetExecute(gomock.Any()).Return(nil, nil)
 
 			Expect(client.DeleteRecordSet(ctx, "zone1", "test.example.com", string(dns.RECORDSETTYPE_A))).To(Succeed())
@@ -168,7 +168,7 @@ var _ = Describe("DNSClient", func() {
 			rand.Shuffle(len(rrSets), func(i, j int) {
 				rrSets[i], rrSets[j] = rrSets[j], rrSets[i]
 			})
-			mockAPI.EXPECT().ListRecordSets(ctx, client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
+			mockAPI.EXPECT().ListRecordSets(gomock.Any(), client.projectID, "zone1").Return(dns.ApiListRecordSetsRequest{ApiService: mockAPI})
 			mockAPI.EXPECT().ListRecordSetsExecute(gomock.Any()).Return(&dns.ListRecordSetsResponse{
 				RrSets: rrSets,
 			}, nil)
