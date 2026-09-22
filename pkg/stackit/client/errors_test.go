@@ -69,7 +69,7 @@ var _ = Describe("Errors", func() {
 		It("wraps the error with the provided identifier", func() {
 			err := errors.New("test error")
 			expected := fmt.Errorf("[X-Trace-Id:12345]: %w", err)
-			Expect(WrapError(err, "X-Trace-Id", "12345")).To(Equal(expected))
+			Expect(WrapError(err, XTraceIDHeader, "12345")).To(Equal(expected))
 		})
 
 		It("returns the original error when the identifier is empty", func() {
