@@ -5,7 +5,11 @@ import (
 	"net/http"
 
 	"github.com/stackitcloud/stackit-sdk-go/core/runtime"
-	sdkWait "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api/wait"
+)
+
+const (
+	XRequestIDHeader = "X-Request-Id"
+	XTraceIDHeader   = "X-Trace-Id"
 )
 
 func execute[T any](ctx context.Context, call func(context.Context) (T, error)) (T, error) {
@@ -15,10 +19,10 @@ func execute[T any](ctx context.Context, call func(context.Context) (T, error)) 
 	resp, err := call(ctx)
 	if err != nil {
 		var zero T
-		err = WrapError(err, "X-Trace-Id", runtime.GetTraceId(ctx))
+		err = WrapError(err, XTraceIDHeader, runtime.GetTraceId(ctx))
 		if httpResp != nil {
-			reqID := httpResp.Header.Get(sdkWait.XRequestIDHeader)
-			err = WrapError(err, sdkWait.XRequestIDHeader, reqID)
+			reqID := httpResp.Header.Get(XRequestIDHeader)
+			err = WrapError(err, XRequestIDHeader, reqID)
 		}
 		return zero, err
 	}

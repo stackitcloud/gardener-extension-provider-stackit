@@ -16,8 +16,8 @@ var _ = Describe("execute", func() {
 			response, ok := ctx.Value(sdkconfig.ContextHTTPResponse).(**http.Response)
 			Expect(ok).To(BeTrue())
 			*response = &http.Response{Header: http.Header{
-				"X-Trace-Id":   {"trace-123"},
-				"X-Request-Id": {"request-456"},
+				XTraceIDHeader:   {"trace-123"},
+				XRequestIDHeader: {"request-456"},
 			}}
 			return 0, errors.New("api error")
 		})
@@ -30,7 +30,7 @@ var _ = Describe("execute", func() {
 			response, ok := ctx.Value(sdkconfig.ContextHTTPResponse).(**http.Response)
 			Expect(ok).To(BeTrue())
 			*response = &http.Response{Header: http.Header{
-				"X-Trace-Id": {"trace-123"},
+				XTraceIDHeader: {"trace-123"},
 			}}
 			return 0, errors.New("api error")
 		})
@@ -43,7 +43,7 @@ var _ = Describe("execute", func() {
 			response, ok := ctx.Value(sdkconfig.ContextHTTPResponse).(**http.Response)
 			Expect(ok).To(BeTrue())
 			*response = &http.Response{Header: http.Header{
-				"X-Request-Id": {"request-456"},
+				XRequestIDHeader: {"request-456"},
 			}}
 			return 0, errors.New("api error")
 		})
