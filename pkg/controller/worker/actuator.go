@@ -25,6 +25,8 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
 	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 )
 
 type delegateFactory struct {
@@ -71,6 +73,12 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 		return nil, err
 	}
 
+	stackitClient := stackitclient.New(stackit.DetermineRegion(cluster), cluster)
+	iaasClient, err := stackitClient.IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewWorkerDelegate(
 		d.seedClient,
 		d.scheme,
@@ -81,6 +89,7 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 		worker,
 		cluster,
 		d.customLabelDomain,
+		iaasClient,
 	)
 }
 
@@ -102,6 +111,7 @@ type workerDelegate struct {
 	machineImages      []stackitv1alpha1.MachineImage
 
 	openstackClient openstackclient.Factory
+	iaaSClient      stackitclient.IaaSClient
 }
 
 // NewWorkerDelegate creates a new context for a worker reconciliation.
@@ -115,6 +125,7 @@ func NewWorkerDelegate(
 	worker *extensionsv1alpha1.Worker,
 	cluster *extensionscontroller.Cluster,
 	customLabelDomain string,
+	iaaSClient stackitclient.IaaSClient,
 ) (genericactuator.WorkerDelegate, error) {
 	config, err := helper.CloudProfileConfigFromCluster(cluster)
 	if err != nil {
@@ -133,5 +144,6 @@ func NewWorkerDelegate(
 		cluster:            cluster,
 		worker:             worker,
 		customLabelDomain:  customLabelDomain,
+		iaaSClient:         iaaSClient,
 	}, nil
 }
