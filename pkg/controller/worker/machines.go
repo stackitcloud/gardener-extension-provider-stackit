@@ -459,19 +459,16 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		}
 		// This annotation is deleted when the server is updated, otherwise its incomplete migrated machine.
 		m.Annotations[shouldMigrateMachineAnnotation] = "true"
-		// The MCM needs to get and delete the NICs of the machine, as they were created separately which needs dedicated deletion
+		// The MCM needs to get and delete the NICs of the machine, as they were created separately which needs dedicated deletion.
+		// The MCM used this annotation as a marker for the said NIC cleanup.
 		m.Annotations[migratedMachineAnnotation] = "true"
 		err = w.seedClient.Patch(ctx, &m, patchAnnotations)
 		if err != nil {
 			return err
 		}
 
-		// It is okay to skip machine without a provider ID, as there is a fallback to get
-		// the server by name in case there is no providerID during deletion by the MCM.
-		// Normally this is done with a label containing the machine name and a label selector.
-		// In case of a migrated machine with the stackit.cloud/migrated-machine annotation the deletion needs
-		// to get all servers and filters internally. This is needed as servers that are migrated during the creation
-		// are maybe created in the infrastructure but has no providerID.
+		// In case we don't have a providerID, we need to fetch all servers and filter them by their name.
+		// Returning an error in case of missing providerID, will block the migration.
 		if m.Spec.ProviderID != "" {
 			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
 			if err != nil {
