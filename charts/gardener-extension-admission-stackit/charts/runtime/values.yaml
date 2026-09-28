@@ -34,7 +34,6 @@ service:
 
 gardener:
   virtualCluster:
-    enabled: true
     serviceAccount: {}
   #     name: extension-admission-provider-stackit
   #     namespace: kube-system

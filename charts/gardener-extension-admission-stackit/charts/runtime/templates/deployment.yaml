@@ -38,12 +38,8 @@ spec:
         args:
         - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
         - --webhook-config-service-port={{ .Values.webhookConfig.servicePort }}
-        {{- if .Values.gardener.virtualCluster.enabled }}
         - --webhook-config-mode=url
         - --webhook-config-url={{ printf "%s.%s" (include "fullname" .) (.Release.Namespace) }}
-        {{- else }}
-        - --webhook-config-mode=service
-        {{- end }}
         - --webhook-config-namespace={{ .Release.Namespace }}
         {{- if .Values.gardener.virtualCluster.namespace }}
         - --webhook-config-owner-namespace={{ .Values.gardener.virtualCluster.namespace }}
@@ -90,10 +86,8 @@ spec:
         {{- if .Values.extraEnvs }}
         {{- toYaml .Values.extraEnvs | nindent 8}}
         {{- end }}
-        {{- if .Values.gardener.virtualCluster.enabled }}
         - name: SOURCE_CLUSTER
           value: enabled
-        {{- end }}
         ports:
         - name: webhook-server
           containerPort: {{ .Values.webhookConfig.serverPort }}

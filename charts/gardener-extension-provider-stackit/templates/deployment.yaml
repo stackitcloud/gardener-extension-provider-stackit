@@ -85,8 +85,8 @@ spec:
         - --metrics-bind-address=:{{ tpl .Values.metricsPort . }}
         - --health-bind-address=:{{ tpl .Values.healthPort . }}
         - --gardener-version={{ .Values.gardener.version }}
-        {{- if .Values.gardener.selfHostedShootCluster }}
-        - --self-hosted-shoot-cluster={{ .Values.gardener.selfHostedShootCluster }}
+        {{- if .Values.gardener.clusterTypes.selfHostedShootCluster }}
+        - --self-hosted-shoot-cluster={{ .Values.gardener.clusterTypes.selfHostedShootCluster }}
         {{- end }}
         {{- with .Values.featureGates }}
         - --feature-gates={{- include "featureGates" . }}

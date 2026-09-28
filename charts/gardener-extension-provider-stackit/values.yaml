@@ -82,14 +82,14 @@ config:
     #   capabilities: ["pull", "resolve"]
 gardener:
   version: ""
+  clusterTypes:
+    selfHostedShootCluster: false
   gardenlet:
     featureGates: {}
   seed:
     provider: stackit
 # runtimeCluster:
-#   enabled: false
 #   priorityClassName: gardener-garden-system-200
-# selfHostedShootCluster: false
 # injected by gardener (see https://github.com/gardener/gardener/pull/11527)
 usablePorts:
 - 8080 # metrics

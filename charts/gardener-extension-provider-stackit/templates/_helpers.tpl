@@ -44,7 +44,7 @@ apps/v1
 {{- end -}}
 
 {{- define "runtimeCluster.enabled" -}}
-{{- if and .Values.gardener.runtimeCluster .Values.gardener.runtimeCluster.enabled }}
+{{- if .Values.gardener.runtimeCluster }}
 true
 {{- end }}
 {{- end -}}
