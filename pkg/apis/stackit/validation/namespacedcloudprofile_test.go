@@ -235,7 +235,12 @@ var _ = DescribeTableSubtree("NamespacedCloudProfile Validator", func(isCapabili
 				{
 					Name: "ubuntu",
 					Versions: []core.MachineImageVersion{
-						{ExpirableVersion: core.ExpirableVersion{Version: "22.04", ExpirationDate: new(metav1.Now())}},
+						{ExpirableVersion: core.ExpirableVersion{
+							Version: "22.04",
+							Lifecycle: []core.LifecycleStage{
+								{Classification: core.ClassificationSupported},
+							},
+						}},
 					},
 				},
 			}
