@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -61,6 +62,23 @@ var _ = Describe("Errors", func() {
 		It("should return false for other errors", func() {
 			Expect(IsConflictError(fmt.Errorf("409"))).To(BeFalse())
 			Expect(IsConflictError(nil)).To(BeFalse())
+		})
+	})
+
+	Describe("WrapError", func() {
+		It("wraps the error with the provided identifier", func() {
+			err := errors.New("test error")
+			expected := fmt.Errorf("[X-Trace-Id:12345]: %w", err)
+			Expect(WrapError(err, XTraceIDHeader, "12345")).To(Equal(expected))
+		})
+
+		It("returns the original error when the identifier is empty", func() {
+			err := errors.New("test error")
+			Expect(WrapError(err, "trace-id", "")).To(Equal(err))
+		})
+
+		It("returns nil when the error is nil", func() {
+			Expect(WrapError(nil, "trace-id", "12345")).To(Succeed())
 		})
 	})
 })

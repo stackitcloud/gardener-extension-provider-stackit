@@ -51,15 +51,21 @@ func (l loadBalancingClient) ProjectID() string {
 }
 
 func (l loadBalancingClient) CreateLoadBalancer(ctx context.Context, payload loadbalancer.CreateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
-	return l.Client.CreateLoadBalancer(ctx, l.projectID, l.region).CreateLoadBalancerPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*loadbalancer.LoadBalancer, error) {
+		return l.Client.CreateLoadBalancer(ctx, l.projectID, l.region).CreateLoadBalancerPayload(payload).Execute()
+	})
 }
 
 func (l loadBalancingClient) GetLoadBalancer(ctx context.Context, name string) (*loadbalancer.LoadBalancer, error) {
-	return l.Client.GetLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	return execute(ctx, func(ctx context.Context) (*loadbalancer.LoadBalancer, error) {
+		return l.Client.GetLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	})
 }
 
 func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalancer.LoadBalancer, error) {
-	lbResponse, err := l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
+	lbResponse, err := execute(ctx, func(ctx context.Context) (*loadbalancer.ListLoadBalancersResponse, error) {
+		return l.Client.ListLoadBalancers(ctx, l.projectID, l.region).Execute()
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +73,14 @@ func (l loadBalancingClient) ListLoadBalancers(ctx context.Context) ([]loadbalan
 }
 
 func (l loadBalancingClient) UpdateLoadBalancer(ctx context.Context, name string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
-	return l.Client.UpdateLoadBalancer(ctx, l.projectID, l.region, name).UpdateLoadBalancerPayload(payload).Execute()
+	return execute(ctx, func(ctx context.Context) (*loadbalancer.LoadBalancer, error) {
+		return l.Client.UpdateLoadBalancer(ctx, l.projectID, l.region, name).UpdateLoadBalancerPayload(payload).Execute()
+	})
 }
 
 func (l loadBalancingClient) DeleteLoadBalancer(ctx context.Context, name string) error {
-	_, err := l.Client.DeleteLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	_, err := execute(ctx, func(ctx context.Context) (map[string]any, error) {
+		return l.Client.DeleteLoadBalancer(ctx, l.projectID, l.region, name).Execute()
+	})
 	return err
 }
