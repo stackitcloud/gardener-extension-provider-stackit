@@ -70,6 +70,12 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 		}
 	}
 
+	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
+		if err := w.migrateMachines(ctx); err != nil {
+			return err
+		}
+	}
+
 	chartPath := "machineclass"
 	if feature.UseStackitMachineControllerManager(w.cluster) {
 		chartPath = "machineclass-stackit"
@@ -78,13 +84,6 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	if feature.MigrateStackitMachineControllerManager(w.cluster) && w.worker.Annotations[workerMigratedAnnotation] != "true" {
-		if err := w.migrateMachines(ctx); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
