@@ -468,7 +468,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		}
 
 		// Skipping on an empty providerID is intentional, these machines will get a migrated annotation
-		// but cannot be migrated due to the missing ID. In that case, the MCM safety controller will
+		// but cannot be migrated due to the missing ID. In that case, the MCM creation timeout will
 		// trigger a deletion after a while and in the MCM deletion path we will fetch all servers and filter by name
 		if m.Spec.ProviderID != "" {
 			serverID, err := ServerIDFromProviderID(m.Spec.ProviderID)
