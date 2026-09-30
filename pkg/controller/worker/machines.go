@@ -35,6 +35,7 @@ import (
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
+	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
 	stackitutils "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/utils"
 )
 
@@ -491,7 +492,9 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 					"kubernetes.io/role":         "node",
 				},
 			})
-			if err != nil {
+
+			// In case a machine is already deleted
+			if stackitclient.IgnoreNotFoundError(err) != nil {
 				return err
 			}
 		}
