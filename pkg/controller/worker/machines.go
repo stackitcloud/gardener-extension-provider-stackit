@@ -442,7 +442,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 	for i := range allMachines.Items {
 		// ignore error as default is false
 		migrateAnnotation, _ := strconv.ParseBool(allMachines.Items[i].Annotations[shouldMigrateMachineAnnotation])
-		if !strings.HasPrefix(allMachines.Items[i].Spec.ProviderID, "stackit://") || migrateAnnotation {
+		if !strings.HasPrefix(allMachines.Items[i].Spec.ProviderID, stackitProviderID) || migrateAnnotation {
 			migrateMachines = append(migrateMachines, allMachines.Items[i])
 		}
 	}
@@ -467,10 +467,11 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 			return err
 		}
 
-		// In case we don't have a providerID, we need to fetch all servers and filter them by their name.
-		// Returning an error in case of missing providerID, will block the migration.
+		// Skipping on an empty providerID is intentional, these machines will get a migrated annotation
+		// but cannot be migrated due to the missing ID. In that case, the MCM safety controller will
+		// trigger a deletion after a while and in the MCM deletion path we will fetch all servers and filter by name
 		if m.Spec.ProviderID != "" {
-			serverID, err := serverIDFromProviderID(m.Spec.ProviderID)
+			serverID, err := ServerIDFromProviderID(m.Spec.ProviderID)
 			if err != nil {
 				return fmt.Errorf("migrateMachines: %w", err)
 			}
@@ -524,12 +525,13 @@ var (
 
 func init() {
 	providerIDPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`^openstack:///[^/]+/(?P<serverID>[^/]+)$`),
+		regexp.MustCompile(`^openstack://[^/]*/[^/]+/(?P<serverID>[^/]+)$`),
 		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
 	}
 }
 
-func serverIDFromProviderID(providerID string) (string, error) {
+// ServerIDFromProviderID extracts the server ID from a provider ID.
+func ServerIDFromProviderID(providerID string) (string, error) {
 	for _, pattern := range providerIDPatterns {
 		match := pattern.FindStringSubmatch(providerID)
 		if len(match) == 0 {

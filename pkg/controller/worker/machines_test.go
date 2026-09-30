@@ -1490,6 +1490,30 @@ var _ = Describe("Machines", func() {
 				},
 			}),
 		)
+
+		DescribeTable("ServerIDFromProviderID",
+			func(providerID, expectedServerID string, expectError bool) {
+				serverID, err := ServerIDFromProviderID(providerID)
+				if expectError {
+					Expect(err).To(HaveOccurred())
+					Expect(serverID).To(BeEmpty())
+					return
+				}
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(serverID).To(Equal(expectedServerID))
+			},
+			Entry("valid openstack provider ID without region", "openstack:///project-id/server-id-1234", "server-id-1234", false),
+			Entry("valid openstack provider ID with region", "openstack://region01/project-id/server-id-1234", "server-id-1234", false),
+			Entry("valid stackit provider ID", "stackit://project-id/server-id-5678", "server-id-5678", false),
+			Entry("empty provider ID", "", "", true),
+			Entry("unsupported scheme", "aws:///project-id/server-id", "", true),
+			Entry("openstack with missing server", "openstack://region/project", "", true),
+			Entry("openstack with extra path segments", "openstack://region01/project-id/server-id/extra", "", true),
+			Entry("stackit with extra slash", "stackit:///project-id/server-id", "", true),
+			Entry("missing server ID", "openstack:///project-id/", "", true),
+			Entry("extra path segments", "stackit://project-id/server-id/extra", "", true),
+		)
 	})
 })
 

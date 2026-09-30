@@ -24,6 +24,7 @@ import (
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	stackitv1alpha1 "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/v1alpha1"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	openstackclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack/client"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	stackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client"
@@ -73,10 +74,13 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 		return nil, err
 	}
 
-	stackitClient := stackitclient.New(stackit.DetermineRegion(cluster), cluster)
-	iaasClient, err := stackitClient.IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
-	if err != nil {
-		return nil, err
+	var iaasClient stackitclient.IaaSClient
+	if feature.MigrateStackitMachineControllerManager(cluster) && worker.Annotations[workerMigratedAnnotation] != "true" {
+		stackitClient := stackitclient.New(stackit.DetermineRegion(cluster), cluster)
+		iaasClient, err = stackitClient.IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return NewWorkerDelegate(
