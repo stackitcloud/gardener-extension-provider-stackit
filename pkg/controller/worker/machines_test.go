@@ -1119,9 +1119,6 @@ var _ = Describe("Machines", func() {
 							},
 						}).
 						Return(nil, nil)
-					chartApplier.EXPECT().
-						ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join("internal", "machineclass-stackit"), w.Namespace, "machineclass", gomock.Any()).
-						Return(nil)
 
 					Expect(workerDelegate.DeployMachineClasses(ctx)).To(Succeed())
 
