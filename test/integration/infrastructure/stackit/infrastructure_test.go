@@ -255,7 +255,18 @@ func testInfrastructure(reconciler *string) {
 		namespace, err := generateNamespaceName()
 		Expect(err).NotTo(HaveOccurred())
 
-		err = runTest(ctx, log, c, namespace, false, providerConfig, decoder, cloudProfileConfig, reconciler)
+		err = runTest(ctx, log, c, namespace, false, providerConfig, decoder, cloudProfileConfig, reconciler, true)
+
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("minimum configuration infrastructure without ssh key", func() {
+		providerConfig := newProviderConfig(nil)
+		cloudProfileConfig := newCloudProfileConfig()
+		namespace, err := generateNamespaceName()
+		Expect(err).NotTo(HaveOccurred())
+
+		err = runTest(ctx, log, c, namespace, false, providerConfig, decoder, cloudProfileConfig, reconciler, false)
 
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -280,7 +291,7 @@ func testInfrastructure(reconciler *string) {
 		providerConfig := newProviderConfig(networkID)
 		cloudProfileConfig := newCloudProfileConfig()
 
-		err = runTest(ctx, log, c, namespace, false, providerConfig, decoder, cloudProfileConfig, reconciler)
+		err = runTest(ctx, log, c, namespace, false, providerConfig, decoder, cloudProfileConfig, reconciler, true)
 
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -306,7 +317,7 @@ func testInfrastructure(reconciler *string) {
 		providerConfig := newProviderConfig(networkID)
 		cloudProfileConfig := newCloudProfileConfig()
 
-		err = runTest(ctx, log, c, namespace, true, providerConfig, decoder, cloudProfileConfig, reconciler)
+		err = runTest(ctx, log, c, namespace, true, providerConfig, decoder, cloudProfileConfig, reconciler, true)
 		Expect(err).NotTo(HaveOccurred())
 	})
 }
@@ -321,6 +332,7 @@ func runTest(
 	decoder runtime.Decoder,
 	cloudProfileConfig *stackitv1alpha1.CloudProfileConfig,
 	reconciler *string,
+	withSSHKey bool,
 ) error {
 	var (
 		namespace        *corev1.Namespace
@@ -450,7 +462,7 @@ func runTest(
 	}
 
 	By("create infrastructure")
-	infra, err = newInfrastructure(namespaceName, providerConfig)
+	infra, err = newInfrastructure(namespaceName, providerConfig, withSSHKey)
 	if err != nil {
 		return err
 	}
@@ -504,7 +516,7 @@ func runTest(
 		nil,
 	)).To(Succeed())
 
-	infraIdentifiers, providerStatus := verifyCreation(infra.Status, providerConfig)
+	infraIdentifiers, providerStatus := verifyCreation(infra.Status, providerConfig, withSSHKey)
 	if snaShoot {
 		Expect(infra.Status.NodesCIDR).To(HaveValue(Equal(workerCIDR)))
 	}
@@ -549,7 +561,7 @@ func newCloudProfileConfig() *stackitv1alpha1.CloudProfileConfig {
 	}
 }
 
-func newInfrastructure(namespace string, providerConfig *stackitv1alpha1.InfrastructureConfig) (*extensionsv1alpha1.Infrastructure, error) {
+func newInfrastructure(namespace string, providerConfig *stackitv1alpha1.InfrastructureConfig, withSSHKey bool) (*extensionsv1alpha1.Infrastructure, error) {
 	const sshPublicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDcSZKq0lM9w+ElLp9I9jFvqEFbOV1+iOBX7WEe66GvPLOWl9ul03ecjhOf06+FhPsWFac1yaxo2xj+SJ+FVZ3DdSn4fjTpS9NGyQVPInSZveetRw0TV0rbYCFBTJuVqUFu6yPEgdcWq8dlUjLqnRNwlelHRcJeBfACBZDLNSxjj0oUz7ANRNCEne1ecySwuJUAz3IlNLPXFexRT0alV7Nl9hmJke3dD73nbeGbQtwvtu8GNFEoO4Eu3xOCKsLw6ILLo4FBiFcYQOZqvYZgCb4ncKM52bnABagG54upgBMZBRzOJvWp0ol+jK3Em7Vb6ufDTTVNiQY78U6BAlNZ8Xg+LUVeyk1C6vWjzAQf02eRvMdfnRCFvmwUpzbHWaVMsQm8gf3AgnTUuDR0ev1nQH/5892wZA86uLYW/wLiiSbvQsqtY1jSn9BAGFGdhXgWLAkGsd/E1vOT+vDcor6/6KjHBm0rG697A3TDBRkbXQ/1oFxcM9m17RteCaXuTiAYWMqGKDoJvTMDc4L+Uvy544pEfbOH39zfkIYE76WLAFPFsUWX6lXFjQrX3O7vEV73bCHoJnwzaNd03PSdJOw+LCzrTmxVezwli3F9wUDiBRB0HkQxIXQmncc1HSecCKALkogIK+1e1OumoWh6gPdkF4PlTMUxRitrwPWSaiUIlPfCpQ== your_email@example.com"
 
 	providerConfigJSON := new(bytes.Buffer)
@@ -577,9 +589,11 @@ func newInfrastructure(namespace string, providerConfig *stackitv1alpha1.Infrast
 				Name:      "cloudprovider",
 				Namespace: namespace,
 			},
-			Region:       *region,
-			SSHPublicKey: []byte(sshPublicKey),
+			Region: *region,
 		},
+	}
+	if withSSHKey {
+		infra.Spec.SSHPublicKey = []byte(sshPublicKey)
 	}
 	return infra, nil
 }
@@ -633,7 +647,7 @@ type infrastructureIdentifiers struct {
 	secGroupID *string
 }
 
-func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, providerConfig *stackitv1alpha1.InfrastructureConfig) (infrastructureIdentifier infrastructureIdentifiers, providerStatus stackitv1alpha1.InfrastructureStatus) {
+func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, providerConfig *stackitv1alpha1.InfrastructureConfig, withSSKKey bool) (infrastructureIdentifier infrastructureIdentifiers, providerStatus stackitv1alpha1.InfrastructureStatus) {
 	_, _, err := decoder.Decode(infraStatus.ProviderStatus.Raw, nil, &providerStatus)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -655,10 +669,14 @@ func verifyCreation(infraStatus extensionsv1alpha1.InfrastructureStatus, provide
 	Expect(secGroup.GetName()).To(Equal(providerStatus.SecurityGroups[0].Name))
 	infrastructureIdentifier.secGroupID = new(secGroup.GetId())
 
-	// keypair is created
-	keyPair, err := iaasClient.GetKeypair(ctx, providerStatus.Node.KeyName)
-	Expect(err).NotTo(HaveOccurred())
-	infrastructureIdentifier.keyPair = new(keyPair.GetName())
+	if withSSKKey {
+		// keypair is created
+		keyPair, err := iaasClient.GetKeypair(ctx, providerStatus.Node.KeyName)
+		Expect(err).NotTo(HaveOccurred())
+		infrastructureIdentifier.keyPair = new(keyPair.GetName())
+	} else {
+		Expect(providerStatus.Node.KeyName).To(BeEmpty())
+	}
 
 	// verify egressCIDRs
 	ip, ok := net.Ipv4.GetPublicIpOk()
