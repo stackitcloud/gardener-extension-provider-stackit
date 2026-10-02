@@ -44,7 +44,8 @@ apps/v1
 {{- end -}}
 
 {{- define "runtimeCluster.enabled" -}}
-{{- if .Values.gardener.runtimeCluster }}
+{{- /* TODO: Remove gardener.runtimeCluster.enabled, replaced by gardener.runtimeCluster, it will be no longer supported by Gardener after v1.159.0 is released. */}}
+{{- if (or .Values.gardener.runtimeCluster (.Values | merge (dict) | dig "gardener" "runtimeCluster" "enabled" false)) }}
 true
 {{- end }}
 {{- end -}}

@@ -37,5 +37,5 @@ gardener:
     serviceAccount: {}
   #     name: extension-admission-provider-stackit
   #     namespace: kube-system
-  runtimeCluster: {}
+# runtimeCluster:
 #   priorityClassName: gardener-garden-system-400
