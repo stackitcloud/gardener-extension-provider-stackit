@@ -8,6 +8,8 @@ healthzPort: 9908
 csi:
   enableCompatibilityMode: false
 
+minReadySeconds: 5
+
 images:
   csi-driver-stackit: image-repository:image-tag
   csi-node-driver-registrar: image-repository:image-tag
