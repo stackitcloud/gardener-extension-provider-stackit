@@ -9,6 +9,7 @@ metadata:
     app: csi
     role: disk-driver
 spec:
+  minReadySeconds: {{ .Values.minReadySeconds }}
   selector:
     matchLabels:
       app: csi

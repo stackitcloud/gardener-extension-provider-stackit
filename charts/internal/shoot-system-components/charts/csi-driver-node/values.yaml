@@ -1,6 +1,8 @@
 cloudProviderConfig: |
   <cloud-provider-config>
 
+minReadySeconds: 5
+
 images:
   csi-driver-cinder: image-repository:image-tag
   csi-node-driver-registrar: image-repository:image-tag
