@@ -129,22 +129,28 @@ var _ = Describe("Options", func() {
 						Versions: []gardencorev1beta1.MachineImageVersion{
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
-									Version:        "1.0.0",
-									Classification: new(gardencorev1beta1.ClassificationDeprecated),
+									Version: "1.0.0",
+									Lifecycle: []gardencorev1beta1.LifecycleStage{
+										{Classification: gardencorev1beta1.ClassificationDeprecated},
+									},
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
-									Version:        "1.1.0",
-									Classification: new(gardencorev1beta1.ClassificationSupported),
+									Version: "1.1.0",
+									Lifecycle: []gardencorev1beta1.LifecycleStage{
+										{Classification: gardencorev1beta1.ClassificationSupported},
+									},
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
 							{
 								ExpirableVersion: gardencorev1beta1.ExpirableVersion{
-									Version:        "2.0.0",
-									Classification: new(gardencorev1beta1.ClassificationPreview),
+									Version: "2.0.0",
+									Lifecycle: []gardencorev1beta1.LifecycleStage{
+										{Classification: gardencorev1beta1.ClassificationPreview},
+									},
 								},
 								Architectures: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
 							},
