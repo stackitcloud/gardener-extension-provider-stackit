@@ -76,8 +76,7 @@ func (d *delegateFactory) WorkerDelegate(ctx context.Context, worker *extensions
 
 	var iaasClient stackitclient.IaaSClient
 	if feature.MigrateStackitMachineControllerManager(cluster) && worker.Annotations[workerMigratedAnnotation] != "true" {
-		stackitClient := stackitclient.New(stackit.DetermineRegion(cluster), cluster)
-		iaasClient, err = stackitClient.IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
+		iaasClient, err = stackitclient.New(stackit.DetermineRegion(cluster), cluster).IaaS(ctx, d.seedClient, worker.Spec.SecretRef)
 		if err != nil {
 			return nil, err
 		}

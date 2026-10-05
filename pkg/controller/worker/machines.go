@@ -47,6 +47,17 @@ const (
 	stackitProviderID = "stackit://"
 )
 
+var (
+	providerIDPatterns []*regexp.Regexp
+)
+
+func init() {
+	providerIDPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`^openstack://[^/]*/[^/]+/(?P<serverID>[^/]+)$`),
+		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
+	}
+}
+
 // MachineClassKind yields the name of the machine class kind used by OpenStack provider.
 func (w *workerDelegate) MachineClassKind() string {
 	return "MachineClass"
@@ -473,7 +484,7 @@ func (w *workerDelegate) migrateMachines(ctx context.Context) error {
 		if m.Spec.ProviderID != "" {
 			serverID, err := ServerIDFromProviderID(m.Spec.ProviderID)
 			if err != nil {
-				return fmt.Errorf("migrateMachines: %w", err)
+				return fmt.Errorf("could not get server ID from provider ID: %w", err)
 			}
 
 			patch := client.MergeFrom(m.DeepCopy())
@@ -519,17 +530,6 @@ func (w *workerDelegate) markWorkerAsMigrated(ctx context.Context) error {
 	w.worker.Annotations[workerMigratedAnnotation] = "true"
 
 	return w.seedClient.Patch(ctx, w.worker, patchWorker)
-}
-
-var (
-	providerIDPatterns []*regexp.Regexp
-)
-
-func init() {
-	providerIDPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`^openstack://[^/]*/[^/]+/(?P<serverID>[^/]+)$`),
-		regexp.MustCompile(`^stackit://[^/]+/(?P<serverID>[^/]+)$`),
-	}
 }
 
 // ServerIDFromProviderID extracts the server ID from a provider ID.
