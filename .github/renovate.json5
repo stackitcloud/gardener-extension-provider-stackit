@@ -113,6 +113,9 @@
       prBodyNotes: [
         '🚨 **Test with all supported kubernetes versions.** Sometimes this containers do not run with all kubernetes versions.',
       ],
+      addLabels: [
+        'do-not-merge/hold',
+      ],
       matchPackageNames: [
         "registry.k8s.io/sig-storage/csi-provisioner",
         "registry.k8s.io/sig-storage/csi-attacher",
