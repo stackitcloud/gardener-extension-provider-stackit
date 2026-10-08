@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
@@ -433,11 +434,24 @@ func (fctx *FlowContext) ensureSecGroup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	emptyRules := []rules.SecGroupRule{}
+	// Delete default egress rules
+	_, err = fctx.access.UpdateSecurityGroupRules(ctx, created, emptyRules, func(_ *rules.SecGroupRule) bool { return true })
+	if err != nil {
+		return err
+	}
+
+	// clear rules on struct before saving in state
+	created.Rules = emptyRules
+
 	fctx.state.Set(IdentifierSecGroup, created.ID)
 	fctx.state.Set(NameSecGroup, created.Name)
 	fctx.state.SetObject(ObjectSecGroup, created)
 	return nil
 }
+
+const managedByRulePrefix = "managed by gardener-extension-provider-stackit"
 
 func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
@@ -464,12 +478,13 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			Direction:     string(rules.DirIngress),
 			EtherType:     string(rules.EtherType4),
 			RemoteGroupID: access.SecurityGroupIDSelf,
-			Description:   "IPv4: allow all incoming traffic within the same security group",
+			Description:   securityGroupRuleDescription("IPv4: allow all incoming traffic within the same security group"),
 		},
 		{
-			Direction:   string(rules.DirEgress),
-			EtherType:   string(rules.EtherType4),
-			Description: "IPv4: allow all outgoing traffic",
+			Direction:     string(rules.DirEgress),
+			EtherType:     string(rules.EtherType4),
+			RemoteGroupID: access.SecurityGroupIDSelf,
+			Description:   securityGroupRuleDescription("IPv4: allow all egress traffic within the same security group"),
 		},
 		// {
 		// 	Direction:   string(rules.DirEgress),
@@ -483,7 +498,7 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			PortRangeMin:   30000,
 			PortRangeMax:   32767,
 			RemoteIPPrefix: nodesCIDR,
-			Description:    "IPv4: allow all incoming tcp traffic with port range 30000-32767",
+			Description:    securityGroupRuleDescription("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
 		},
 		{
 			Direction:      string(rules.DirIngress),
@@ -492,7 +507,24 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			PortRangeMin:   30000,
 			PortRangeMax:   32767,
 			RemoteIPPrefix: nodesCIDR,
-			Description:    "IPv4: allow all incoming udp traffic with port range 30000-32767",
+			Description:    securityGroupRuleDescription("IPv4: allow all incoming udp traffic with port range 30000-32767"),
+		},
+		{
+			Direction:      string(rules.DirEgress),
+			EtherType:      string(rules.EtherType4),
+			Description:    securityGroupRuleDescription("IPv4: allow metadata"),
+			Protocol:       string(rules.ProtocolTCP),
+			RemoteIPPrefix: "169.254.169.254/32",
+			PortRangeMin:   80,
+			PortRangeMax:   80,
+		},
+		{
+			Direction:    string(rules.DirEgress),
+			EtherType:    string(rules.EtherType4),
+			Description:  securityGroupRuleDescription("IPv4: allow dhcp"),
+			Protocol:     string(rules.ProtocolUDP),
+			PortRangeMin: 67,
+			PortRangeMax: 67,
 		},
 	}
 
@@ -501,12 +533,31 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			Direction:      string(rules.DirIngress),
 			EtherType:      string(rules.EtherType4),
 			RemoteIPPrefix: *fctx.networkSpec.Pods,
-			Description:    "IPv4: allow all incoming traffic from cluster pod CIDR",
+			Description:    securityGroupRuleDescription("IPv4: allow all incoming traffic from cluster pod CIDR"),
 		}
 		desiredRules = append(desiredRules, podCIDRRule)
 	}
 
+	var allowEgress = true
+	if fctx.config.Networks.SecurityGroup != nil {
+		if fctx.config.Networks.SecurityGroup.AllowEgress != nil {
+			allowEgress = *fctx.config.Networks.SecurityGroup.AllowEgress
+		}
+	}
+
+	if allowEgress {
+		desiredRules = append(desiredRules, rules.SecGroupRule{
+			Direction:   string(rules.DirEgress),
+			EtherType:   string(rules.EtherType4),
+			Description: securityGroupRuleDescription("IPv4: allow all outgoing traffic"),
+		})
+	}
+
 	if modified, err := fctx.access.UpdateSecurityGroupRules(ctx, group, desiredRules, func(rule *rules.SecGroupRule) bool {
+		// ensure rules managed by us are cleaned up
+		if strings.HasPrefix(rule.Description, managedByRulePrefix) {
+			return true
+		}
 		// Do NOT delete unknown rules to keep permissive behavior as with terraform.
 		// As we don't store the role ids in the state, this function needs to be adjusted
 		// if values in existing rules are changed to identify them for update by replacement.
@@ -517,6 +568,10 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 		log.Info("updated rules")
 	}
 	return nil
+}
+
+func securityGroupRuleDescription(s string) string {
+	return fmt.Sprintf("%s: %s", managedByRulePrefix, s)
 }
 
 func (fctx *FlowContext) ensureStackitSSHKeyPair(ctx context.Context) error {

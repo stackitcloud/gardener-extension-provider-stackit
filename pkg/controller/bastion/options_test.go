@@ -197,7 +197,7 @@ var _ = Describe("Options", func() {
 			Networks: stackitv1alpha1.NetworkStatus{
 				ID: "network-id",
 			},
-			SecurityGroups: []stackitv1alpha1.SecurityGroup{
+			SecurityGroups: []stackitv1alpha1.SecurityGroupStatus{
 				{
 					ID:      "security-group-id-nodes",
 					Purpose: "nodes",

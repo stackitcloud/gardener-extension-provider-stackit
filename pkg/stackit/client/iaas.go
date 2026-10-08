@@ -278,13 +278,9 @@ func findMatchingRule(rule iaas.SecurityGroupRule, wantedRules []iaas.SecurityGr
 			continue
 		}
 
-		// We want to ignore the description, because OpenStack by default already created egress SecGroupRules for IPv4
-		// and IPv6 but without an description. This way we can avoid the infra controller trying to either re-create or
-		// recreate essentially the same rule (plus description)
-
 		// The infra controller when creating a SecGroup, unlike OpenStack infra ctrl, now initially wipes the SecGroup so
 		// that the default from OpenStack does not carry over.
-		if cmp.Equal(rule, wanted, stackit.ProtocolComparison, stackit.MapStringAnyComparison, cmpopts.IgnoreFields(iaas.SecurityGroupRule{}, "Description", "Id", "CreatedAt", "UpdatedAt", "SecurityGroupId")) {
+		if cmp.Equal(rule, wanted, stackit.ProtocolComparison, stackit.MapStringAnyComparison, cmpopts.IgnoreFields(iaas.SecurityGroupRule{}, "Id", "CreatedAt", "UpdatedAt", "SecurityGroupId")) {
 			return &wantedRules[i]
 		}
 	}

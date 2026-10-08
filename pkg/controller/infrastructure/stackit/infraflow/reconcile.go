@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
@@ -265,6 +266,8 @@ func (fctx *FlowContext) ensureSecGroup(ctx context.Context) error {
 	return nil
 }
 
+const managedByRulePrefix = "managed by gardener-extension-provider-stackit"
+
 func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
 
@@ -290,12 +293,13 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			Direction:             stackit.DirectionIngress,
 			Ethertype:             new(stackit.EtherTypeIPv4),
 			RemoteSecurityGroupId: new(group.GetId()),
-			Description:           new("IPv4: allow all incoming traffic within the same security group"),
+			Description:           new(securityGroupRuleDescription("IPv4: allow all incoming traffic within the same security group")),
 		},
 		{
-			Direction:   stackit.DirectionEgress,
-			Ethertype:   new(stackit.EtherTypeIPv4),
-			Description: new("IPv4: allow all outgoing traffic"),
+			Direction:             stackit.DirectionEgress,
+			Ethertype:             new(stackit.EtherTypeIPv4),
+			RemoteSecurityGroupId: new(group.GetId()),
+			Description:           new(securityGroupRuleDescription("IPv4: allow all egress traffic within the same security group")),
 		},
 		{
 			Direction: stackit.DirectionIngress,
@@ -306,7 +310,7 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 				Min: int64(30000),
 			},
 			IpRange:     new(nodesCIDR),
-			Description: new("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
+			Description: new(securityGroupRuleDescription("IPv4: allow all incoming tcp traffic with port range 30000-32767")),
 		},
 		{
 			Direction: stackit.DirectionIngress,
@@ -317,7 +321,28 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 				Min: int64(30000),
 			},
 			IpRange:     new(nodesCIDR),
-			Description: new("IPv4: allow all incoming udp traffic with port range 30000-32767"),
+			Description: new(securityGroupRuleDescription("IPv4: allow all incoming udp traffic with port range 30000-32767")),
+		},
+		{
+			Direction:   stackit.DirectionEgress,
+			Ethertype:   new(stackit.EtherTypeIPv4),
+			Description: new(securityGroupRuleDescription("IPv4: allow metadata")),
+			Protocol:    new(stackit.ProtocolTCP),
+			IpRange:     new("169.254.169.254/32"),
+			PortRange: &iaas.PortRange{
+				Min: 80,
+				Max: 80,
+			},
+		},
+		{
+			Direction:   stackit.DirectionEgress,
+			Ethertype:   new(stackit.EtherTypeIPv4),
+			Description: new(securityGroupRuleDescription("IPv4: allow dhcp")),
+			Protocol:    new(stackit.ProtocolUDP),
+			PortRange: &iaas.PortRange{
+				Min: 67,
+				Max: 67,
+			},
 		},
 	}
 
@@ -326,12 +351,31 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			Direction:   stackit.DirectionIngress,
 			Ethertype:   new(stackit.EtherTypeIPv4),
 			IpRange:     new(*fctx.cluster.Shoot.Spec.Networking.Pods),
-			Description: new("IPv4: allow all incoming traffic from cluster pod CIDR"),
+			Description: new(securityGroupRuleDescription("IPv4: allow all incoming traffic from cluster pod CIDR")),
 		}
 		desiredRules = append(desiredRules, podCIDRRule)
 	}
 
+	var allowEgress = true
+	if fctx.config.Networks.SecurityGroup != nil {
+		if fctx.config.Networks.SecurityGroup.AllowEgress != nil {
+			allowEgress = *fctx.config.Networks.SecurityGroup.AllowEgress
+		}
+	}
+
+	if allowEgress {
+		desiredRules = append(desiredRules, iaas.SecurityGroupRule{
+			Direction:   stackit.DirectionEgress,
+			Ethertype:   new(stackit.EtherTypeIPv4),
+			Description: new(securityGroupRuleDescription("IPv4: allow all outgoing traffic")),
+		})
+	}
+
 	if modified, err := fctx.iaasClient.UpdateSecurityGroupRules(ctx, group, desiredRules, func(rule *iaas.SecurityGroupRule) bool {
+		// ensure rules managed by us are cleaned up
+		if rule.Description != nil && strings.HasPrefix(*rule.Description, managedByRulePrefix) {
+			return true
+		}
 		// Do NOT delete unknown rules to keep permissive behavior as with terraform.
 		// As we don't store the role ids in the state, this function needs to be adjusted
 		// if values in existing rules are changed to identify them for update by replacement.
@@ -343,6 +387,10 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func securityGroupRuleDescription(s string) string {
+	return fmt.Sprintf("%s: %s", managedByRulePrefix, s)
 }
 
 func (fctx *FlowContext) ensureNetwork(ctx context.Context) error {

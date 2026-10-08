@@ -33,15 +33,15 @@ var _ = Describe("Helper", func() {
 	)
 
 	DescribeTable("#FindSecurityGroupByPurpose",
-		func(securityGroups []stackitv1alpha1.SecurityGroup, purpose stackitv1alpha1.Purpose, expectedSecurityGroup *stackitv1alpha1.SecurityGroup, expectErr bool) {
+		func(securityGroups []stackitv1alpha1.SecurityGroupStatus, purpose stackitv1alpha1.Purpose, expectedSecurityGroup *stackitv1alpha1.SecurityGroupStatus, expectErr bool) {
 			securityGroup, err := FindSecurityGroupByPurpose(securityGroups, purpose)
 			expectResults(securityGroup, expectedSecurityGroup, err, expectErr)
 		},
 
 		Entry("list is nil", nil, purpose, nil, true),
-		Entry("empty list", []stackitv1alpha1.SecurityGroup{}, purpose, nil, true),
-		Entry("entry not found", []stackitv1alpha1.SecurityGroup{{Name: "bar", Purpose: purposeWrong}}, purpose, nil, true),
-		Entry("entry exists", []stackitv1alpha1.SecurityGroup{{Name: "bar", Purpose: purpose}}, purpose, &stackitv1alpha1.SecurityGroup{Name: "bar", Purpose: purpose}, false),
+		Entry("empty list", []stackitv1alpha1.SecurityGroupStatus{}, purpose, nil, true),
+		Entry("entry not found", []stackitv1alpha1.SecurityGroupStatus{{Name: "bar", Purpose: purposeWrong}}, purpose, nil, true),
+		Entry("entry exists", []stackitv1alpha1.SecurityGroupStatus{{Name: "bar", Purpose: purpose}}, purpose, &stackitv1alpha1.SecurityGroupStatus{Name: "bar", Purpose: purpose}, false),
 	)
 
 	regionName := "eu-de-1"

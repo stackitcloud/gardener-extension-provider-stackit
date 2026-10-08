@@ -58,6 +58,12 @@ type Networks struct {
 	// DNSServers overrides the default dns configuration from cloud profile
 	// +optional
 	DNSServers *[]string `json:"dnsServers,omitempty"`
+
+	SecurityGroup *SecurityGroup `json:"securityGroup,omitempty"`
+}
+
+type SecurityGroup struct {
+	AllowEgress *bool `json:"allowEgress,omitempty"`
 }
 
 // Router indicates whether to use an existing router or create a new one.
@@ -84,7 +90,7 @@ type InfrastructureStatus struct {
 	// Node contains information about Node related resources.
 	Node NodeStatus `json:"node"`
 	// SecurityGroups is a list of security groups that have been created.
-	SecurityGroups []SecurityGroup `json:"securityGroups"`
+	SecurityGroups []SecurityGroupStatus `json:"securityGroups"`
 }
 
 // NodeStatus contains information about Node related resources.
@@ -195,8 +201,8 @@ type Subnet struct {
 	DNSNameservers *[]string `json:"dnsNameservers,omitempty"`
 }
 
-// SecurityGroup is an OpenStack security group related to a Network.
-type SecurityGroup struct {
+// SecurityGroupStatus is an OpenStack security group related to a Network.
+type SecurityGroupStatus struct {
 	// Purpose is a logical description of the security group.
 	Purpose Purpose `json:"purpose"`
 	// ID is the security group id.

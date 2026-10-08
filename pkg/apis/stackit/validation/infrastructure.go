@@ -90,10 +90,18 @@ func ValidateInfrastructureConfigUpdate(oldConfig, newConfig *stackitv1alpha1.In
 	newNetworks := newConfig.DeepCopy().Networks
 	oldNetworks := oldConfig.DeepCopy().Networks
 
-	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newNetworks, oldNetworks, fldPath.Child("networks"))...)
+	allErrs = append(allErrs, validateNetworkUpdate(oldNetworks, newNetworks, fldPath.Child("networks"))...)
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newConfig.FloatingPoolName, oldConfig.FloatingPoolName, fldPath.Child("floatingPoolName"))...)
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newConfig.FloatingPoolSubnetName, oldConfig.FloatingPoolSubnetName, fldPath.Child("floatingPoolSubnetName"))...)
 
+	return allErrs
+}
+
+func validateNetworkUpdate(oldNetworks, newNetworks stackitv1alpha1.Networks, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newNetworks.ID, oldNetworks.ID, fldPath.Child("id"))...)
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newNetworks.DNSServers, oldNetworks.DNSServers, fldPath.Child("dnsServers"))...)
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(newNetworks.Workers, oldNetworks.Workers, fldPath.Child("workers"))...)
 	return allErrs
 }
 
