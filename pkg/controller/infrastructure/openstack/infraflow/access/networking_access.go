@@ -475,7 +475,7 @@ func (a *networkingAccess) UpdateSecurityGroupRules(
 
 	for i := range group.Rules {
 		rule := &group.Rules[i]
-		if desiredRule, _ := a.findMatchingRule(rule, desiredRules); desiredRule == nil {
+		if desiredRule := a.findMatchingRule(rule, desiredRules); desiredRule == nil {
 			if allowDelete == nil || allowDelete(rule) {
 				if err = a.networking.DeleteRule(ctx, rule.ID); err != nil {
 					err = fmt.Errorf("error deleting rule for security group %s: %s", rule.ID, err)
@@ -514,7 +514,7 @@ func (a *networkingAccess) UpdateSecurityGroupRules(
 	return
 }
 
-func (a *networkingAccess) findMatchingRule(rule *rules.SecGroupRule, desiredRules []rules.SecGroupRule) (*rules.SecGroupRule, bool) {
+func (a *networkingAccess) findMatchingRule(rule *rules.SecGroupRule, desiredRules []rules.SecGroupRule) *rules.SecGroupRule {
 	for i := range desiredRules {
 		desired := &desiredRules[i]
 		if desired.ID != "" {
@@ -529,9 +529,10 @@ func (a *networkingAccess) findMatchingRule(rule *rules.SecGroupRule, desiredRul
 			rule.PortRangeMin == desired.PortRangeMin &&
 			rule.PortRangeMax == desired.PortRangeMax &&
 			rule.ProjectID == desired.ProjectID &&
-			rule.TenantID == desired.TenantID {
-			return desired, rule.Description != desired.Description
+			rule.TenantID == desired.TenantID &&
+			rule.Description == desired.Description {
+			return desired
 		}
 	}
-	return nil, false
+	return nil
 }

@@ -181,7 +181,7 @@ func (fctx *FlowContext) computeInfrastructureStatus() *stackitv1alpha1.Infrastr
 	}
 
 	if v := fctx.state.Get(IdentifierSecGroup); v != nil {
-		status.SecurityGroups = []stackitv1alpha1.SecurityGroup{
+		status.SecurityGroups = []stackitv1alpha1.SecurityGroupStatus{
 			{
 				Purpose: stackitv1alpha1.PurposeNodes,
 				ID:      *v,

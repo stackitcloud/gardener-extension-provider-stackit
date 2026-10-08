@@ -447,7 +447,7 @@ var _ = Describe("Machines", func() {
 						Region: region,
 						InfrastructureProviderStatus: &runtime.RawExtension{
 							Raw: encode(&stackitv1alpha1.InfrastructureStatus{
-								SecurityGroups: []stackitv1alpha1.SecurityGroup{
+								SecurityGroups: []stackitv1alpha1.SecurityGroupStatus{
 									{
 										Purpose: stackitv1alpha1.PurposeNodes,
 										Name:    securityGroupName,

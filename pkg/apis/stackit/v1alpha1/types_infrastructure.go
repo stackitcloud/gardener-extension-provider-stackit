@@ -27,6 +27,9 @@ type InfrastructureConfig struct {
 	FloatingPoolSubnetName *string `json:"floatingPoolSubnetName,omitempty"`
 	// Networks is the OpenStack specific network configuration
 	Networks Networks `json:"networks"`
+
+	// SecurityGroup holds configuration for the shoot's default security group
+	SecurityGroup *SecurityGroup `json:"securityGroup,omitempty"`
 }
 
 // Networks holds information about the Kubernetes and infrastructure networks.
@@ -60,6 +63,11 @@ type Networks struct {
 	DNSServers *[]string `json:"dnsServers,omitempty"`
 }
 
+type SecurityGroup struct {
+	// AllowPublicEgress controls whether the security group should allow egress to everything
+	AllowPublicEgress *bool `json:"allowPublicEgress,omitempty"`
+}
+
 // Router indicates whether to use an existing router or create a new one.
 type Router struct {
 	// ID is the router id of an existing OpenStack router.
@@ -84,7 +92,7 @@ type InfrastructureStatus struct {
 	// Node contains information about Node related resources.
 	Node NodeStatus `json:"node"`
 	// SecurityGroups is a list of security groups that have been created.
-	SecurityGroups []SecurityGroup `json:"securityGroups"`
+	SecurityGroups []SecurityGroupStatus `json:"securityGroups"`
 }
 
 // NodeStatus contains information about Node related resources.
@@ -195,8 +203,8 @@ type Subnet struct {
 	DNSNameservers *[]string `json:"dnsNameservers,omitempty"`
 }
 
-// SecurityGroup is an OpenStack security group related to a Network.
-type SecurityGroup struct {
+// SecurityGroupStatus is an OpenStack security group related to a Network.
+type SecurityGroupStatus struct {
 	// Purpose is a logical description of the security group.
 	Purpose Purpose `json:"purpose"`
 	// ID is the security group id.

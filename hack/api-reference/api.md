@@ -981,6 +981,17 @@ string
 <p>Networks is the OpenStack specific network configuration</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>securityGroup</code></br>
+<em>
+<a href="#securitygroup">SecurityGroup</a>
+</em>
+</td>
+<td>
+<p>SecurityGroup holds configuration for the shoot's default security group</p>
+</td>
+</tr>
 
 </tbody>
 </table>
@@ -1062,7 +1073,7 @@ InfrastructureStatus contains information about created infrastructure resources
 <td>
 <code>securityGroups</code></br>
 <em>
-<a href="#securitygroup">SecurityGroup</a> array
+<a href="#securitygroupstatus">SecurityGroupStatus</a> array
 </em>
 </td>
 <td>
@@ -1770,7 +1781,7 @@ string
 
 
 <p>
-(<em>Appears on:</em><a href="#securitygroup">SecurityGroup</a>, <a href="#subnet">Subnet</a>)
+(<em>Appears on:</em><a href="#securitygroupstatus">SecurityGroupStatus</a>, <a href="#subnet">Subnet</a>)
 </p>
 
 <p>
@@ -1941,11 +1952,48 @@ string array
 
 
 <p>
+(<em>Appears on:</em><a href="#infrastructureconfig">InfrastructureConfig</a>)
+</p>
+
+<p>
+
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>allowPublicEgress</code></br>
+<em>
+boolean
+</em>
+</td>
+<td>
+<p>AllowPublicEgress controls whether the security group should allow egress to everything</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="securitygroupstatus">SecurityGroupStatus
+</h3>
+
+
+<p>
 (<em>Appears on:</em><a href="#infrastructurestatus">InfrastructureStatus</a>)
 </p>
 
 <p>
-SecurityGroup is an OpenStack security group related to a Network.
+SecurityGroupStatus is an OpenStack security group related to a Network.
 </p>
 
 <table>

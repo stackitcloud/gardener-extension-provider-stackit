@@ -32,7 +32,7 @@ func FindSubnetByPurpose(subnets []stackitv1alpha1.Subnet, purpose stackitv1alph
 // FindSecurityGroupByPurpose takes a list of security groups and tries to find the first entry
 // whose purpose matches with the given purpose. If no such entry is found then an error will be
 // returned.
-func FindSecurityGroupByPurpose(securityGroups []stackitv1alpha1.SecurityGroup, purpose stackitv1alpha1.Purpose) (*stackitv1alpha1.SecurityGroup, error) {
+func FindSecurityGroupByPurpose(securityGroups []stackitv1alpha1.SecurityGroupStatus, purpose stackitv1alpha1.Purpose) (*stackitv1alpha1.SecurityGroupStatus, error) {
 	for _, securityGroup := range securityGroups {
 		if securityGroup.Purpose == purpose {
 			return &securityGroup, nil
