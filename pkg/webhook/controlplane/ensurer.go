@@ -11,6 +11,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/coreos/go-systemd/v22/unit"
+	"github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -322,15 +323,30 @@ ExecStart=/opt/bin/update-resolv-conf.sh
 }
 
 func (e *ensurer) EnsureAdditionalProvisionFiles(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *[]extensionsv1alpha1.File) error {
-	return e.regCacheEnsurer.EnsureCaches(newObj)
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+	if registrycache.ShouldEnsure(cluster.Shoot) {
+		if err := e.regCacheEnsurer.EnsureCaches(newObj); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // EnsureAdditionalFiles ensures that additional required system files are added.
 func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, newObj, _ *[]extensionsv1alpha1.File) error {
-	if err := e.regCacheEnsurer.EnsureCaches(newObj); err != nil {
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
 		return err
 	}
-	cloudProfileConfig, err := getCloudProfileConfig(ctx, gctx)
+	if registrycache.ShouldEnsure(cluster.Shoot) {
+		if err := e.regCacheEnsurer.EnsureCaches(newObj); err != nil {
+			return err
+		}
+	}
+	cloudProfileConfig, err := getCloudProfileConfig(cluster)
 	if err != nil {
 		return err
 	}
@@ -393,11 +409,7 @@ mv "$tmp" "$dest" && echo updated "$dest"
 	*newObj = extensionswebhook.EnsureFileWithPath(*newObj, file)
 }
 
-func getCloudProfileConfig(ctx context.Context, gctx gcontext.GardenContext) (*stackitv1alpha1.CloudProfileConfig, error) {
-	cluster, err := gctx.GetCluster(ctx)
-	if err != nil {
-		return nil, err
-	}
+func getCloudProfileConfig(cluster *controller.Cluster) (*stackitv1alpha1.CloudProfileConfig, error) {
 	cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster)
 	if err != nil {
 		return nil, err
