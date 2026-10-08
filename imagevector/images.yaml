@@ -97,7 +97,7 @@ images:
 - name: csi-provisioner
   sourceRepository: github.com/kubernetes-csi/external-provisioner
   repository: registry.k8s.io/sig-storage/csi-provisioner
-  tag: "v5.3.0"
+  tag: "v5.3.0" # ignore renovate
 - name: csi-provisioner
   sourceRepository: github.com/kubernetes-csi/external-provisioner
   repository: registry.k8s.io/sig-storage/csi-provisioner
@@ -118,7 +118,7 @@ images:
 - name: csi-resizer
   sourceRepository: github.com/kubernetes-csi/external-resizer
   repository: registry.k8s.io/sig-storage/csi-resizer
-  tag: "v1.14.0"
+  tag: "v1.14.0"  # ignore renovate
 - name: csi-resizer
   sourceRepository: github.com/kubernetes-csi/external-resizer
   repository: registry.k8s.io/sig-storage/csi-resizer
