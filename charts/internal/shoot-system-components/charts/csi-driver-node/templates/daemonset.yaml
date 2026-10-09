@@ -100,11 +100,16 @@ spec:
         - --csi-address=$(ADDRESS)
         - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
         - --v=5
+        - --http-endpoint=:8080
         env:
         - name: ADDRESS
           value: {{ .Values.socketPath }}
         - name: DRIVER_REG_SOCK_PATH
           value: /var/lib/kubelet/plugins/{{ include "csi-driver-node.provisioner" . }}/csi.sock
+        ports:
+        - name: healthz
+          containerPort: 8080
+          protocol: TCP
 {{- if .Values.resources.nodeDriverRegistrar }}
         resources:
 {{ toYaml .Values.resources.nodeDriverRegistrar | indent 10 }}
