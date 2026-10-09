@@ -64,8 +64,8 @@ func ensureHostsConfig(reg config.RegistryCacheConfiguration, files *[]extension
 		Permissions: new(uint32(0o644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
-				Encoding: "",
-				Data:     data,
+				Encoding: "b64",
+				Data:     utils.EncodeBase64([]byte(data)),
 			},
 		},
 	}
