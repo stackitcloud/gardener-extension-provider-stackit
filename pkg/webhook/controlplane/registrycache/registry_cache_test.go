@@ -4,9 +4,11 @@ import (
 	"encoding/base64"
 	"testing"
 
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
@@ -15,6 +17,21 @@ func TestRegistryCache(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Registry cache")
 }
+
+var _ = Describe("#ShouldEnsure", func() {
+	It("should return true if annotation shoot.gardener.cloud/disable-stackit-registry-caches is not present", func() {
+		Expect(ShouldEnsure(&gardencorev1beta1.Shoot{})).To(BeTrue())
+	})
+	It("should return false if annotation shoot.gardener.cloud/disable-stackit-registry-caches is set to true", func() {
+		Expect(ShouldEnsure(&gardencorev1beta1.Shoot{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"shoot.gardener.cloud/disable-stackit-registry-caches": "true",
+				},
+			},
+		})).To(BeFalse())
+	})
+})
 
 var _ = Describe("registry cache files", func() {
 	var (
