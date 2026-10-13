@@ -19,6 +19,8 @@ data:
       {{- end }}
     loadBalancer:
       networkId: {{ .Values.config.stackitNetworkID }}
+      healthCheck:
+        useKubeProxy: {{ .Values.config.stackitLBUseKubeProxy }}
       {{- if .Values.config.extraLabels }}
       extraLabels:
         {{- toYaml .Values.config.extraLabels | nindent 8 }}

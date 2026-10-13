@@ -27,10 +27,23 @@ type ControlPlaneConfig struct {
 	// Storage contains configuration for storage in the cluster.
 	// +optional
 	Storage *Storage `json:"storage,omitempty"`
-
 	// ApplicationLoadBalancer holds the configuration for the ApplicationLoadBalancer controller
 	// +optional
 	ApplicationLoadBalancer *ApplicationLoadBalancerConfig `json:"applicationLoadBalancer,omitempty"`
+}
+
+// LoadBalancerConfig contains configuration for the Load Balancer integration.
+type LoadBalancerConfig struct {
+	// HealthCheck contains configuration for active load balancer target health checks.
+	// +optional
+	HealthCheck *LoadBalancerHealthCheckConfig `json:"healthCheck,omitempty"`
+}
+
+// LoadBalancerHealthCheckConfig contains configuration for active load balancer health checks.
+type LoadBalancerHealthCheckConfig struct {
+	// UseKubeProxy specifies whether active health checks targeting kube-proxy are enabled.
+	// +optional
+	UseKubeProxy *bool `json:"useKubeProxy,omitempty"`
 }
 
 // ApplicationLoadBalancerConfig defines the configuration for the
@@ -59,6 +72,10 @@ type CloudControllerManagerConfig struct {
 	// Name contains the information of which ccm to deploy
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// LoadBalancer contains configuration for load balancers.
+	// +optional
+	LoadBalancer *LoadBalancerConfig `json:"loadBalancer,omitempty"`
 }
 
 // Storage contains configuration for storage in the cluster.
