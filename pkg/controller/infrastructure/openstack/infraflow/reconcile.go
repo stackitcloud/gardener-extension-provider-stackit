@@ -494,6 +494,15 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			RemoteIPPrefix: nodesCIDR,
 			Description:    "IPv4: allow all incoming udp traffic with port range 30000-32767",
 		},
+		{
+			Direction:      string(rules.DirIngress),
+			EtherType:      string(rules.EtherType4),
+			Protocol:       string(rules.ProtocolTCP),
+			PortRangeMin:   10256,
+			PortRangeMax:   10256,
+			RemoteIPPrefix: nodesCIDR,
+			Description:    "IPv4: allow incoming tcp traffic to kube-proxy healthcheck port",
+		},
 	}
 
 	if fctx.networkSpec != nil && fctx.networkSpec.Pods != nil {
