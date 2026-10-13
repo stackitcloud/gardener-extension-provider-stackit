@@ -2,6 +2,7 @@ package registrycache
 
 import (
 	"encoding/base64"
+	"testing"
 
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
@@ -9,6 +10,11 @@ import (
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/config"
 )
+
+func TestRegistryCache(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Registry cache")
+}
 
 var _ = Describe("registry cache files", func() {
 	var (
@@ -41,18 +47,20 @@ var _ = Describe("registry cache files", func() {
 
 		Expect(e.EnsureCaches(&files)).To(Succeed())
 
-		expetedData := `# Created by gardener-extension-provider-stackit
+		expectedData := `# Created by gardener-extension-provider-stackit
 server = 'https://foo.com'
 
 [host]
 [host.'https://foo-cache.com']
 capabilities = ['pull']
 `
+
+		encoded := base64.StdEncoding.EncodeToString([]byte(expectedData))
 		Expect(files).To(ContainElement(And(
 			HaveField("Path", "/etc/containerd/certs.d/foo.com/hosts.toml"),
 			HaveField("Content.Inline", And(
-				HaveField("Encoding", ""),
-				HaveField("Data", Equal(expetedData)),
+				HaveField("Encoding", "b64"),
+				HaveField("Data", Equal(encoded)),
 			)),
 		)))
 	})
@@ -77,8 +85,15 @@ capabilities = ['pull']
 			),
 			And(
 				HaveField("Path", "/etc/containerd/certs.d/foo.com/hosts.toml"),
-				HaveField("Content.Inline.Data", ContainSubstring("ca = '/etc/containerd/certs.d/foo.com/foo-cache.com.crt'")),
+				HaveField("Content.Inline.Data", WithTransform(decodeTransformer, ContainSubstring("ca = '/etc/containerd/certs.d/foo.com/foo-cache.com.crt'"))),
 			),
 		))
 	})
 })
+
+func decodeTransformer(data string) string {
+	GinkgoHelper()
+	decoded, err := base64.StdEncoding.DecodeString(data)
+	Expect(err).NotTo(HaveOccurred())
+	return string(decoded)
+}
