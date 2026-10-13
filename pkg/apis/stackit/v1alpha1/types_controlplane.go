@@ -28,9 +28,20 @@ type ControlPlaneConfig struct {
 	// +optional
 	Storage *Storage `json:"storage,omitempty"`
 
+	// LoadBalancer contains configuration for load balancers.
+	// +optional
+	LoadBalancer *LoadBalancerConfig `json:"loadBalancer,omitempty"`
+
 	// ApplicationLoadBalancer holds the configuration for the ApplicationLoadBalancer controller
 	// +optional
 	ApplicationLoadBalancer *ApplicationLoadBalancerConfig `json:"applicationLoadBalancer,omitempty"`
+}
+
+// LoadBalancerConfig contains configuration for the Load Balancer integration.
+type LoadBalancerConfig struct {
+	// EnableHealthChecks specifies whether active health checks are enabled on load balancers.
+	// +optional
+	EnableHealthChecks *bool `json:"enableHealthChecks,omitempty"`
 }
 
 // ApplicationLoadBalancerConfig defines the configuration for the

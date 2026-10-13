@@ -860,10 +860,18 @@ func getSTACKITCCMChartValues(
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
 
+	stackitLBEnableHealthChecks := true
+	if cpConfig != nil {
+		if cpConfig.LoadBalancer != nil && cpConfig.LoadBalancer.EnableHealthChecks != nil {
+			stackitLBEnableHealthChecks = *cpConfig.LoadBalancer.EnableHealthChecks
+		}
+	}
+
 	ccmConfig := map[string]any{
-		"stackitNetworkID": infra.Networks.ID,
-		"stackitRegion":    stackitRegion,
-		"stackitProjectID": credentials.ProjectID,
+		"stackitNetworkID":            infra.Networks.ID,
+		"stackitRegion":               stackitRegion,
+		"stackitProjectID":            credentials.ProjectID,
+		"stackitLBEnableHealthChecks": stackitLBEnableHealthChecks,
 		"extraLabels": map[string]string{
 			// TODO: migrate away from the old key
 			STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,

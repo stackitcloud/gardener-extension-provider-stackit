@@ -19,6 +19,7 @@ data:
       {{- end }}
     loadBalancer:
       networkId: {{ .Values.config.stackitNetworkID }}
+      enableHealthChecks: {{ .Values.config.stackitLBEnableHealthChecks }}
       {{- if .Values.config.extraLabels }}
       extraLabels:
         {{- toYaml .Values.config.extraLabels | nindent 8 }}

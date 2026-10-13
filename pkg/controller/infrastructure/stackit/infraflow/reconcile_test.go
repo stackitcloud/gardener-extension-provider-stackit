@@ -167,7 +167,7 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 						Min: int64(10256),
 					},
 					IpRange:     new("0.0.0.0/0"),
-					Description: new("IPv4: allow all incoming tcp traffic with port 10256"),
+					Description: new("IPv4: allow incoming tcp traffic to kube-proxy healthcheck port"),
 				},
 			}
 
