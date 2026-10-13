@@ -861,9 +861,10 @@ func getSTACKITCCMChartValues(
 	}
 
 	ccmConfig := map[string]any{
-		"stackitNetworkID": infra.Networks.ID,
-		"stackitRegion":    stackitRegion,
-		"stackitProjectID": credentials.ProjectID,
+		"stackitNetworkID":         infra.Networks.ID,
+		"stackitRegion":            stackitRegion,
+		"stackitProjectID":         credentials.ProjectID,
+		"enableActiveHealthChecks": true,
 		"extraLabels": map[string]string{
 			// TODO: migrate away from the old key
 			STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,

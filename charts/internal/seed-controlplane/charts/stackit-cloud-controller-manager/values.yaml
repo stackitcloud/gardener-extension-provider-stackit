@@ -11,6 +11,7 @@ config:
   loadBalancerEmergencyToken: ""
   port: 10258
   metricsPort: 9090
+  enableActiveHealthChecks: true
 podAnnotations: {}
 podLabels: {}
 featureGates: {}

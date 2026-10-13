@@ -19,6 +19,9 @@ data:
       {{- end }}
     loadBalancer:
       networkId: {{ .Values.config.stackitNetworkID }}
+      {{- if hasKey .Values.config "enableActiveHealthChecks" }}
+      enableActiveHealthChecks: {{ .Values.config.enableActiveHealthChecks }}
+      {{- end }}
       {{- if .Values.config.extraLabels }}
       extraLabels:
         {{- toYaml .Values.config.extraLabels | nindent 8 }}

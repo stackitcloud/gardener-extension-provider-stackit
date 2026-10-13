@@ -378,9 +378,10 @@ func expectedUserAgentHeaders() []string {
 
 func expectedSTACKITCCMConfig(customLabelDomain string, apiEndpoints *stackitv1alpha1.APIEndpoints) map[string]any {
 	config := map[string]any{
-		"stackitProjectID": "foo",
-		"stackitNetworkID": "network-acbd1234",
-		"stackitRegion":    "eu01",
+		"stackitProjectID":         "foo",
+		"stackitNetworkID":         "network-acbd1234",
+		"stackitRegion":            "eu01",
+		"enableActiveHealthChecks": true,
 		"extraLabels": map[string]string{
 			STACKITLBClusterLabelKey: technicalID,
 		},
