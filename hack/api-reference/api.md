@@ -411,6 +411,18 @@ string
 <p>Name contains the information of which ccm to deploy</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>loadBalancer</code></br>
+<em>
+<a href="#loadbalancerconfig">LoadBalancerConfig</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>LoadBalancer contains configuration for load balancers.</p>
+</td>
+</tr>
 
 </tbody>
 </table>
@@ -1176,6 +1188,82 @@ string
 <td>
 <em>(Optional)</em>
 <p>AccessControl restricts which source IP ranges may reach the load balancer.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="loadbalancerconfig">LoadBalancerConfig
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#cloudcontrollermanagerconfig">CloudControllerManagerConfig</a>)
+</p>
+
+<p>
+LoadBalancerConfig contains configuration for the Load Balancer integration.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>healthCheck</code></br>
+<em>
+<a href="#loadbalancerhealthcheckconfig">LoadBalancerHealthCheckConfig</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HealthCheck contains configuration for active load balancer target health checks.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="loadbalancerhealthcheckconfig">LoadBalancerHealthCheckConfig
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#loadbalancerconfig">LoadBalancerConfig</a>)
+</p>
+
+<p>
+LoadBalancerHealthCheckConfig contains configuration for active load balancer health checks.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>useKubeProxy</code></br>
+<em>
+boolean
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>UseKubeProxy specifies whether active health checks targeting kube-proxy are enabled.</p>
 </td>
 </tr>
 

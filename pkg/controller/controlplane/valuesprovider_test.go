@@ -989,6 +989,7 @@ type noopCSICompatibilityHandler struct{}
 func (*noopCSICompatibilityHandler) HandleSeedCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
 	return nil
 }
+
 func (*noopCSICompatibilityHandler) HandleShootCSICompatibility(context.Context, string, string, *stackitv1alpha1.ControlPlaneConfig, map[string]any) error {
 	return nil
 }
