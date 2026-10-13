@@ -43,6 +43,7 @@
         '/github.com/gardener/etcd-druid/',
         '/github.com/gardener/machine-controller-manager/',
         '/github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/',
+        '/github.com/prometheus/client_golang/',
       ],
     },
     {
