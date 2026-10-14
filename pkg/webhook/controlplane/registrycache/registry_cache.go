@@ -28,10 +28,7 @@ func ShouldEnsure(shoot *gardencorev1beta1.Shoot) bool {
 	if !ok {
 		return true
 	}
-	disableCaches, err := strconv.ParseBool(val)
-	if err != nil {
-		return true
-	}
+	disableCaches, _ := strconv.ParseBool(val)
 	return !disableCaches
 }
 
