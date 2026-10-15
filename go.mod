@@ -30,7 +30,7 @@ require (
 	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.16.0
 	github.com/stackitcloud/stackit-sdk-go/services/certificates v1.9.2
 	github.com/stackitcloud/stackit-sdk-go/services/dns v0.25.0
-	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.14.5
+	github.com/stackitcloud/stackit-sdk-go/services/iaas v1.15.0
 	github.com/stackitcloud/stackit-sdk-go/services/loadbalancer v1.15.2
 	github.com/stackitcloud/stackit-sdk-go/services/resourcemanager v0.26.1
 	github.com/stackitcloud/stackit-sdk-go/services/serviceaccount v0.21.1
