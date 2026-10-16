@@ -26,7 +26,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stackitcloud/stackit-sdk-go/core v0.27.1
-	github.com/stackitcloud/stackit-sdk-go/services/alb v0.18.0
+	github.com/stackitcloud/stackit-sdk-go/services/alb v0.19.0
 	github.com/stackitcloud/stackit-sdk-go/services/authorization v0.16.0
 	github.com/stackitcloud/stackit-sdk-go/services/certificates v1.9.2
 	github.com/stackitcloud/stackit-sdk-go/services/dns v0.25.0
