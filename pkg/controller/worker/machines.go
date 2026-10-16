@@ -6,6 +6,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -87,10 +88,18 @@ func (w *workerDelegate) DeployMachineClasses(ctx context.Context) error {
 		}
 	}
 
-	chartPath := "machineclass"
-	if feature.UseStackitMachineControllerManager(w.cluster) {
-		chartPath = "machineclass-stackit"
+	chartPath := "machineclass-stackit"
+	if !feature.UseStackitMachineControllerManager(w.cluster) {
+		chartPath = "machineclass"
+		hasStackitMachineClass, err := w.hasStackitMachineClass(ctx)
+		if err != nil {
+			return err
+		}
+		if hasStackitMachineClass {
+			return errors.New("migration from machine-controller-manager-provider-stackit to machine-controller-manager-provider-openstack is not supported")
+		}
 	}
+
 	err := w.seedChartApplier.ApplyFromEmbeddedFS(ctx, charts.InternalChart, filepath.Join(charts.InternalChartsPath, chartPath), w.worker.Namespace, "machineclass", kubernetes.Values(map[string]any{"machineClasses": w.machineClasses}))
 	if err != nil {
 		return err
@@ -373,6 +382,19 @@ func (w *workerDelegate) generateWorkerPoolHash(pool extensionsv1alpha1.WorkerPo
 	// Generate the worker pool hash.
 	// since the ProviderConfig is in this provider is always nil, we add some additionalHashdata
 	return worker.WorkerPoolHash(pool, w.cluster, additionalHashData, nil)
+}
+
+func (w *workerDelegate) hasStackitMachineClass(ctx context.Context) (bool, error) {
+	machineclaseslist := &machinev1alpha1.MachineClassList{}
+	if err := w.seedClient.List(ctx, machineclaseslist, &client.ListOptions{Namespace: w.worker.Namespace}); err != nil {
+		return false, err
+	}
+	for _, machineClass := range machineclaseslist.Items {
+		if machineClass.Provider == stackit.Type {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // NormalizeLabelsForMachineClass because metadata in OpenStack resources do not allow for certain characters that present in k8s labels e.g. "/",

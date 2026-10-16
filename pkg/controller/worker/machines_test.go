@@ -42,6 +42,7 @@ import (
 	. "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/controller/worker"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/feature"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/openstack"
+	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
 	mockstackitclient "github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit/client/mock"
 )
 
@@ -1004,7 +1005,9 @@ var _ = Describe("Machines", func() {
 					}
 
 					Expect(c.Create(ctx, machine)).To(Succeed())
+				})
 
+				It("should migrate the machine controller manager", func() {
 					chartApplier.
 						EXPECT().
 						ApplyFromEmbeddedFS(
@@ -1016,9 +1019,7 @@ var _ = Describe("Machines", func() {
 							gomock.Any(),
 						).
 						Return(nil)
-				})
 
-				It("should migrate the machine controller manager", func() {
 					mockIaaSClient.EXPECT().
 						ProjectID().
 						Return("project-id-123")
@@ -1068,6 +1069,17 @@ var _ = Describe("Machines", func() {
 				})
 
 				It("should retry a machine after an IaaS API failure without touching migrated machines", func() {
+					chartApplier.
+						EXPECT().
+						ApplyFromEmbeddedFS(
+							ctx,
+							charts.InternalChart,
+							filepath.Join("internal", "machineclass-stackit"),
+							w.Namespace,
+							"machineclass",
+							gomock.Any(),
+						).
+						Return(nil)
 					migratedMachine := &machinev1alpha1.Machine{}
 					Expect(c.Get(ctx, client.ObjectKey{Name: machine.Name, Namespace: machine.Namespace}, migratedMachine)).To(Succeed())
 					migratedMachine.Spec.ProviderID = "stackit://project-id-123/server-123"
@@ -1132,6 +1144,20 @@ var _ = Describe("Machines", func() {
 					Expect(c.Get(ctx, client.ObjectKey{Name: w.Name, Namespace: w.Namespace}, migratedWorker)).To(Succeed())
 					Expect(migratedWorker.Annotations).To(HaveKeyWithValue("stackit.cloud/machine-controller-manager-migrated", "true"))
 				})
+
+				It("should fail when migrating from stackit to openstack", func() {
+					cluster.Shoot.Annotations[feature.ShootUseSTACKITMachineControllerManager] = "false"
+					mc := machinev1alpha1.MachineClass{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "machine-class",
+							Namespace: machine.Namespace,
+						},
+						Provider: stackit.Type,
+					}
+					Expect(c.Create(ctx, &mc)).To(Succeed())
+					Expect(workerDelegate.DeployMachineClasses(ctx)).To(MatchError(ContainSubstring("migration from machine-controller-manager-provider-stackit to machine-controller-manager-provider-openstack is not supported")))
+				})
+
 			})
 
 			It("should fail because the infrastructure status cannot be decoded", func() {
