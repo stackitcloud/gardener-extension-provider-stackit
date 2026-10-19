@@ -33,10 +33,14 @@ include $(HACK_DIR)/tools.mk
 
 .PHONY: run
 run: ## Starts the application locally
-	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
+	touch config.yaml
+	gardenctl kubeconfig --raw --garden $(shell gardenctl target view -o json | jq -r .garden) > /tmp/garden-kubeconfig.yml
+	@LEADER_ELECTION_NAMESPACE=garden GARDEN_KUBECONFIG=/tmp/garden-kubeconfig.yml GO111MODULE=on go run \
 		./cmd/$(EXTENSION_PREFIX)-$(NAME) \
 		--kubeconfig=${KUBECONFIG} \
-		--leader-election=$(LEADER_ELECTION)
+		--leader-election=$(LEADER_ELECTION) \
+		--disable-webhooks=cloudprovider,seedprovider,controlplane \
+		--config-file=config.yaml
 
 .PHONY: debug
 debug: ## Starts the application locally with a delve as a debugger
@@ -205,7 +209,7 @@ help:  ## Display this help
 
 # speed-up skaffold deployments by building all images concurrently
 extension-%: export SKAFFOLD_BUILD_CONCURRENCY = 0
-extension-%: export SKAFFOLD_DEFAULT_REPO = ghcr.io
+extension-%: export SKAFFOLD_DEFAULT_REPO = $(REGISTRY)
 extension-%: export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-%: export SKAFFOLD_LABEL = skaffold.dev/run-id=gardener-extension-provider-stackit
