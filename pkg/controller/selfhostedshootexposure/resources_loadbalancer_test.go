@@ -87,6 +87,8 @@ var _ = Describe("reconcileLoadBalancer", func() {
 					Expect(payload.TargetPools[0].Targets).To(HaveLen(2))
 					Expect(*payload.TargetPools[0].Targets[0].Ip).To(Equal("10.0.1.10"))
 					Expect(*payload.TargetPools[0].Targets[1].Ip).To(Equal("10.0.1.20"))
+					Expect(payload.Options).NotTo(BeNil())
+					Expect(payload.Options.EphemeralAddress).To(Equal(new(true)))
 					return createdLB, nil
 				})
 
@@ -291,7 +293,63 @@ var _ = Describe("reconcileLoadBalancer", func() {
 			Expect(err.Error()).To(ContainSubstring("error updating load balancer"))
 		})
 
-		It("should defer the update when the LB has no external address yet", func() {
+		It("should keep an ephemeral LB ephemeral and omit its external address on update", func() {
+			r.PlanID = "p100"
+			r.LoadBalancer.Options = &loadbalancer.LoadBalancerOptions{EphemeralAddress: new(true)}
+
+			mockLBClient.EXPECT().
+				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					// Sending the address of an ephemeral LB would promote its IP to a static one,
+					// which is not deleted together with the LB.
+					Expect(payload.ExternalAddress).To(BeNil())
+					Expect(payload.Options).NotTo(BeNil())
+					Expect(payload.Options.EphemeralAddress).To(Equal(new(true)))
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should update an ephemeral LB that has no external address yet", func() {
+			r.PlanID = "p100"
+			r.LoadBalancer.ExternalAddress = nil
+			r.LoadBalancer.Options = &loadbalancer.LoadBalancerOptions{EphemeralAddress: new(true)}
+
+			mockLBClient.EXPECT().
+				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					Expect(payload.ExternalAddress).To(BeNil())
+					Expect(payload.Options.EphemeralAddress).To(Equal(new(true)))
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should keep the external address of a non-ephemeral LB on update", func() {
+			r.PlanID = "p100"
+			r.LoadBalancer.Options = &loadbalancer.LoadBalancerOptions{EphemeralAddress: new(false)}
+
+			mockLBClient.EXPECT().
+				UpdateLoadBalancer(ctx, "test-lb", gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ string, payload loadbalancer.UpdateLoadBalancerPayload) (*loadbalancer.LoadBalancer, error) {
+					Expect(payload.ExternalAddress).To(Equal(new("203.0.113.1")))
+					Expect(payload.Options).NotTo(BeNil())
+					Expect(payload.Options.EphemeralAddress).To(BeNil())
+					return &loadbalancer.LoadBalancer{}, nil
+				})
+
+			err := r.reconcileLoadBalancer(ctx, logger)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should defer the update when a non-ephemeral LB has no external address yet", func() {
 			r.PlanID = "p100"
 			r.LoadBalancer.ExternalAddress = nil
 

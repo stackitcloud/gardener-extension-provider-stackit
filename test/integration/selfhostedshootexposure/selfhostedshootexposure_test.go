@@ -699,6 +699,14 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
 		}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
 
+		By("verify the external IP is still ephemeral after the updates")
+		// Sending the address of an ephemeral LB on update would promote its IP to a static one,
+		// which STACKIT does not delete together with the LB.
+		Expect(lb.Options).NotTo(BeNil())
+		Expect(lb.Options.EphemeralAddress).To(Equal(new(true)))
+		Expect(lb.ExternalAddress).NotTo(BeNil())
+		externalAddress := *lb.ExternalAddress
+
 		By("delete SelfHostedShootExposure")
 		Expect(client.IgnoreNotFound(c.Delete(ctx, exposure))).To(Succeed())
 
@@ -718,6 +726,15 @@ var _ = Describe("SelfHostedShootExposure tests", func() {
 			lb, err := lbClient.GetLoadBalancer(ctx, lbName)
 			g.Expect(stackitclient.IgnoreNotFoundError(err)).NotTo(HaveOccurred())
 			g.Expect(lb).To(BeNil())
+		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+
+		By("verify the external IP was released together with the load balancer")
+		Eventually(func(g Gomega) {
+			publicIPs, err := iaasClient.GetPublicIpByLabels(ctx, stackit.LabelSelector{})
+			g.Expect(err).NotTo(HaveOccurred())
+			for _, ip := range publicIPs {
+				g.Expect(ip.GetIp()).NotTo(Equal(externalAddress), "public IP %s was not released", ip.GetId())
+			}
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 	})
 })

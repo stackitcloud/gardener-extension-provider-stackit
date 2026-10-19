@@ -66,10 +66,16 @@ func (r *Resources) createLoadBalancer(ctx context.Context, log logr.Logger, tar
 }
 
 func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, targets []loadbalancer.Target) error {
-	// STACKIT requires ExternalAddress to be set on PUT (and rejects EphemeralAddress=true once
-	// the LB has a floating IP). If the LB hasn't been assigned an external address yet, return
-	// an error so controller-runtime retries with backoff rather than 400ing the API.
-	if r.LoadBalancer.ExternalAddress == nil {
+	// An ephemeral LB must be updated with EphemeralAddress=true and without ExternalAddress:
+	// sending its address promotes the ephemeral IP to a static one, which is then no longer
+	// deleted together with the LB (and can't be demoted again).
+	// A non-ephemeral LB (e.g. promoted by an earlier version of this controller) requires
+	// ExternalAddress on PUT. If it hasn't been assigned one yet, return an error so
+	// controller-runtime retries with backoff rather than 400ing the API.
+	externalAddress := r.LoadBalancer.ExternalAddress
+	if r.loadBalancerIsEphemeral() {
+		externalAddress = nil
+	} else if externalAddress == nil {
 		return fmt.Errorf("waiting for load balancer external address before updating")
 	}
 
@@ -77,7 +83,7 @@ func (r *Resources) updateLoadBalancer(ctx context.Context, log logr.Logger, tar
 	updated, err := r.LBClient.UpdateLoadBalancer(ctx, r.ResourceName, loadbalancer.UpdateLoadBalancerPayload{
 		Name:            &r.ResourceName,
 		Version:         r.LoadBalancer.Version,
-		ExternalAddress: r.LoadBalancer.ExternalAddress,
+		ExternalAddress: externalAddress,
 		Labels:          &r.Labels,
 		Networks:        r.desiredNetworks(),
 		Listeners:       r.desiredListeners(),
@@ -123,17 +129,17 @@ func (r *Resources) desiredTargetPools(targets []loadbalancer.Target) []loadbala
 
 // desiredOptions returns the LB options.
 //
-// Initial create: ask STACKIT to assign an ephemeral external IP.
+// Initial create: ask STACKIT to assign an ephemeral external IP, which is deleted together
+// with the LB.
 //
-// Subsequent PUT updates: do NOT set EphemeralAddress — STACKIT rejects PUTs with
-// EphemeralAddress=true once the LB has been assigned a floating IP ("Ephemeral address is
-// not supported for existing floating IPs"). The constraint that one of ExternalAddress,
-// EphemeralAddress=true, or PrivateNetworkOnly=true must be set is satisfied via
-// UpdateLoadBalancerPayload.ExternalAddress, which the caller passes through from the
-// existing LB. updateLoadBalancer guards against the LB not yet having an ExternalAddress.
+// Subsequent PUT updates: keep EphemeralAddress=true for an ephemeral LB (updateLoadBalancer
+// omits ExternalAddress then). For a non-ephemeral LB, leave EphemeralAddress unset: STACKIT
+// can't demote a static IP to an ephemeral one, and the constraint that one of
+// ExternalAddress, EphemeralAddress=true, or PrivateNetworkOnly=true must be set is satisfied
+// via UpdateLoadBalancerPayload.ExternalAddress.
 func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 	opts := &loadbalancer.LoadBalancerOptions{}
-	if r.LoadBalancer == nil {
+	if r.LoadBalancer == nil || r.loadBalancerIsEphemeral() {
 		opts.EphemeralAddress = new(true)
 	}
 	if len(r.AllowedSourceRanges) > 0 {
@@ -142,6 +148,12 @@ func (r *Resources) desiredOptions() *loadbalancer.LoadBalancerOptions {
 		}
 	}
 	return opts
+}
+
+// loadBalancerIsEphemeral reports whether the existing LB's external IP is ephemeral, i.e. managed by
+// STACKIT and deleted together with the LB. Caller must guarantee r.LoadBalancer is non-nil.
+func (r *Resources) loadBalancerIsEphemeral() bool {
+	return r.LoadBalancer.Options != nil && ptr.Deref(r.LoadBalancer.Options.EphemeralAddress, false)
 }
 
 // loadBalancerNeedsUpdate reports whether any controller-managed field of the LB (targets,
