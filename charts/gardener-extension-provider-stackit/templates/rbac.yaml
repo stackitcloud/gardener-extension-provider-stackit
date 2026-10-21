@@ -1,16 +1,12 @@
+{{- if not (include "runtimeCluster.enabled" .) }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  {{- if not (include "runtimeCluster.enabled" .) }}
   name: {{ include "name" . }}
-  {{- else }}
-  name: {{ include "name" . }}-runtime
-  {{- end }}
   labels:
     {{- include "labels" . | nindent 4 }}
 rules:
-{{- if not (include "runtimeCluster.enabled" .) }}
 - apiGroups:
   - extensions.gardener.cloud
   resources:
@@ -123,7 +119,6 @@ rules:
   - patch
   - update
   - delete
-{{- end }}
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -145,7 +140,6 @@ rules:
   - update
   - patch
 ---
-{{- if not (include "runtimeCluster.enabled" .) }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

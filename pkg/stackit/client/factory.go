@@ -53,7 +53,7 @@ func New(region string, cluster *extensionscontroller.Cluster) Factory {
 		apiEndpoints = ptr.Deref(cloudProfileConfig.APIEndpoints, stackitv1alpha1.APIEndpoints{})
 	}
 
-	if cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
+	if cluster != nil && cluster.CloudProfile != nil && cluster.CloudProfile.Spec.CABundle != nil {
 		caBundle = ptr.Deref(cluster.CloudProfile.Spec.CABundle, "")
 	}
 
