@@ -73,11 +73,9 @@ spec:
         - --webhook-config-service-port={{ .Values.webhookConfig.servicePort }}
         - --webhook-config-server-port={{ tpl .Values.webhookConfig.serverPort . }}
         {{- if (include "runtimeCluster.enabled" .) }}
-        # typically you would only enable required controllers
-        # as this extension doesn't have any controller that can run in runtime, disable all
-        - --disable-controllers="*"
-        - --disable-webhooks="*"
-        - --extension-class=garden
+        - --controllers=dnsrecord
+        - --disable-webhooks=*
+        - --extension-classes=garden
         {{- else }}
         - --disable-controllers={{ .Values.disableControllers | join "," }}
         - --disable-webhooks={{ .Values.disableWebhooks | join "," }}

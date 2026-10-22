@@ -1,6 +1,72 @@
 {{ if (include "runtimeCluster.enabled" .) }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "name" . }}-runtime
+  labels:
+    {{- include "labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - dnsrecords
+  - dnsrecords/status
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  resourceNames:
+  - provider-stackit-leader-election
+  - gardener-extension-heartbeat
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - patch
+  - delete
+# Required by the DNSRecord reconciler to check whether a namespace has the shoot label.
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - list
+  - watch
+# Required for leader election to publish events.
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "name" . }}-runtime

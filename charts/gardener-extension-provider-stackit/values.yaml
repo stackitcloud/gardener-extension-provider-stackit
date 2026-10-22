@@ -1,6 +1,6 @@
 image:
   ref: ""
-  repository: ghcr.io/stackitcloud/gardener-extension-provider-stackit
+  repository: ghcr.io/stackitcloud/gardener-extension-provider-stackit/gardener-extension-provider-stackit
   tag: latest
   pullPolicy: IfNotPresent
 replicaCount: 1
@@ -76,10 +76,10 @@ config:
       provisioner: block-storage.csi.stackit.cloud
       volumeBindingMode: WaitForFirstConsumer
   registryCaches:
-    # - server: reg.example.com
-    #   cache: reg-cache.example.com
-    #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
-    #   capabilities: ["pull", "resolve"]
+  # - server: reg.example.com
+  #   cache: reg-cache.example.com
+  #   caBundle: LS0tLS1C... #b64 encoded CA bundle, optional
+  #   capabilities: ["pull", "resolve"]
 gardener:
   version: ""
   clusterTypes:
