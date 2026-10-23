@@ -7,7 +7,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.38.2
 	github.com/gardener/gardener v1.153.1
-	github.com/gardener/gardener-extension-networking-calico v1.60.1
+	github.com/gardener/gardener-extension-networking-calico v1.60.2
 	github.com/gardener/gardener/hack/tools v1.153.1
 	github.com/gardener/gardener/pkg/apis v1.153.1
 	github.com/gardener/machine-controller-manager v0.63.0
