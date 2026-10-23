@@ -769,6 +769,18 @@ string
 </tr>
 <tr>
 <td>
+<code>loadBalancer</code></br>
+<em>
+<a href="#loadbalancerconfig">LoadBalancerConfig</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>LoadBalancer contains configuration for load balancers.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>applicationLoadBalancer</code></br>
 <em>
 <a href="#applicationloadbalancerconfig">ApplicationLoadBalancerConfig</a>
@@ -1176,6 +1188,44 @@ string
 <td>
 <em>(Optional)</em>
 <p>AccessControl restricts which source IP ranges may reach the load balancer.</p>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3 id="loadbalancerconfig">LoadBalancerConfig
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#controlplaneconfig">ControlPlaneConfig</a>)
+</p>
+
+<p>
+LoadBalancerConfig contains configuration for the Load Balancer integration.
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>
+<code>enableHealthChecks</code></br>
+<em>
+boolean
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>EnableHealthChecks specifies whether active health checks are enabled on load balancers.</p>
 </td>
 </tr>
 

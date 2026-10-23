@@ -329,6 +329,17 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 			IpRange:     new(nodesCIDR),
 			Description: new("IPv4: allow all incoming udp traffic with port range 30000-32767"),
 		},
+		{
+			Direction: stackit.DirectionIngress,
+			Ethertype: new(stackit.EtherTypeIPv4),
+			Protocol:  new(stackit.ProtocolTCP),
+			PortRange: &iaas.PortRange{
+				Max: int64(10256),
+				Min: int64(10256),
+			},
+			IpRange:     new(nodesCIDR),
+			Description: new("IPv4: allow incoming tcp traffic to kube-proxy healthcheck port"),
+		},
 	}
 
 	if fctx.cluster.Shoot.Spec.Networking != nil && fctx.cluster.Shoot.Spec.Networking.Pods != nil {

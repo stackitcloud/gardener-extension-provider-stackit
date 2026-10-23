@@ -5,6 +5,7 @@ config:
   stackitProjectID: foo
   stackitNetworkID: foo
   stackitRegion: foo
+  stackitLBEnableHealthChecks: true
   loadBalancerApiUrl: ""
   iaasApiUrl: ""
   tokenUrl: ""
