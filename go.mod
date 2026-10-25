@@ -6,10 +6,10 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.38.2
-	github.com/gardener/gardener v1.153.1
+	github.com/gardener/gardener v1.153.2
 	github.com/gardener/gardener-extension-networking-calico v1.60.2
-	github.com/gardener/gardener/hack/tools v1.153.1
-	github.com/gardener/gardener/pkg/apis v1.153.1
+	github.com/gardener/gardener/hack/tools v1.153.2
+	github.com/gardener/gardener/pkg/apis v1.153.2
 	github.com/gardener/machine-controller-manager v0.63.0
 	github.com/go-logr/logr v1.4.4
 	github.com/google/go-cmp v0.7.0
