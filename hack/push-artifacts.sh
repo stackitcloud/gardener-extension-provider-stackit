@@ -26,7 +26,7 @@ function image_repo() {
 function image_tag() {
   local chart_name="$1"
   local image_full_tag=$(echo "$images" | jq -r ".images.\"${chart_name}\"")
-  echo "$(image_tag_with_digest $chart_name)" | cut -d'@' -f1 | sed 's/-dirty//'
+  echo "$(image_tag_with_digest $chart_name)" | cut -d'@' -f1
 }
 
 function image_tag_with_digest(){
@@ -65,26 +65,25 @@ function package_and_push_chart() {
       exit 1
     fi
 
-    # TODO: If this error (i.e. Unauthorized) then nothing is printed
+    if [ "${PUSH:-false}" != "true" ]; then
+      echo "Skip pushing helm chart ${chart_name} because PUSH is not set to 'true'"
+      return 0
+    fi
+
     push_output=$(helm push "$packaged_chart_file" "oci://$(oci_repo ${chart_name})/charts" 2>&1)
 
     pushed_line=$(echo "$push_output" | grep "Pushed:")
     digest_line=$(echo "$push_output" | grep "Digest:")
 
-    if [ -n "$pushed_line" ] && [ -n "$digest_line" ]; then
-      echo "$pushed_line"
-      echo "$digest_line"
-    else
+    if [ -z "$pushed_line" ] || [ -z "$digest_line" ]; then
       echo "Error: Failed to push chart ${chart_name}."
       echo "$push_output"
       exit 1
     fi
-}
 
-if [ "$PUSH" != "true" ] ; then
-  echo "Skip pushing artifacts because PUSH is not set to 'true'"
-  exit 0
-fi
+    echo "$pushed_line"
+    echo "$digest_line"
+}
 
 for chart_name in $chart_names; do
   chart_source_dir="charts/${chart_name}"
@@ -98,6 +97,4 @@ for chart_name in $chart_names; do
   else
     package_and_push_chart "${chart_source_dir}"
   fi
-
-
 done
