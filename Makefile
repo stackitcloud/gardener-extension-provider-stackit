@@ -75,22 +75,9 @@ admission-images: $(KO) ## Builds a container image with the app using ko. Use P
 	@jq --arg image "$$(cat admission-images.txt)" '.images += {"$(EXTENSION_PREFIX)-$(ADMISSION)":$$image}' images.json > images.json.tmp
 	@mv -v images.json.tmp images.json
 
-.PHONY: manifests-substitute
-manifests-substitute: $(YQ) ## Substitutes extension manifests on disk with version and repository
-	mkdir -p artifacts/manifests
-	cp -rf deploy/operator/. artifacts/manifests
-	$(YQ) -i "\
-	  ( .spec.deployment.extension.helm.ociRepository.ref = \"$(REPOSITORY)/charts/gardener-extension-provider-stackit:$(TAG)\" ) | \
-	  ( .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref = \"$(REPOSITORY)/charts/admission-stackit-runtime:$(TAG)\" ) | \
-	  ( .spec.deployment.admission.virtualCluster.helm.ociRepository.ref = \"$(REPOSITORY)/charts/admission-stackit-virtual-garden:$(TAG)\" )\
-	" artifacts/manifests/extension.yaml
-
-.PHONY: manifests-push
-manifests-push: $(FLUX) ## Uploads extension manifests to target registry
-	REPOSITORY=$(REPOSITORY) TAG=$(TAG) PUSH=$(PUSH) hack/push-manifests.sh
-
 .PHONY: manifests
-manifests: manifests-substitute manifests-push ## Prepares and uploads extension manifests
+manifests: $(YQ) $(FLUX) ## Prepares and uploads extension manifests
+	REPOSITORY=$(REPOSITORY) TAG=$(TAG) PUSH=$(PUSH) hack/push-manifests.sh
 
 .PHONY: artifacts-only
 artifacts-only: $(YQ) $(HELM) ## Builds helm charts (`charts/`)
