@@ -34,22 +34,22 @@ images:
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.34.13"
+  tag: "v1.34.14"
   targetVersion: "1.34.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.35.8"
+  tag: "v1.35.9"
   targetVersion: "1.35.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.36.5"
+  tag: "v1.36.6"
   targetVersion: "1.36.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.37.0"
+  tag: "v1.37.1"
   targetVersion: ">= 1.37"
 
 - name: machine-controller-manager-provider-openstack
@@ -95,22 +95,22 @@ images:
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.34.13"
+  tag: "v1.34.14"
   targetVersion: "1.34.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.35.8"
+  tag: "v1.35.9"
   targetVersion: "1.35.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.36.5"
+  tag: "v1.36.6"
   targetVersion: "1.36.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.37.0"
+  tag: "v1.37.1"
   targetVersion: ">= 1.37"
 
 - name: csi-provisioner
