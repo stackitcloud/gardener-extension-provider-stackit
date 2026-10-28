@@ -102,6 +102,7 @@ revendor: tidy
 .PHONY: clean
 clean: ## Cleans the ./cmd and ./pkg package
 	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
+	@rm -rf ./artifacts
 
 .PHONY: check-generate
 check-generate: ## Check if check target has been run

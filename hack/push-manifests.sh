@@ -18,7 +18,7 @@ if [ "${PUSH:-false}" != "true" ]; then
   exit 0
 fi
 
-git_sha=$(git rev-parse --short HEAD)
+git_sha=$(git rev-parse HEAD)
 git_branch=$(git rev-parse --abbrev-ref HEAD)
 
 flux push artifact "oci://${manifests_repo}:${TAG}" \
@@ -26,9 +26,5 @@ flux push artifact "oci://${manifests_repo}:${TAG}" \
   --source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
   --revision="${git_branch}@sha1:${git_sha}"
 
-if [ "$git_branch" = "main" ] && [ "$TAG" != "main" ]; then
-  flux push artifact "oci://${manifests_repo}:main" \
-    --path="$manifests_dir" \
-    --source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
-    --revision="main@sha1:${git_sha}"
-fi
+flux tag artifact "oci://${manifests_repo}:${TAG}" \
+  --tag="${git_branch}"
