@@ -5,7 +5,7 @@ MOCKGEN_VERSION = v0.6.0
 # renovate: datasource=github-releases depName=golangci/golangci-lint
 GOLANGCI_LINT_VERSION = v2.15.0
 # renovate: datasource=github-tags depName=fluxcd/flux2
-FLUX_VERSION ?= 2.9.6
+FLUX_VERSION ?= v2.10.0
 
 KO := $(TOOLS_BIN_DIR)/ko
 $(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
@@ -13,5 +13,5 @@ $(KO): $(call tool_version_file,$(KO),$(KO_VERSION))
 
 FLUX := $(TOOLS_BIN_DIR)/flux
 $(FLUX): $(call tool_version_file,$(FLUX),$(FLUX_VERSION))
-	curl -sSLo - https://github.com/fluxcd/flux2/releases/download/$(FLUX_VERSION)/flux_$(FLUX_VERSION:v%=%)_$(shell echo $(OS) | tr '[:upper:]' '[:lower:]')_$(shell echo $(MACHINE_HARDWARE) | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) flux
+	curl -sSLo - https://github.com/fluxcd/flux2/releases/download/$(FLUX_VERSION)/flux_$(FLUX_VERSION:v%=%)_$(shell go env GOOS)_$(shell go env GOARCH).tar.gz | tar -xzmf - -C $(TOOLS_BIN_DIR) flux
 	chmod +x $(FLUX)
