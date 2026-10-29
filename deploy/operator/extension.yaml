@@ -19,12 +19,12 @@ spec:
       runtimeCluster:
         helm:
           ociRepository:
-            ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-runtime:v2.1.0
+            ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-runtime:0.0.0
       virtualCluster:
         helm:
           ociRepository:
-            ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-virtual-garden:v2.1.0
+            ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/admission-stackit-virtual-garden:0.0.0
     extension:
       helm:
         ociRepository:
-          ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/gardener-extension-provider-stackit:v2.1.0
+          ref: ghcr.io/stackitcloud/gardener-extension-provider-stackit/charts/gardener-extension-provider-stackit:0.0.0

@@ -10,11 +10,11 @@ REGISTRY                    ?= ghcr.io
 REPOSITORY                  := $(REGISTRY)/stackitcloud/gardener-extension-provider-stackit
 IS_DEV                      ?= true
 ifeq ($(IS_DEV),true)
-REPO_POSTFIX                := -dev
+REPOSITORY                  := $(REPOSITORY)/dev
 endif
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
-VERSION                     := $(shell git describe --tag --always --dirty)
+VERSION                     ?= $(shell git describe --tag --always)
 TAG							:= $(VERSION)
 LEADER_ELECTION             := false
 
@@ -56,7 +56,7 @@ images: export KO_DOCKER_REPO = $(REPOSITORY)
 
 .PHONY: images
 images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True to also push the image to a registry
-	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(NAME)$(REPO_POSTFIX) \
+	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(NAME) \
 	$(KO) build --image-label org.opencontainers.image.source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
 	--sbom none -t $(TAG) --bare \
 	--platform linux/amd64,linux/arm64 --push=$(PUSH) \
@@ -66,7 +66,7 @@ images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True t
 
 .PHONY: admission-images
 admission-images: $(KO) ## Builds a container image with the app using ko. Use PUSH=True to also push the image to a registry
-	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(ADMISSION)$(REPO_POSTFIX) \
+	KO_DOCKER_REPO=$(REPOSITORY)/$(EXTENSION_PREFIX)-$(ADMISSION) \
 	$(KO) build --image-label org.opencontainers.image.source="https://github.com/stackitcloud/gardener-extension-provider-stackit" \
 	--sbom none -t $(TAG) --bare \
 	--platform linux/amd64,linux/arm64 --push=$(PUSH) \
@@ -75,12 +75,16 @@ admission-images: $(KO) ## Builds a container image with the app using ko. Use P
 	@jq --arg image "$$(cat admission-images.txt)" '.images += {"$(EXTENSION_PREFIX)-$(ADMISSION)":$$image}' images.json > images.json.tmp
 	@mv -v images.json.tmp images.json
 
+.PHONY: manifests
+manifests: $(YQ) $(FLUX) ## Prepares and uploads extension manifests
+	REPOSITORY=$(REPOSITORY) TAG=$(TAG) PUSH=$(PUSH) hack/push-manifests.sh
+
 .PHONY: artifacts-only
 artifacts-only: $(YQ) $(HELM) ## Builds helm charts (`charts/`)
 	PUSH=$(PUSH) hack/push-artifacts.sh images.json
 
 .PHONY: artifacts
-artifacts: images admission-images artifacts-only ## Builds all artifacts.
+artifacts: images admission-images artifacts-only manifests ## Builds all artifacts.
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -98,6 +102,7 @@ revendor: tidy
 .PHONY: clean
 clean: ## Cleans the ./cmd and ./pkg package
 	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
+	@rm -rf ./artifacts
 
 .PHONY: check-generate
 check-generate: ## Check if check target has been run
