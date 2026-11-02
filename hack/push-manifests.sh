@@ -19,7 +19,7 @@ if [ "${PUSH:-false}" != "true" ]; then
 fi
 
 git_sha=$(git rev-parse HEAD)
-git_branch=$(git rev-parse --abbrev-ref HEAD)
+git_branch=$(git rev-parse --abbrev-ref HEAD | sed 's/[^a-zA-Z0-9_.-]/-/g')
 
 flux push artifact "oci://${manifests_repo}:${TAG}" \
   --path="${manifests_dir}" \
