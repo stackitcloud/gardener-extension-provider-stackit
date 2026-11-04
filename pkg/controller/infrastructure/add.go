@@ -6,12 +6,15 @@ package infrastructure
 
 import (
 	"context"
+	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -32,9 +35,20 @@ type AddOptions struct {
 	CustomLabelDomain string
 }
 
+// SetDefaultRateLimiter sets the default exponential failure rate limiter if none is configured.
+func SetDefaultRateLimiter(options *AddOptions) {
+	if options.Controller.RateLimiter == nil {
+		options.Controller.RateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
+			1*time.Minute, 30*time.Minute,
+		)
+	}
+}
+
 // AddToManagerWithOptions adds a controller with the given AddOptions to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, options AddOptions) error {
+	SetDefaultRateLimiter(&options)
+
 	return infrastructure.Add(mgr, infrastructure.AddArgs{
 		Actuator:          NewActuator(mgr, options.CustomLabelDomain),
 		ConfigValidator:   NewConfigValidator(mgr, log.Log),
