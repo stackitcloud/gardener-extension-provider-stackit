@@ -54,8 +54,9 @@ const (
 	// or "<technicalID>-exp-<exposureName-short>-<exposureName-hash> if the name is too long."
 	exposureName = "apiserver"
 
-	defaultPlanID     = "p10"
-	alternativePlanID = "p250"
+	smallPlanID  = "p10"
+	mediumPlanID = "p50"
+	largePlanID  = "p250"
 
 	updateTimeout = 2 * time.Minute
 	pollInterval  = 5 * time.Second
@@ -414,7 +415,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			g.Expect(targetIPs(lb)).To(ConsistOf("10.250.0.10", "10.250.0.11"))
 
 			// Default plan, since no providerConfig.LoadBalancer.PlanId is set
-			g.Expect(lb.PlanId).To(HaveValue(Equal(defaultPlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(smallPlanID)))
 
 			// EphemeralAddress is set on create
 			g.Expect(lb.Options).NotTo(BeNil())
@@ -463,7 +464,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			g.Expect(lb.Listeners[0].Port).To(HaveValue(BeEquivalentTo(6443)))
 			g.Expect(lb.Networks).To(HaveLen(1))
 			g.Expect(lb.Networks[0].NetworkId).To(HaveValue(Equal(networkID)))
-			g.Expect(lb.PlanId).To(HaveValue(Equal(defaultPlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(smallPlanID)))
 		})
 	})
 
@@ -491,7 +492,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 
 			// Targets + plan untouched by a port-only change.
 			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
-			g.Expect(lb.PlanId).To(HaveValue(Equal(defaultPlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(smallPlanID)))
 		})
 	})
 
@@ -506,15 +507,15 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			g.Expect(lb.TargetPools).To(HaveLen(1))
 			g.Expect(targetIPs(lb)).To(ConsistOf("10.250.0.10", "10.250.0.12"))
 			// Plan unchanged by a pure target update.
-			g.Expect(lb.PlanId).To(HaveValue(Equal(defaultPlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(smallPlanID)))
 		})
 	})
 
 	It("changes the plan only (full PUT update)", func() {
 		updateExposure(func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new("p50")})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new(mediumPlanID)})
 		}, func(g Gomega, lb *loadbalancer.LoadBalancer) {
-			g.Expect(lb.PlanId).To(HaveValue(Equal("p50")))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(mediumPlanID)))
 
 			// Targets untouched by a plan-only change.
 			g.Expect(lb.TargetPools).To(HaveLen(1))
@@ -524,11 +525,11 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 
 	It("changes plan and endpoints together (full PUT update)", func() {
 		updateExposure(func() {
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new(alternativePlanID)})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new(largePlanID)})
 			// Add node-2 back, so targets *and* plan change in the same reconcile.
 			exposure.Spec.Endpoints = append(exposure.Spec.Endpoints, endpoint("node-2", "10.250.0.11"))
 		}, func(g Gomega, lb *loadbalancer.LoadBalancer) {
-			g.Expect(lb.PlanId).To(HaveValue(Equal(alternativePlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(largePlanID)))
 			g.Expect(lb.TargetPools).To(HaveLen(1))
 			g.Expect(targetIPs(lb)).To(ConsistOf("10.250.0.10", "10.250.0.11", "10.250.0.12"))
 		})
@@ -537,7 +538,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 	It("adds AccessControl.AllowedSourceRanges (full PUT update)", func() {
 		updateExposure(func() {
 			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{
-				PlanID: new(alternativePlanID),
+				PlanID: new(largePlanID),
 				AccessControl: &stackitv1alpha1.AccessControl{
 					AllowedSourceRanges: []string{"0.0.0.0/0"},
 				},
@@ -548,7 +549,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			g.Expect(lb.Options.AccessControl.AllowedSourceRanges).To(ConsistOf("0.0.0.0/0"))
 
 			// Plan + targets unchanged by an AccessControl-only addition.
-			g.Expect(lb.PlanId).To(HaveValue(Equal(alternativePlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(largePlanID)))
 			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
 		})
 	})
@@ -556,7 +557,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 	It("updates AllowedSourceRanges to a different set (order-independent)", func() {
 		updateExposure(func() {
 			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{
-				PlanID: new(alternativePlanID),
+				PlanID: new(largePlanID),
 				AccessControl: &stackitv1alpha1.AccessControl{
 					AllowedSourceRanges: []string{"192.168.0.0/16", "10.0.0.0/8"},
 				},
@@ -571,7 +572,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 	It("removes AccessControl (full PUT update)", func() {
 		updateExposure(func() {
 			// Drop AccessControl entirely from the providerConfig.
-			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new(alternativePlanID)})
+			setExposureLBConfig(exposure, &stackitv1alpha1.LoadBalancer{PlanID: new(largePlanID)})
 		}, func(g Gomega, lb *loadbalancer.LoadBalancer) {
 			// After removal, the LB API may report Options.AccessControl as nil OR with an empty
 			// AllowedSourceRanges slice; both mean "unrestricted".
@@ -580,7 +581,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			}
 
 			// Plan + targets unchanged.
-			g.Expect(lb.PlanId).To(HaveValue(Equal(alternativePlanID)))
+			g.Expect(lb.PlanId).To(HaveValue(Equal(largePlanID)))
 			g.Expect(lb.TargetPools[0].Targets).To(HaveLen(3))
 		})
 	})
