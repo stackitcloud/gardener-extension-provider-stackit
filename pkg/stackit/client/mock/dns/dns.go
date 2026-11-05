@@ -331,6 +331,35 @@ func (mr *MockDefaultAPIMockRecorder) ExportRecordSetsExecute(r any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecordSetsExecute", reflect.TypeOf((*MockDefaultAPI)(nil).ExportRecordSetsExecute), r)
 }
 
+// FlushDomain mocks base method.
+func (m *MockDefaultAPI) FlushDomain(ctx context.Context) v1api.ApiFlushDomainRequest {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlushDomain", ctx)
+	ret0, _ := ret[0].(v1api.ApiFlushDomainRequest)
+	return ret0
+}
+
+// FlushDomain indicates an expected call of FlushDomain.
+func (mr *MockDefaultAPIMockRecorder) FlushDomain(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlushDomain", reflect.TypeOf((*MockDefaultAPI)(nil).FlushDomain), ctx)
+}
+
+// FlushDomainExecute mocks base method.
+func (m *MockDefaultAPI) FlushDomainExecute(r v1api.ApiFlushDomainRequest) (*v1api.FlushDomainResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlushDomainExecute", r)
+	ret0, _ := ret[0].(*v1api.FlushDomainResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FlushDomainExecute indicates an expected call of FlushDomainExecute.
+func (mr *MockDefaultAPIMockRecorder) FlushDomainExecute(r any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlushDomainExecute", reflect.TypeOf((*MockDefaultAPI)(nil).FlushDomainExecute), r)
+}
+
 // GetRecordSet mocks base method.
 func (m *MockDefaultAPI) GetRecordSet(ctx context.Context, projectId, zoneId, rrSetId string) v1api.ApiGetRecordSetRequest {
 	m.ctrl.T.Helper()
@@ -503,6 +532,35 @@ func (m *MockDefaultAPI) ListZonesExecute(r v1api.ApiListZonesRequest) (*v1api.L
 func (mr *MockDefaultAPIMockRecorder) ListZonesExecute(r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListZonesExecute", reflect.TypeOf((*MockDefaultAPI)(nil).ListZonesExecute), r)
+}
+
+// LookupDomain mocks base method.
+func (m *MockDefaultAPI) LookupDomain(ctx context.Context) v1api.ApiLookupDomainRequest {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LookupDomain", ctx)
+	ret0, _ := ret[0].(v1api.ApiLookupDomainRequest)
+	return ret0
+}
+
+// LookupDomain indicates an expected call of LookupDomain.
+func (mr *MockDefaultAPIMockRecorder) LookupDomain(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDomain", reflect.TypeOf((*MockDefaultAPI)(nil).LookupDomain), ctx)
+}
+
+// LookupDomainExecute mocks base method.
+func (m *MockDefaultAPI) LookupDomainExecute(r v1api.ApiLookupDomainRequest) (*v1api.LookupDomainResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LookupDomainExecute", r)
+	ret0, _ := ret[0].(*v1api.LookupDomainResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LookupDomainExecute indicates an expected call of LookupDomainExecute.
+func (mr *MockDefaultAPIMockRecorder) LookupDomainExecute(r any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookupDomainExecute", reflect.TypeOf((*MockDefaultAPI)(nil).LookupDomainExecute), r)
 }
 
 // MoveZone mocks base method.
