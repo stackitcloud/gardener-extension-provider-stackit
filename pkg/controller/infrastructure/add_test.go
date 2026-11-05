@@ -44,10 +44,79 @@ var _ = Describe("Add", func() {
 			delay3 := options.Controller.RateLimiter.When(req)
 			Expect(delay3).To(Equal(4 * time.Minute))
 
+			// Fourth failure: 8 minutes
+			delay4 := options.Controller.RateLimiter.When(req)
+			Expect(delay4).To(Equal(8 * time.Minute))
+
+			// Fifth failure: 16 minutes
+			delay5 := options.Controller.RateLimiter.When(req)
+			Expect(delay5).To(Equal(16 * time.Minute))
+
+			// Sixth failure: capped at maxDelay of 30 minutes (not 32 minutes)
+			delay6 := options.Controller.RateLimiter.When(req)
+			Expect(delay6).To(Equal(30 * time.Minute))
+
+			// Seventh failure: still capped at 30 minutes
+			delay7 := options.Controller.RateLimiter.When(req)
+			Expect(delay7).To(Equal(30 * time.Minute))
+
 			// Forget should reset the backoff
 			options.Controller.RateLimiter.Forget(req)
 			delayAfterReset := options.Controller.RateLimiter.When(req)
 			Expect(delayAfterReset).To(Equal(1 * time.Minute))
+		})
+
+		It("should track failure backoffs independently for different shoot requests", func() {
+			options := infrastructure.AddOptions{}
+			infrastructure.SetDefaultRateLimiter(&options)
+
+			reqShootA := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "shoot--project--a",
+					Name:      "infrastructure",
+				},
+			}
+			reqShootB := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "shoot--project--b",
+					Name:      "infrastructure",
+				},
+			}
+
+			// Shoot A fails twice (1m, then 2m)
+			Expect(options.Controller.RateLimiter.When(reqShootA)).To(Equal(1 * time.Minute))
+			Expect(options.Controller.RateLimiter.When(reqShootA)).To(Equal(2 * time.Minute))
+
+			// Shoot B fails for the first time: should start at 1m, not affected by Shoot A
+			Expect(options.Controller.RateLimiter.When(reqShootB)).To(Equal(1 * time.Minute))
+		})
+
+		It("should integrate correctly with a rate-limiting workqueue", func() {
+			options := infrastructure.AddOptions{}
+			infrastructure.SetDefaultRateLimiter(&options)
+
+			queue := workqueue.NewTypedRateLimitingQueue(options.Controller.RateLimiter)
+			defer queue.ShutDown()
+
+			req := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "shoot--project--test",
+					Name:      "infrastructure",
+				},
+			}
+
+			Expect(queue.NumRequeues(req)).To(Equal(0))
+
+			// Simulate controller-runtime failing a reconcile and enqueuing with rate limiting
+			queue.AddRateLimited(req)
+			Expect(queue.NumRequeues(req)).To(Equal(1))
+
+			queue.AddRateLimited(req)
+			Expect(queue.NumRequeues(req)).To(Equal(2))
+
+			// Simulate successful reconcile calling Forget
+			queue.Forget(req)
+			Expect(queue.NumRequeues(req)).To(Equal(0))
 		})
 
 		It("should preserve existing rate limiter if already configured", func() {
