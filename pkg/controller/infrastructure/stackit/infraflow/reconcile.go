@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
@@ -23,6 +24,12 @@ const (
 	defaultTimeout = 90 * time.Second
 )
 
+var (
+	testAttemptsLock sync.Mutex
+	testAttempts     = make(map[string]int)
+	testLastAttempt  = make(map[string]time.Time)
+)
+
 func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 	fctx.BasicFlowContext = shared.NewBasicFlowContext().WithSpan().WithLogger(fctx.log).WithPersist(fctx.persistState)
 	g := fctx.buildReconcileGraph()
@@ -40,9 +47,18 @@ func (fctx *FlowContext) Reconcile(ctx context.Context) error {
 func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	g := flow.NewGraph("STACKIT infrastructure reconciliation")
 
+	// ================= DUMMY TEST INJECTION =================
+	// Pre-check task before ensureNetwork to test backoff delays
+	preCheck := fctx.AddTask(g, "test backoff pre-check",
+		fctx.testBackoffPreCheck,
+		shared.Timeout(defaultTimeout))
+	// =========================================================
+
 	ensureNetwork := fctx.AddTask(g, "ensure isolated network",
 		fctx.ensureNetwork,
-		shared.Timeout(defaultTimeout))
+		shared.Timeout(defaultTimeout),
+		shared.Dependencies(preCheck),
+	)
 
 	_ = fctx.AddTask(g, "ensure openstack subnet id",
 		fctx.ensureOpenStackSubnetID,
@@ -352,6 +368,49 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 		log.Info("updated rules", "security group", group.GetName())
 	}
 
+	return nil
+}
+
+func (fctx *FlowContext) testBackoffPreCheck(ctx context.Context) error {
+	infraKey := fctx.technicalID
+	if fctx.infra != nil {
+		infraKey = fctx.infra.Namespace + "/" + fctx.infra.Name
+	}
+
+	testAttemptsLock.Lock()
+	now := time.Now()
+	attempt := testAttempts[infraKey] + 1
+	testAttempts[infraKey] = attempt
+	lastTime := testLastAttempt[infraKey]
+	testLastAttempt[infraKey] = now
+	testAttemptsLock.Unlock()
+
+	log := shared.LogFromContext(ctx)
+	if !lastTime.IsZero() {
+		elapsed := now.Sub(lastTime).Round(time.Second)
+		log.Info(">>> [TEST BACKOFF] Pre-check attempt before ensureNetwork",
+			"infra", infraKey,
+			"attempt", attempt,
+			"elapsedSinceLastAttempt", elapsed.String())
+	} else {
+		log.Info(">>> [TEST BACKOFF] Pre-check first attempt received before ensureNetwork",
+			"infra", infraKey,
+			"attempt", attempt)
+	}
+
+	// Fail the first 2 attempts inside the flow before ensureNetwork is called,
+	// demonstrating the 1-minute and 2-minute delays through the flow engine.
+	// Succeed on attempt 3 so the shoot recovers and completes.
+	if attempt <= 2 {
+		log.Info(">>> [TEST BACKOFF] Simulating timeout error before ensureNetwork to trigger backoff delay",
+			"infra", infraKey,
+			"attempt", attempt,
+			"nextRetryInApprox", (time.Duration(1<<(attempt-1)) * time.Minute).String())
+		return fmt.Errorf("simulated timeout error before ensureNetwork for backoff test (attempt %d/2)", attempt)
+	}
+
+	log.Info(">>> [TEST BACKOFF] Simulation complete! Proceeding to ensureNetwork",
+		"infra", infraKey)
 	return nil
 }
 
