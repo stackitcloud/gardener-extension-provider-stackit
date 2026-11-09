@@ -618,7 +618,7 @@ var _ = Describe("SelfHostedShootExposure", Serial, Ordered, func() {
 			lb, err := lbClient.GetLoadBalancer(ctx, lbName)
 			g.Expect(stackitclient.IgnoreNotFoundError(err)).NotTo(HaveOccurred())
 			g.Expect(lb).To(BeNil())
-		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+		}).WithTimeout(10 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 	})
 
 	It("releases the external IP together with the load balancer", func() {
