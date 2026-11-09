@@ -860,10 +860,20 @@ func getSTACKITCCMChartValues(
 		return nil, fmt.Errorf("no STACKIT credentials are provided in cluster %s", cluster.Shoot.Name)
 	}
 
+	stackitLBUseKubeProxy := true
+	if cpConfig != nil &&
+		cpConfig.CloudControllerManager != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer.HealthCheck != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer.HealthCheck.UseKubeProxy != nil {
+		stackitLBUseKubeProxy = *cpConfig.CloudControllerManager.LoadBalancer.HealthCheck.UseKubeProxy
+	}
+
 	ccmConfig := map[string]any{
-		"stackitNetworkID": infra.Networks.ID,
-		"stackitRegion":    stackitRegion,
-		"stackitProjectID": credentials.ProjectID,
+		"stackitNetworkID":      infra.Networks.ID,
+		"stackitRegion":         stackitRegion,
+		"stackitProjectID":      credentials.ProjectID,
+		"stackitLBUseKubeProxy": stackitLBUseKubeProxy,
 		"extraLabels": map[string]string{
 			// TODO: migrate away from the old key
 			STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,
