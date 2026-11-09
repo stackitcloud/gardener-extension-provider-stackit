@@ -37,7 +37,7 @@ var (
 				SyncPeriod: metav1.Duration{Duration: defaultSyncPeriod},
 				ShootRESTOptions: &healthcheckconfig.RESTOptions{
 					QPS:   new(float32(100)),
-					Burst: new(130),
+					Burst: new(int32(130)),
 				},
 			},
 		},
