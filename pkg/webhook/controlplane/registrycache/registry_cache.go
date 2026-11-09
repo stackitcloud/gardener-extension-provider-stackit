@@ -58,7 +58,7 @@ func ensureHostsConfig(reg config.RegistryCacheConfiguration, files *[]extension
 	}
 	hostsFile := extensionsv1alpha1.File{
 		Path:        path.Join(configBaseDir(reg.Server), "hosts.toml"),
-		Permissions: new(uint32(0o644)),
+		Permissions: new(int32(0o644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",
@@ -73,7 +73,7 @@ func ensureHostsConfig(reg config.RegistryCacheConfiguration, files *[]extension
 func ensureCAFile(reg config.RegistryCacheConfiguration, files *[]extensionsv1alpha1.File) {
 	caFile := extensionsv1alpha1.File{
 		Path:        caPath(reg),
-		Permissions: new(uint32(0o644)),
+		Permissions: new(int32(0o644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",
