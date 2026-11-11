@@ -74,17 +74,18 @@ func (a *Actuator) DetermineOptions(ctx context.Context, bastion *extensionsv1al
 	}
 	opts.MachineType = bastionSpec.MachineTypeName
 
-	opts.ImageID, err = determineImageID(bastionSpec, cluster)
+	// Fetch provider-specific options from stackitv1alpha1.CloudProfileConfig
+	cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	// Fetch provider-specific options from stackitv1alpha1.CloudProfileConfig
-	cloudProfile, err := helper.CloudProfileConfigFromCluster(cluster)
+	opts.ImageID, err = determineImageID(bastionSpec, cluster, cloudProfileConfig)
 	if err != nil {
 		return nil, err
 	}
-	cpBastionConfig := cloudProfile.Bastion
+
+	cpBastionConfig := cloudProfileConfig.Bastion
 	if cpBastionConfig != nil && cpBastionConfig.RootDiskSize != nil {
 		opts.RootDiskSize = *cpBastionConfig.RootDiskSize
 	} else {
@@ -131,45 +132,27 @@ func determineAvailabilityZone(cluster *extensionscontroller.Cluster) (string, e
 	return region.Zones[0].Name, nil
 }
 
-func determineImageID(bastionSpec extensionsbastion.MachineSpec, cluster *extensionscontroller.Cluster) (string, error) {
-	cloudProfileConfig, err := helper.CloudProfileConfigFromCluster(cluster)
-	if err != nil {
-		return "", fmt.Errorf("error getting CloudProfileConfig from Cluster: %w", err)
-	}
+func determineImageID(bastionSpec extensionsbastion.MachineSpec, cluster *extensionscontroller.Cluster, cloudProfileConfig *stackitv1alpha1.CloudProfileConfig) (string, error) {
+	capabilityDefinitions := helper.NormalizeCapabilityDefinitions(cluster.CloudProfile.Spec.MachineCapabilities)
+	machineCapabilities := helper.NormalizeMachineTypeCapabilities(bastionSpec.MachineTypeCapabilities, &bastionSpec.Architecture, capabilityDefinitions)
 
-	imageID, err := determineRegionalImageIDForSpec(bastionSpec, cluster.Shoot.Spec.Region, cloudProfileConfig.MachineImages)
+	imageFlavor, err := helper.FindImageInCloudProfile(
+		cloudProfileConfig,
+		bastionSpec.ImageBaseName,
+		bastionSpec.ImageVersion,
+		cluster.Shoot.Spec.Region,
+		machineCapabilities,
+		capabilityDefinitions,
+	)
 	if err != nil {
 		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: %w", err)
 	}
 
-	return imageID, nil
-}
-
-func determineRegionalImageIDForSpec(bastionSpec extensionsbastion.MachineSpec, region string, images []stackitv1alpha1.MachineImages) (string, error) {
-	imageIndex := slices.IndexFunc(images, func(image stackitv1alpha1.MachineImages) bool {
-		return image.Name == bastionSpec.ImageBaseName
-	})
-	if imageIndex == -1 {
-		return "", fmt.Errorf("machine image with name %s not found", bastionSpec.ImageBaseName)
+	if len(imageFlavor.Regions) == 0 || imageFlavor.Regions[0].ID == "" {
+		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: machine image %s with version %s in region %s has no image ID", bastionSpec.ImageBaseName, bastionSpec.ImageVersion, cluster.Shoot.Spec.Region)
 	}
 
-	versions := images[imageIndex].Versions
-	versionIndex := slices.IndexFunc(versions, func(version stackitv1alpha1.MachineImageVersion) bool {
-		return version.Version == bastionSpec.ImageVersion
-	})
-	if versionIndex == -1 {
-		return "", fmt.Errorf("machine image %s with version %s not found", bastionSpec.ImageBaseName, bastionSpec.ImageVersion)
-	}
-
-	regions := versions[versionIndex].Regions
-	regionIndex := slices.IndexFunc(regions, func(regionID stackitv1alpha1.RegionIDMapping) bool {
-		return regionID.Name == region && *regionID.Architecture == bastionSpec.Architecture
-	})
-	if regionIndex == -1 {
-		return "", fmt.Errorf("machine image %s with version %s for arch %s in region %s not found", bastionSpec.ImageBaseName, bastionSpec.ImageVersion, bastionSpec.Architecture, region)
-	}
-
-	return regions[regionIndex].ID, nil
+	return imageFlavor.Regions[0].ID, nil
 }
 
 func getInfrastructureStatus(ctx context.Context, c client.Client, cluster *extensionscontroller.Cluster) (*stackitv1alpha1.InfrastructureStatus, error) {
