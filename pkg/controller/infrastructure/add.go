@@ -38,6 +38,8 @@ type AddOptions struct {
 // AddToManagerWithOptions adds a controller with the given AddOptions to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, options AddOptions) error {
+	// Wait at least 1 minute on failures: timed-out resources have time to finish creating in
+	// the backend so the next reconcile finds them by name, and broken APIs get time to recover.
 	options.Controller.RateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
 		1*time.Minute, 15*time.Minute,
 	)
