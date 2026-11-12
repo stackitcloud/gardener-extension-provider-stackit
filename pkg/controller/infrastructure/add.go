@@ -35,19 +35,12 @@ type AddOptions struct {
 	CustomLabelDomain string
 }
 
-// SetDefaultRateLimiter sets the default exponential failure rate limiter if none is configured.
-func SetDefaultRateLimiter(options *AddOptions) {
-	if options.Controller.RateLimiter == nil {
-		options.Controller.RateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
-			1*time.Minute, 30*time.Minute,
-		)
-	}
-}
-
 // AddToManagerWithOptions adds a controller with the given AddOptions to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, options AddOptions) error {
-	SetDefaultRateLimiter(&options)
+	options.Controller.RateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
+		1*time.Minute, 15*time.Minute,
+	)
 
 	return infrastructure.Add(mgr, infrastructure.AddArgs{
 		Actuator:          NewActuator(mgr, options.CustomLabelDomain),
