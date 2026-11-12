@@ -119,6 +119,40 @@ var _ = Describe("Add", func() {
 			Expect(queue.NumRequeues(req)).To(Equal(0))
 		})
 
+		It("should ensure failure backoff waits at least 30 seconds (1 minute default) and not 1-2 seconds", func() {
+			options := infrastructure.AddOptions{}
+			infrastructure.SetDefaultRateLimiter(&options)
+
+			req := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "shoot--project--test",
+					Name:      "infrastructure",
+				},
+			}
+
+			// Controller-runtime default rate limiter retries in 5ms (almost immediately, <= 1-2 seconds)
+			defaultRateLimiter := workqueue.DefaultTypedControllerRateLimiter[reconcile.Request]()
+			Expect(defaultRateLimiter.When(req)).To(BeNumerically("<", 1*time.Second))
+
+			// SetDefaultRateLimiter ensures the initial retry delay is 1 minute (>= 30 seconds),
+			// preventing immediate retries while cloud resources are still being created
+			initialDelay := options.Controller.RateLimiter.When(req)
+			Expect(initialDelay).To(BeNumerically(">=", 30*time.Second))
+			Expect(initialDelay).To(Equal(1 * time.Minute))
+
+			// Reset rate limiter for the request before passing to workqueue
+			options.Controller.RateLimiter.Forget(req)
+
+			// Verify with workqueue that the failed request is delayed and NOT available immediately
+			queue := workqueue.NewTypedRateLimitingQueue(options.Controller.RateLimiter)
+			defer queue.ShutDown()
+
+			queue.AddRateLimited(req)
+			// Item should be in the delayed queue, not immediately ready in the queue
+			Expect(queue.Len()).To(Equal(0))
+			Expect(queue.NumRequeues(req)).To(Equal(1))
+		})
+
 		It("should preserve existing rate limiter if already configured", func() {
 			customLimiter := workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
 				5*time.Second,
