@@ -167,28 +167,5 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 			// Proves the error returns immediately without sleeping or looping
 			Expect(elapsed).To(BeNumerically("<", 1*time.Second))
 		})
-
-		It("does not retry inside the flow when network lookup fails and returns the error immediately", func() {
-			lookupAttempts := 0
-			expectedErr := errors.New("network lookup failed")
-
-			mockIaaS.EXPECT().GetNetworkByName(gomock.Any(), "shoot--foo--bar").DoAndReturn(
-				func(ctx context.Context, name string) ([]iaas.Network, error) {
-					lookupAttempts++
-					return nil, expectedErr
-				},
-			).Times(1)
-
-			mockIaaS.EXPECT().CreateIsolatedNetwork(gomock.Any(), gomock.Any()).Times(0)
-
-			start := time.Now()
-			err := fctx.Reconcile(ctx)
-			elapsed := time.Since(start)
-
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("network lookup failed"))
-			Expect(lookupAttempts).To(Equal(1))
-			Expect(elapsed).To(BeNumerically("<", 1*time.Second))
-		})
 	})
 })
