@@ -140,6 +140,9 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 			ctrl.Finish()
 		})
 
+		// If requests time out, the backend resource may still be created. The flow must not retry
+		// internally and must return immediately so the controller-level rate limiter enforces a >=1m
+		// backoff. This allows the backend time to finish provisioning (found by name on next reconcile)
 		It("does not retry inside the flow when network creation fails and returns the error immediately", func() {
 			networkCreationAttempts := 0
 			expectedErr := errors.New("timeout creating network in backend")
