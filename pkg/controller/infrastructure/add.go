@@ -6,12 +6,15 @@ package infrastructure
 
 import (
 	"context"
+	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/infrastructure"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/apis/stackit/helper"
 	"github.com/stackitcloud/gardener-extension-provider-stackit/v2/pkg/stackit"
@@ -35,6 +38,12 @@ type AddOptions struct {
 // AddToManagerWithOptions adds a controller with the given AddOptions to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, options AddOptions) error {
+	// Wait at least 1 minute on failures: timed-out resources have time to finish creating in
+	// the backend so the next reconcile finds them by name, and broken APIs get time to recover.
+	options.Controller.RateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[reconcile.Request](
+		1*time.Minute, 15*time.Minute,
+	)
+
 	return infrastructure.Add(mgr, infrastructure.AddArgs{
 		Actuator:          NewActuator(mgr, options.CustomLabelDomain),
 		ConfigValidator:   NewConfigValidator(mgr, log.Log),
