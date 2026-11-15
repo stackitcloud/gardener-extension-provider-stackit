@@ -6,10 +6,10 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gardener/etcd-druid/api v0.39.2
-	github.com/gardener/gardener v1.155.0
+	github.com/gardener/gardener v1.155.1
 	github.com/gardener/gardener-extension-networking-calico v1.60.3
-	github.com/gardener/gardener/hack/tools v1.155.0
-	github.com/gardener/gardener/pkg/apis v1.155.0
+	github.com/gardener/gardener/hack/tools v1.155.1
+	github.com/gardener/gardener/pkg/apis v1.155.1
 	github.com/gardener/machine-controller-manager v0.63.1
 	github.com/go-logr/logr v1.4.4
 	github.com/google/go-cmp v0.7.0
@@ -101,7 +101,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
 	github.com/gardener/cert-management v0.23.0 // indirect
-	github.com/gardener/pvc-autoscaler v0.3.2 // indirect
+	github.com/gardener/pvc-autoscaler v0.3.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
