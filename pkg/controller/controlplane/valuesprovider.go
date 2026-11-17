@@ -861,9 +861,10 @@ func getSTACKITCCMChartValues(
 	}
 
 	ccmConfig := map[string]any{
-		"stackitNetworkID": infra.Networks.ID,
-		"stackitRegion":    stackitRegion,
-		"stackitProjectID": credentials.ProjectID,
+		"stackitNetworkID":      infra.Networks.ID,
+		"stackitRegion":         stackitRegion,
+		"stackitProjectID":      credentials.ProjectID,
+		"stackitLBUseKubeProxy": useKubeProxyHealthChecksEnabled(cpConfig),
 		"extraLabels": map[string]string{
 			// TODO: migrate away from the old key
 			STACKITLBClusterLabelKey: cluster.Shoot.Status.TechnicalID,
@@ -917,6 +918,17 @@ func getSTACKITCCMChartValues(
 	}
 
 	return values, nil
+}
+
+func useKubeProxyHealthChecksEnabled(cpConfig *stackitv1alpha1.ControlPlaneConfig) bool {
+	if cpConfig != nil &&
+		cpConfig.CloudControllerManager != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer.HealthCheck != nil &&
+		cpConfig.CloudControllerManager.LoadBalancer.HealthCheck.UseKubeProxy != nil {
+		return *cpConfig.CloudControllerManager.LoadBalancer.HealthCheck.UseKubeProxy
+	}
+	return true
 }
 
 // getCCMChartValues collects and returns the CCM chart values.
