@@ -318,6 +318,18 @@ var _ = Describe("Options", func() {
 		Expect(a.DetermineOptions(ctx, bastion, cluster, projectID)).To(HaveField("ImageID", "eu01-flatcar-1.1.0"))
 	})
 
+	It("should fallback to global image name when region ID is empty", func() {
+		cloudProfileConfig.MachineImages[0].Versions[0] = stackitv1alpha1.MachineImageVersion{
+			Version: "1.1.0",
+			Image:   "global-flatcar-image",
+		}
+		cloudProfileConfigBytes, err := runtime.Encode(encoder, cloudProfileConfig)
+		Expect(err).NotTo(HaveOccurred())
+		cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: cloudProfileConfigBytes}
+
+		Expect(a.DetermineOptions(ctx, bastion, cluster, projectID)).To(HaveField("ImageID", "global-flatcar-image"))
+	})
+
 	DescribeTable("customLabelDomain for bastion labels",
 		func(customDomain string, expectedClusterLabelKey string, expectedBastionLabelKey string) {
 			actuatorWithCustomDomain := &Actuator{
