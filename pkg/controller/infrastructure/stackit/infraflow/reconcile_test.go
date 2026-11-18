@@ -176,7 +176,7 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 		})
 	})
 
-	Describe("#ensureConfiguredNetwork", func() {
+	Describe("#ensureNetworkReady", func() {
 		var (
 			ctx      context.Context
 			ctrl     *gomock.Controller
@@ -203,21 +203,23 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 			ctrl.Finish()
 		})
 
-		It("succeeds and populates state when prefixes exist", func() {
+		It("succeeds and populates state when prefixes and egress IP exist", func() {
 			net := &iaas.Network{
 				Id:   "net-id",
 				Name: "shoot--foo--bar",
 				Ipv4: &iaas.NetworkIPv4{
 					Prefixes:    []string{"10.250.0.0/16"},
 					Nameservers: []string{"8.8.8.8"},
+					PublicIp:    new("1.2.3.4"),
 				},
 			}
 			mockIaaS.EXPECT().GetNetworkById(ctx, "net-id").Return(net, nil)
 
-			err := fctx.ensureConfiguredNetwork(ctx)
+			err := fctx.ensureNetworkReady(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(fctx.state.Get(NameNetwork)).To(Equal(new("shoot--foo--bar")))
 			Expect(fctx.dnsNameservers).To(Equal(new([]string{"8.8.8.8"})))
+			Expect(fctx.egressCIDRs).To(Equal([]string{"1.2.3.4/32"}))
 		})
 
 		It("returns error when no prefixes are found", func() {
@@ -230,9 +232,24 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 			}
 			mockIaaS.EXPECT().GetNetworkById(ctx, "net-id").Return(net, nil)
 
-			err := fctx.ensureConfiguredNetwork(ctx)
+			err := fctx.ensureNetworkReady(ctx)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("no prefixes found for network 'net-id'"))
+		})
+
+		It("returns error when egress IP is not found", func() {
+			net := &iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Ipv4: &iaas.NetworkIPv4{
+					Prefixes: []string{"10.250.0.0/16"},
+				},
+			}
+			mockIaaS.EXPECT().GetNetworkById(ctx, "net-id").Return(net, nil)
+
+			err := fctx.ensureNetworkReady(ctx)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("egress IP not found for network: net-id"))
 		})
 	})
 
