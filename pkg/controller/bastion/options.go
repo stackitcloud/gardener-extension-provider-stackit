@@ -148,11 +148,17 @@ func determineImageID(bastionSpec extensionsbastion.MachineSpec, cluster *extens
 		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: %w", err)
 	}
 
-	if len(imageFlavor.Regions) == 0 || imageFlavor.Regions[0].ID == "" {
-		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: machine image %s with version %s in region %s has no image ID", bastionSpec.ImageBaseName, bastionSpec.ImageVersion, cluster.Shoot.Spec.Region)
+	var imageID string
+	if len(imageFlavor.Regions) > 0 && imageFlavor.Regions[0].ID != "" {
+		imageID = imageFlavor.Regions[0].ID
+	} else if imageFlavor.Image != "" {
+		// Fallback: use global image name (not region-specific)
+		imageID = imageFlavor.Image
+	} else {
+		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: machine image %s with version %s in region %s has no image ID or global image name", bastionSpec.ImageBaseName, bastionSpec.ImageVersion, cluster.Shoot.Spec.Region)
 	}
 
-	return imageFlavor.Regions[0].ID, nil
+	return imageID, nil
 }
 
 func getInfrastructureStatus(ctx context.Context, c client.Client, cluster *extensionscontroller.Cluster) (*stackitv1alpha1.InfrastructureStatus, error) {
