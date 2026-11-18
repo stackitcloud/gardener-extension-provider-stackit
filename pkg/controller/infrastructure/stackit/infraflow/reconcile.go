@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
@@ -44,20 +45,24 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		fctx.ensureNetwork,
 		shared.Timeout(defaultTimeout))
 
+	networkReady := fctx.AddTask(g, "ensure network ready",
+		flow.TaskFn(fctx.ensureConfiguredNetwork).RetryUntilTimeout(5*time.Second, defaultTimeout),
+		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+
 	_ = fctx.AddTask(g, "ensure openstack subnet id",
 		fctx.ensureOpenStackSubnetID,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork),
+		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady),
 		shared.DoIf(fctx.hasOpenStackCredentials),
 	)
 
 	_ = fctx.AddTask(g, "ensure egress IP",
 		fctx.ensureEgressIP,
-		shared.Dependencies(ensureNetwork),
+		shared.Dependencies(networkReady),
 		shared.Timeout(defaultTimeout))
 
 	ensureSecGroup := fctx.AddTask(g, "ensure security group",
 		fctx.ensureSecGroup,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady))
 
 	_ = fctx.AddTask(g, "ensure security group rules",
 		fctx.ensureSecGroupRules,
@@ -71,23 +76,25 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 
 	_ = fctx.AddTask(g, "ensure stackit ssh key pair",
 		fctx.ensureStackitSSHKeyPair,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady))
 
 	return g
 }
 
 func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
-	networkID := *fctx.config.Networks.ID
-	network, err := fctx.iaasClient.GetNetworkById(ctx, networkID)
+	networkID := fctx.state.Get(IdentifierNetwork)
+	if networkID == nil || *networkID == "" {
+		return fmt.Errorf("no network ID found in the state")
+	}
+
+	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
 	if err != nil {
-		fctx.dnsNameservers = nil
-		fctx.state.Set(IdentifierNetwork, "")
-		fctx.state.Set(NameNetwork, "")
 		return err
 	}
+
 	if network == nil {
 		return gardenv1beta1helper.NewErrorWithCodes(
-			fmt.Errorf("network with ID '%s' was not found", networkID),
+			fmt.Errorf("network with ID '%s' was not found", *networkID),
 			gardencorev1beta1.ErrorInfraDependencies,
 		)
 	}
@@ -96,16 +103,16 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 	// In IaaS API Network can only have 1 Prefix. However, in OpenStack previously it was possible to have more.
 	// We never used this but let's be sure by checking it here.
 	if len(networkIPv4Config.GetPrefixes()) > 1 {
-		return fmt.Errorf("multiple prefixes found for network '%s'", networkID)
+		return fmt.Errorf("multiple prefixes found for network '%s'", network.GetId())
 	}
 	if len(networkIPv4Config.GetPrefixes()) == 0 {
-		return fmt.Errorf("no prefixes found for network '%s'", networkID)
+		return fmt.Errorf("no prefixes found for network '%s'", network.GetId())
 	}
 	workerCIDR := networkIPv4Config.GetPrefixes()[0]
 
 	if fctx.isSNAShoot {
 		snaConfig := &infrainternal.SNAConfig{
-			NetworkID:   networkID,
+			NetworkID:   network.GetId(),
 			WorkersCIDR: workerCIDR,
 		}
 
@@ -117,7 +124,6 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 	nameservers := networkIPv4Config.GetNameservers()
 	fctx.dnsNameservers = new(nameservers)
 
-	fctx.state.Set(IdentifierNetwork, networkID)
 	fctx.state.Set(NameNetwork, network.GetName())
 	return nil
 }
@@ -369,8 +375,10 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 func (fctx *FlowContext) ensureNetwork(ctx context.Context) error {
 	// SNA Case: Network already provided
 	if fctx.config.Networks.ID != nil {
-		return fctx.ensureConfiguredNetwork(ctx)
+		fctx.state.Set(IdentifierNetwork, *fctx.config.Networks.ID)
+		return nil
 	}
+
 	return fctx.ensureIsolatedNetwork(ctx)
 }
 
@@ -400,29 +408,36 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if current != nil {
-		fctx.state.Set(IdentifierNetwork, current.GetId())
-		fctx.state.Set(NameNetwork, current.GetName())
-		if _, err := fctx.iaasClient.UpdateNetwork(ctx, current.GetId(), client.IsolatedNetworkToPartialUpdate(desired)); err != nil {
-			return err
-		}
-		// Update dnsNameservers when update was successful
-		fctx.dnsNameservers = new(desired.Ipv4.CreateNetworkIPv4WithPrefix.GetNameservers())
-	} else {
+
+	if current == nil {
 		log.Info("creating...", "network", fctx.defaultNetworkName())
 		created, err := fctx.iaasClient.CreateIsolatedNetwork(ctx, desired)
 		if err != nil {
 			return err
 		}
 		fctx.state.Set(IdentifierNetwork, created.GetId())
-		fctx.state.Set(NameNetwork, created.GetName())
-		fctx.dnsNameservers = new(created.Ipv4.GetNameservers())
+		return nil
 	}
+
+	fctx.state.Set(IdentifierNetwork, current.GetId())
+	if isIsolatedNetworkUpToDate(current, desired) {
+		return nil
+	}
+
+	log.Info("updating...", "network", current.GetName())
+	if _, err := fctx.iaasClient.UpdateNetwork(ctx, current.GetId(), client.IsolatedNetworkToPartialUpdate(desired)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 	networkID := fctx.state.Get(IdentifierNetwork)
+	if networkID == nil || *networkID == "" {
+		return fmt.Errorf("network ID not found in state")
+	}
+
 	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
 	if err != nil {
 		return err
@@ -432,9 +447,22 @@ func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
 		return fmt.Errorf("could not find IPv4 config in network: %s", network.GetId())
 	}
 	routerIP, ok := network.Ipv4.GetPublicIpOk()
-	if ok && routerIP != nil {
+	if ok && routerIP != nil && *routerIP != "" {
 		fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{*routerIP})
 		return nil
 	}
 	return fmt.Errorf("egress IP not found for network: %s", network.GetId())
+}
+
+func isIsolatedNetworkUpToDate(current *iaas.Network, desired iaas.CreateIsolatedNetworkPayload) bool {
+	if current.GetName() != desired.Name {
+		return false
+	}
+	if desired.Dhcp != nil && current.GetDhcp() != *desired.Dhcp {
+		return false
+	}
+	if current.Ipv4 == nil {
+		return false
+	}
+	return slices.Equal(current.Ipv4.GetNameservers(), desired.Ipv4.CreateNetworkIPv4WithPrefix.Nameservers)
 }
