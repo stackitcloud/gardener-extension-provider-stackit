@@ -3,16 +3,6 @@ images:
 - name: cloud-controller-manager
   sourceRepository: github.com/kubernetes/cloud-provider-openstack
   repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
-  tag: "v1.33.1"
-  targetVersion: "1.33.x"
-- name: cloud-controller-manager
-  sourceRepository: github.com/kubernetes/cloud-provider-openstack
-  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
-  tag: "v1.34.1"
-  targetVersion: 1.34.x
-- name: cloud-controller-manager
-  sourceRepository: github.com/kubernetes/cloud-provider-openstack
-  repository: registry.k8s.io/provider-os/openstack-cloud-controller-manager
   tag: "v1.35.0"
   targetVersion: "1.35.x"
 - name: cloud-controller-manager
@@ -39,17 +29,17 @@ images:
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.35.9"
+  tag: "v1.35.10"
   targetVersion: "1.35.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.36.6"
+  tag: "v1.36.7"
   targetVersion: "1.36.x"
 - name: stackit-cloud-controller-manager
   sourceRepository: https://github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/cloud-controller-manager
-  tag: "v1.37.1"
+  tag: "v1.37.2"
   targetVersion: ">= 1.37"
 
 - name: machine-controller-manager-provider-openstack
@@ -61,16 +51,6 @@ images:
   repository: ghcr.io/stackitcloud/machine-controller-manager-provider-stackit
   tag: "v0.11.0"
 
-- name: csi-driver-cinder
-  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
-  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
-  tag: "v1.33.0-ske-1"
-  targetVersion: "1.33.x"
-- name: csi-driver-cinder
-  sourceRepository: github.com/stackitcloud/cloud-provider-openstack
-  repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
-  tag: "v1.34.1-ske-1"
-  targetVersion: 1.34.x
 - name: csi-driver-cinder
   sourceRepository: github.com/stackitcloud/cloud-provider-openstack
   repository: registry.ske.stackit.cloud/stackitcloud/cinder-csi-plugin
@@ -100,17 +80,17 @@ images:
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.35.9"
+  tag: "v1.35.10"
   targetVersion: "1.35.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.36.6"
+  tag: "v1.36.7"
   targetVersion: "1.36.x"
 - name: csi-driver-stackit
   sourceRepository: github.com/stackitcloud/cloud-provider-stackit
   repository: ghcr.io/stackitcloud/cloud-provider-stackit/stackit-csi-plugin
-  tag: "v1.37.1"
+  tag: "v1.37.2"
   targetVersion: ">= 1.37"
 
 - name: csi-provisioner
@@ -155,7 +135,7 @@ images:
 - name: stackit-application-load-balancer-controller
   sourceRepository: github.com/stackitcloud/application-load-balancer-controller
   repository: ghcr.io/stackitcloud/application-load-balancer-controller
-  tag: "v0.3.0"
+  tag: "v0.4.0"
 
 - name: stackit-pod-identity-webhook
   sourceRepository: github.com/stackitcloud/stackit-pod-identity-webhook
