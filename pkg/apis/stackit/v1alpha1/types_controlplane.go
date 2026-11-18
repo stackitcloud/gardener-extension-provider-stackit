@@ -42,7 +42,7 @@ type LoadBalancerConfig struct {
 // LoadBalancerHealthCheckConfig contains configuration for active load balancer health checks.
 type LoadBalancerHealthCheckConfig struct {
 	// UseKubeProxy specifies whether active health checks targeting kube-proxy are enabled.
-  Default is true.
+	// Default is true.
 	// +optional
 	UseKubeProxy *bool `json:"useKubeProxy,omitempty"`
 }
