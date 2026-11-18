@@ -93,6 +93,149 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 		})
 	})
 
+	Describe("#ensureIsolatedNetwork", func() {
+		var (
+			ctx      context.Context
+			ctrl     *gomock.Controller
+			mockIaaS *mockclient.MockIaaSClient
+			fctx     *FlowContext
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			ctrl = gomock.NewController(GinkgoT())
+			mockIaaS = mockclient.NewMockIaaSClient(ctrl)
+
+			fctx = &FlowContext{
+				state:       shared.NewWhiteboard(),
+				iaasClient:  mockIaaS,
+				technicalID: "shoot--foo--bar",
+				log:         logr.Discard(),
+				config: &stackitv1alpha1.InfrastructureConfig{
+					Networks: stackitv1alpha1.Networks{
+						Workers: "10.250.0.0/16",
+					},
+				},
+				cloudProfileConfig: &stackitv1alpha1.CloudProfileConfig{
+					DNSServers: []string{"8.8.8.8"},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("creates the network when it does not exist", func() {
+			mockIaaS.EXPECT().GetNetworkByName(ctx, "shoot--foo--bar").Return([]iaas.Network{}, nil)
+			mockIaaS.EXPECT().CreateIsolatedNetwork(ctx, gomock.Any()).Return(&iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Ipv4: &iaas.NetworkIPv4{
+					Nameservers: []string{"8.8.8.8"},
+				},
+			}, nil)
+
+			err := fctx.ensureIsolatedNetwork(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fctx.state.Get(IdentifierNetwork)).To(Equal(new("net-id")))
+		})
+
+		It("does not update the network when settings match", func() {
+			currentNet := &iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Dhcp: new(true),
+				Ipv4: &iaas.NetworkIPv4{
+					Nameservers: []string{"8.8.8.8"},
+				},
+			}
+			mockIaaS.EXPECT().GetNetworkByName(ctx, "shoot--foo--bar").Return([]iaas.Network{*currentNet}, nil)
+			mockIaaS.EXPECT().UpdateNetwork(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+			err := fctx.ensureIsolatedNetwork(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fctx.state.Get(IdentifierNetwork)).To(Equal(new("net-id")))
+		})
+
+		It("updates the network when settings do not match", func() {
+			currentNet := &iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Dhcp: new(true),
+				Ipv4: &iaas.NetworkIPv4{
+					Nameservers: []string{"1.1.1.1"},
+				},
+			}
+			mockIaaS.EXPECT().GetNetworkByName(ctx, "shoot--foo--bar").Return([]iaas.Network{*currentNet}, nil)
+			mockIaaS.EXPECT().UpdateNetwork(ctx, "net-id", gomock.Any()).Return(nil, nil)
+
+			err := fctx.ensureIsolatedNetwork(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fctx.state.Get(IdentifierNetwork)).To(Equal(new("net-id")))
+		})
+	})
+
+	Describe("#ensureConfiguredNetwork", func() {
+		var (
+			ctx      context.Context
+			ctrl     *gomock.Controller
+			mockIaaS *mockclient.MockIaaSClient
+			fctx     *FlowContext
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			ctrl = gomock.NewController(GinkgoT())
+			mockIaaS = mockclient.NewMockIaaSClient(ctrl)
+
+			fctx = &FlowContext{
+				state:       shared.NewWhiteboard(),
+				iaasClient:  mockIaaS,
+				technicalID: "shoot--foo--bar",
+				log:         logr.Discard(),
+				config:      &stackitv1alpha1.InfrastructureConfig{},
+			}
+			fctx.state.Set(IdentifierNetwork, "net-id")
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("succeeds and populates state when prefixes exist", func() {
+			net := &iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Ipv4: &iaas.NetworkIPv4{
+					Prefixes:    []string{"10.250.0.0/16"},
+					Nameservers: []string{"8.8.8.8"},
+				},
+			}
+			mockIaaS.EXPECT().GetNetworkById(ctx, "net-id").Return(net, nil)
+
+			err := fctx.ensureConfiguredNetwork(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fctx.state.Get(NameNetwork)).To(Equal(new("shoot--foo--bar")))
+			Expect(fctx.dnsNameservers).To(Equal(new([]string{"8.8.8.8"})))
+		})
+
+		It("returns error when no prefixes are found", func() {
+			net := &iaas.Network{
+				Id:   "net-id",
+				Name: "shoot--foo--bar",
+				Ipv4: &iaas.NetworkIPv4{
+					Prefixes: []string{},
+				},
+			}
+			mockIaaS.EXPECT().GetNetworkById(ctx, "net-id").Return(net, nil)
+
+			err := fctx.ensureConfiguredNetwork(ctx)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("no prefixes found for network 'net-id'"))
+		})
+	})
+
 	Describe("#Reconcile", func() {
 		var (
 			ctx      context.Context
