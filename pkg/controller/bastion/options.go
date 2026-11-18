@@ -149,12 +149,13 @@ func determineImageID(bastionSpec extensionsbastion.MachineSpec, cluster *extens
 	}
 
 	var imageID string
-	if len(imageFlavor.Regions) > 0 && imageFlavor.Regions[0].ID != "" {
+	switch {
+	case len(imageFlavor.Regions) > 0 && imageFlavor.Regions[0].ID != "":
 		imageID = imageFlavor.Regions[0].ID
-	} else if imageFlavor.Image != "" {
+	case imageFlavor.Image != "":
 		// Fallback: use global image name (not region-specific)
 		imageID = imageFlavor.Image
-	} else {
+	default:
 		return "", fmt.Errorf("error determining image ID for Bastion from CloudProfileConfig: machine image %s with version %s in region %s has no image ID or global image name", bastionSpec.ImageBaseName, bastionSpec.ImageVersion, cluster.Shoot.Spec.Region)
 	}
 
