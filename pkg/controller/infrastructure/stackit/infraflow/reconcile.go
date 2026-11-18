@@ -42,11 +42,11 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	g := flow.NewGraph("STACKIT infrastructure reconciliation")
 
 	ensureNetwork := fctx.AddTask(g, "ensure isolated network",
-		fctx.ensureNetwork,
+		fctx.ensureIsolatedNetwork,
 		shared.Timeout(defaultTimeout))
 
-	networkReady := fctx.AddTask(g, "ensure network ready",
-		flow.TaskFn(fctx.ensureConfiguredNetwork).RetryUntilTimeout(5*time.Second, defaultTimeout),
+	networkReady := fctx.AddTask(g, "wait until network is ready",
+		flow.TaskFn(fctx.ensureNetworkReady).RetryUntilTimeout(5*time.Second, defaultTimeout),
 		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
 
 	_ = fctx.AddTask(g, "ensure openstack subnet id",
@@ -54,11 +54,6 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady),
 		shared.DoIf(fctx.hasOpenStackCredentials),
 	)
-
-	_ = fctx.AddTask(g, "ensure egress IP",
-		fctx.ensureEgressIP,
-		shared.Dependencies(networkReady),
-		shared.Timeout(defaultTimeout))
 
 	ensureSecGroup := fctx.AddTask(g, "ensure security group",
 		fctx.ensureSecGroup,
@@ -81,7 +76,7 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	return g
 }
 
-func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
+func (fctx *FlowContext) ensureNetworkReady(ctx context.Context) error {
 	networkID := fctx.state.Get(IdentifierNetwork)
 	if networkID == nil || *networkID == "" {
 		return fmt.Errorf("no network ID found in the state")
@@ -119,6 +114,12 @@ func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
 		infrainternal.InjectConfig(&fctx.config.Networks, snaConfig)
 		fctx.nodesCIDR = &snaConfig.WorkersCIDR
 	}
+
+	routerIP := networkIPv4Config.GetPublicIp()
+	if routerIP == "" {
+		return fmt.Errorf("egress IP not found for network: %s", network.GetId())
+	}
+	fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{routerIP})
 
 	// Populate dnsNameservers for InfrastructureStatus from provided network
 	nameservers := networkIPv4Config.GetNameservers()
@@ -372,17 +373,13 @@ func (fctx *FlowContext) ensureSecGroupRules(ctx context.Context) error {
 	return nil
 }
 
-func (fctx *FlowContext) ensureNetwork(ctx context.Context) error {
+func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 	// SNA Case: Network already provided
 	if fctx.config.Networks.ID != nil {
 		fctx.state.Set(IdentifierNetwork, *fctx.config.Networks.ID)
 		return nil
 	}
 
-	return fctx.ensureIsolatedNetwork(ctx)
-}
-
-func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 	log := shared.LogFromContext(ctx)
 
 	// Configure DNS settings with the cloud profile as default, while allowing overrides through shoot configuration.
@@ -430,28 +427,6 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (fctx *FlowContext) ensureEgressIP(ctx context.Context) error {
-	networkID := fctx.state.Get(IdentifierNetwork)
-	if networkID == nil || *networkID == "" {
-		return fmt.Errorf("network ID not found in state")
-	}
-
-	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
-	if err != nil {
-		return err
-	}
-	_, ok := network.GetIpv4Ok()
-	if !ok {
-		return fmt.Errorf("could not find IPv4 config in network: %s", network.GetId())
-	}
-	routerIP, ok := network.Ipv4.GetPublicIpOk()
-	if ok && routerIP != nil && *routerIP != "" {
-		fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{*routerIP})
-		return nil
-	}
-	return fmt.Errorf("egress IP not found for network: %s", network.GetId())
 }
 
 func isIsolatedNetworkUpToDate(current *iaas.Network, desired iaas.CreateIsolatedNetworkPayload) bool {
