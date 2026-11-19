@@ -378,9 +378,10 @@ func expectedUserAgentHeaders() []string {
 
 func expectedSTACKITCCMConfig(customLabelDomain string, apiEndpoints *stackitv1alpha1.APIEndpoints) map[string]any {
 	config := map[string]any{
-		"stackitProjectID": "foo",
-		"stackitNetworkID": "network-acbd1234",
-		"stackitRegion":    "eu01",
+		"stackitProjectID":      "foo",
+		"stackitNetworkID":      "network-acbd1234",
+		"stackitRegion":         "eu01",
+		"stackitLBUseKubeProxy": true,
 		"extraLabels": map[string]string{
 			STACKITLBClusterLabelKey: technicalID,
 		},
@@ -702,6 +703,23 @@ var _ = Describe("ValuesProvider fake client", func() {
 			Entry("custom ske.stackit.cloud domain", "ske.stackit.cloud"),
 			Entry("custom example.com domain", "example.com"),
 		)
+
+		It("respects useKubeProxy in ControlPlaneConfig LoadBalancer.HealthCheck", func() {
+			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
+			cpConfig := baseControlPlaneConfig()
+			cpConfig.CloudControllerManager.LoadBalancer = &stackitv1alpha1.LoadBalancerConfig{
+				HealthCheck: &stackitv1alpha1.LoadBalancerHealthCheckConfig{
+					UseKubeProxy: new(false),
+				},
+			}
+			cp.Spec.ProviderConfig.Raw = encode(cpConfig)
+
+			values, err := vp.GetControlPlaneChartValues(ctx, cp, cluster, secretsManager, checksumsFor(providerSecret), false)
+			Expect(err).NotTo(HaveOccurred())
+
+			stackitCCMConfig := chartValues(values, openstack.STACKITCloudControllerManagerName)["config"].(map[string]any)
+			Expect(stackitCCMConfig).To(HaveKeyWithValue("stackitLBUseKubeProxy", false))
+		})
 
 		It("returns ALB controller values when enabled", func() {
 			cp, cluster, providerSecret, _ := seedReadyControlPlane(ctx, c)
