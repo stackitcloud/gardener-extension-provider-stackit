@@ -78,9 +78,13 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		fctx.ensureNetwork,
 		shared.Timeout(defaultTimeout), shared.Dependencies(prehook, ensureSNAState))
 
+	networkReady := fctx.AddTask(g, "wait until network is ready",
+		fctx.ensureNetworkReady,
+		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+
 	ensureSubnet := fctx.AddTask(g, "ensure subnet",
 		fctx.ensureSubnet,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady))
 
 	_ = fctx.AddTask(g, "ensure router interface",
 		fctx.ensureRouterInterface,
@@ -224,26 +228,29 @@ func (fctx *FlowContext) findFloatingPoolSubnetName() *string {
 
 func (fctx *FlowContext) ensureNetwork(ctx context.Context) error {
 	if fctx.config.Networks.ID != nil {
-		return fctx.ensureConfiguredNetwork(ctx)
+		fctx.state.Set(IdentifierNetwork, *fctx.config.Networks.ID)
+		return nil
 	}
 	return fctx.ensureNewNetwork(ctx)
 }
 
-func (fctx *FlowContext) ensureConfiguredNetwork(ctx context.Context) error {
-	networkID := *fctx.config.Networks.ID
-	network, err := fctx.access.GetNetworkByID(ctx, networkID)
+func (fctx *FlowContext) ensureNetworkReady(ctx context.Context) error {
+	networkID := fctx.state.Get(IdentifierNetwork)
+	if networkID == nil || *networkID == "" {
+		return fmt.Errorf("no network ID found in the state")
+	}
+
+	network, err := fctx.access.GetNetworkByID(ctx, *networkID)
 	if err != nil {
-		fctx.state.Set(IdentifierNetwork, "")
-		fctx.state.Set(NameNetwork, "")
 		return err
 	}
 	if network == nil {
 		return gardenv1beta1helper.NewErrorWithCodes(
-			fmt.Errorf("network with ID '%s' was not found", networkID),
+			fmt.Errorf("network with ID '%s' was not found", *networkID),
 			gardencorev1beta1.ErrorInfraDependencies,
 		)
 	}
-	fctx.state.Set(IdentifierNetwork, networkID)
+
 	fctx.state.Set(NameNetwork, network.Name)
 	return nil
 }
@@ -259,23 +266,34 @@ func (fctx *FlowContext) ensureNewNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if current != nil {
-		fctx.state.Set(IdentifierNetwork, current.ID)
-		fctx.state.Set(NameNetwork, current.Name)
-		if _, err := fctx.access.UpdateNetwork(ctx, desired, current); err != nil {
-			return err
-		}
-	} else {
-		log.Info("creating...")
+	if current == nil {
+		log.Info("creating...", "network", fctx.defaultNetworkName())
 		created, err := fctx.access.CreateNetwork(ctx, desired)
 		if err != nil {
 			return err
 		}
 		fctx.state.Set(IdentifierNetwork, created.ID)
-		fctx.state.Set(NameNetwork, created.Name)
+		return nil
+	}
+
+	fctx.state.Set(IdentifierNetwork, current.ID)
+	if isNetworkUpToDate(current, desired) {
+		return nil
+	}
+
+	log.Info("updating...", "network", current.Name)
+	if _, err := fctx.access.UpdateNetwork(ctx, desired, current); err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func isNetworkUpToDate(current *access.Network, desired *access.Network) bool {
+	if current.Name != desired.Name {
+		return false
+	}
+	return current.AdminStateUp == desired.AdminStateUp
 }
 
 func (fctx *FlowContext) findExistingNetwork(ctx context.Context) (*access.Network, error) {
