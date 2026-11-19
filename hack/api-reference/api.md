@@ -1263,7 +1263,7 @@ boolean
 </td>
 <td>
 <em>(Optional)</em>
-<p>UseKubeProxy specifies whether active health checks targeting kube-proxy are enabled.</p>
+<p>UseKubeProxy specifies whether active health checks targeting kube-proxy are enabled.<br />This option currently do NOT configure the Cloud Controller Manager, this field was added<br />first to be able to set it in the Shoot, because the default for this value will be true and<br />therefore different as the current value.</p>
 </td>
 </tr>
 
