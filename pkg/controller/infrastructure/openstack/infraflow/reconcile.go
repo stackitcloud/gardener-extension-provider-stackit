@@ -79,8 +79,8 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		shared.Timeout(defaultTimeout), shared.Dependencies(prehook, ensureSNAState))
 
 	networkReady := fctx.AddTask(g, "wait until network is ready",
-		fctx.ensureNetworkReady,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureNetwork))
+		flow.TaskFn(fctx.ensureNetworkReady).RetryUntilTimeout(5*time.Second, defaultTimeout),
+		shared.Dependencies(ensureNetwork))
 
 	ensureSubnet := fctx.AddTask(g, "ensure subnet",
 		fctx.ensureSubnet,
