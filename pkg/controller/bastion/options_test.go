@@ -289,6 +289,47 @@ var _ = Describe("Options", func() {
 		Expect(result.ResourceName).To(HaveLen(63))
 	})
 
+	It("should determine the image ID when CloudProfile uses capabilityFlavors", func() {
+		cloudProfile.Spec.MachineCapabilities = []gardencorev1beta1.CapabilityDefinition{{
+			Name:   v1beta1constants.ArchitectureName,
+			Values: []string{v1beta1constants.ArchitectureAMD64, v1beta1constants.ArchitectureARM64},
+		}}
+		amd64Capabilities := gardencorev1beta1.Capabilities{
+			v1beta1constants.ArchitectureName: []string{v1beta1constants.ArchitectureAMD64},
+		}
+		cloudProfile.Spec.MachineTypes[1].Capabilities = amd64Capabilities
+		cloudProfile.Spec.MachineImages[0].Versions[1].CapabilityFlavors = []gardencorev1beta1.MachineImageFlavor{{
+			Capabilities: amd64Capabilities,
+		}}
+		cloudProfileConfig.MachineImages[0].Versions[0] = stackitv1alpha1.MachineImageVersion{
+			Version: "1.1.0",
+			CapabilityFlavors: []stackitv1alpha1.MachineImageFlavor{{
+				Capabilities: amd64Capabilities,
+				Regions: []stackitv1alpha1.RegionIDMapping{{
+					Name: "eu01",
+					ID:   "eu01-flatcar-1.1.0",
+				}},
+			}},
+		}
+		cloudProfileConfigBytes, err := runtime.Encode(encoder, cloudProfileConfig)
+		Expect(err).NotTo(HaveOccurred())
+		cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: cloudProfileConfigBytes}
+
+		Expect(a.DetermineOptions(ctx, bastion, cluster, projectID)).To(HaveField("ImageID", "eu01-flatcar-1.1.0"))
+	})
+
+	It("should fallback to global image name when region ID is empty", func() {
+		cloudProfileConfig.MachineImages[0].Versions[0] = stackitv1alpha1.MachineImageVersion{
+			Version: "1.1.0",
+			Image:   "global-flatcar-image",
+		}
+		cloudProfileConfigBytes, err := runtime.Encode(encoder, cloudProfileConfig)
+		Expect(err).NotTo(HaveOccurred())
+		cloudProfile.Spec.ProviderConfig = &runtime.RawExtension{Raw: cloudProfileConfigBytes}
+
+		Expect(a.DetermineOptions(ctx, bastion, cluster, projectID)).To(HaveField("ImageID", "global-flatcar-image"))
+	})
+
 	DescribeTable("customLabelDomain for bastion labels",
 		func(customDomain string, expectedClusterLabelKey string, expectedBastionLabelKey string) {
 			actuatorWithCustomDomain := &Actuator{
