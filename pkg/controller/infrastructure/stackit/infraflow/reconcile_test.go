@@ -3,6 +3,8 @@ package infraflow
 import (
 	"context"
 
+	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	iaas "github.com/stackitcloud/stackit-sdk-go/services/iaas/v2api"
@@ -82,6 +84,97 @@ var _ = Describe("STACKIT infraflow reconcile", func() {
 			Expect(savedSecurityGroup.GetId()).To(Equal("security-group-id"))
 			Expect(savedSecurityGroup.GetName()).To(Equal("shoot--foo--bar"))
 			Expect(savedSecurityGroup.GetRules()).To(BeEmpty())
+		})
+	})
+
+	Describe("#ensureSecGroupRules", func() {
+		var (
+			ctx      context.Context
+			ctrl     *gomock.Controller
+			mockIaaS *mockclient.MockIaaSClient
+			fctx     *FlowContext
+			group    *iaas.SecurityGroup
+		)
+
+		BeforeEach(func() {
+			ctx = context.Background()
+			ctrl = gomock.NewController(GinkgoT())
+			mockIaaS = mockclient.NewMockIaaSClient(ctrl)
+
+			group = &iaas.SecurityGroup{
+				Id:   new("security-group-id"),
+				Name: "shoot--foo--bar",
+			}
+
+			whiteboard := shared.NewWhiteboard()
+			whiteboard.SetObject(ObjectSecGroup, group)
+
+			fctx = &FlowContext{
+				state:       whiteboard,
+				iaasClient:  mockIaaS,
+				technicalID: "shoot--foo--bar",
+				cluster: &extensionscontroller.Cluster{
+					Shoot: &gardencorev1beta1.Shoot{},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("reconciles desired security group rules including nodeports and kube-proxy health check", func() {
+			expectedRules := []iaas.SecurityGroupRule{
+				{
+					Direction:             stackit.DirectionIngress,
+					Ethertype:             new(stackit.EtherTypeIPv4),
+					RemoteSecurityGroupId: new("security-group-id"),
+					Description:           new("IPv4: allow all incoming traffic within the same security group"),
+				},
+				{
+					Direction:   stackit.DirectionEgress,
+					Ethertype:   new(stackit.EtherTypeIPv4),
+					Description: new("IPv4: allow all outgoing traffic"),
+				},
+				{
+					Direction: stackit.DirectionIngress,
+					Ethertype: new(stackit.EtherTypeIPv4),
+					Protocol:  new(stackit.ProtocolTCP),
+					PortRange: &iaas.PortRange{
+						Max: int64(32767),
+						Min: int64(30000),
+					},
+					IpRange:     new("0.0.0.0/0"),
+					Description: new("IPv4: allow all incoming tcp traffic with port range 30000-32767"),
+				},
+				{
+					Direction: stackit.DirectionIngress,
+					Ethertype: new(stackit.EtherTypeIPv4),
+					Protocol:  new(stackit.ProtocolUDP),
+					PortRange: &iaas.PortRange{
+						Max: int64(32767),
+						Min: int64(30000),
+					},
+					IpRange:     new("0.0.0.0/0"),
+					Description: new("IPv4: allow all incoming udp traffic with port range 30000-32767"),
+				},
+				{
+					Direction: stackit.DirectionIngress,
+					Ethertype: new(stackit.EtherTypeIPv4),
+					Protocol:  new(stackit.ProtocolTCP),
+					PortRange: &iaas.PortRange{
+						Max: int64(10256),
+						Min: int64(10256),
+					},
+					IpRange:     new("0.0.0.0/0"),
+					Description: new("IPv4: allow incoming tcp traffic to kube-proxy healthcheck port"),
+				},
+			}
+
+			mockIaaS.EXPECT().UpdateSecurityGroupRules(ctx, group, expectedRules, gomock.Any()).Return(false, nil)
+
+			err := fctx.ensureSecGroupRules(ctx)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })
