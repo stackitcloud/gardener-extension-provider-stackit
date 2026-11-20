@@ -185,8 +185,8 @@ github.com/gardener/etcd-druid/api v0.39.2 h1:zP4WQdrhh09YGjamoBqss8gmjyT6c1BGwN
 github.com/gardener/etcd-druid/api v0.39.2/go.mod h1:HsqEM/h4XuxPC4cFDm20V9TPAUqv0tjtnzds/nZ5p7Y=
 github.com/gardener/gardener v1.155.1 h1:kjDdT28/z+HaPIioK+qs9ztfavFsxnJi1vMJBn0ysJU=
 github.com/gardener/gardener v1.155.1/go.mod h1:3Iym9wdjTE5EDPQrnJnkmulDxcNk28WnnzhPk3Jpe44=
-github.com/gardener/gardener-extension-networking-calico v1.60.3 h1:ohS72nt+TJDpYteR8jLqlwGuyRBo7dXCvT70ivoO7NE=
-github.com/gardener/gardener-extension-networking-calico v1.60.3/go.mod h1:zAc15kqwUbClHMXZhYypC22GGOcjQ5n5JrxURs7RPqM=
+github.com/gardener/gardener-extension-networking-calico v1.61.0 h1:gPvsyF7ZBTmQSCzg13abq0eNHwBUR0sJe76srNEJnNc=
+github.com/gardener/gardener-extension-networking-calico v1.61.0/go.mod h1:ub+/hOWC14M3QTapjPISGnlHuhlB/25+bE0mZJduqkk=
 github.com/gardener/gardener/hack/tools v1.155.1 h1:Enchx9z/LmZrRupqD2Hk40bJ1maSZdatU7j5lbofUew=
 github.com/gardener/gardener/hack/tools v1.155.1/go.mod h1:TQX7KtW4JDFujQBLb/Ij2yIfvKGtGVnt7GQjbFmZhpI=
 github.com/gardener/gardener/pkg/apis v1.155.1 h1:FNnp8YxaSB606ElV4BKeC4UbDb8QTrexi1/DkyUlUFI=
