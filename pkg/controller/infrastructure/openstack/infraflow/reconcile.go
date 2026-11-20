@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	gardenv1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
@@ -74,6 +75,10 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		fctx.ensureRouter,
 		shared.Timeout(defaultTimeout), shared.Dependencies(ensureExternalNetwork))
 
+	routerReady := fctx.AddTask(g, "wait until router is ready",
+		flow.TaskFn(fctx.ensureRouterReady).RetryUntilTimeout(5*time.Second, defaultTimeout),
+		shared.Dependencies(ensureRouter))
+
 	ensureNetwork := fctx.AddTask(g, "ensure network",
 		fctx.ensureNetwork,
 		shared.Timeout(defaultTimeout), shared.Dependencies(prehook, ensureSNAState))
@@ -86,13 +91,17 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 		fctx.ensureSubnet,
 		shared.Timeout(defaultTimeout), shared.Dependencies(networkReady))
 
+	subnetReady := fctx.AddTask(g, "wait until subnet is ready",
+		flow.TaskFn(fctx.ensureSubnetReady).RetryUntilTimeout(5*time.Second, defaultTimeout),
+		shared.Dependencies(ensureSubnet))
+
 	_ = fctx.AddTask(g, "ensure router interface",
 		fctx.ensureRouterInterface,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureRouter, ensureSubnet))
+		shared.Timeout(defaultTimeout), shared.Dependencies(routerReady, subnetReady))
 
 	ensureSecGroup := fctx.AddTask(g, "ensure security group",
 		fctx.ensureSecGroup,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureRouter))
+		shared.Timeout(defaultTimeout), shared.Dependencies(routerReady))
 
 	_ = fctx.AddTask(g, "ensure security group rules",
 		fctx.ensureSecGroupRules,
@@ -100,11 +109,11 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 
 	_ = fctx.AddTask(g, "ensure ssh key pair",
 		fctx.ensureSSHKeyPair,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureRouter))
+		shared.Timeout(defaultTimeout), shared.Dependencies(routerReady))
 
 	_ = fctx.AddTask(g, "ensure stackit ssh key pair",
 		fctx.ensureStackitSSHKeyPair,
-		shared.Timeout(defaultTimeout), shared.Dependencies(ensureRouter),
+		shared.Timeout(defaultTimeout), shared.Dependencies(routerReady),
 		shared.DoIf(fctx.hasStackitMCM),
 	)
 
@@ -142,23 +151,28 @@ func (fctx *FlowContext) ensureRouter(ctx context.Context) error {
 	}
 
 	if fctx.config.Networks.Router != nil {
-		return fctx.ensureConfiguredRouter(ctx)
+		fctx.state.Set(IdentifierRouter, fctx.config.Networks.Router.ID)
+		return nil
 	}
 	return fctx.ensureNewRouter(ctx, *externalNetworkID)
 }
 
-func (fctx *FlowContext) ensureConfiguredRouter(ctx context.Context) error {
-	router, err := fctx.access.GetRouterByID(ctx, fctx.config.Networks.Router.ID)
+func (fctx *FlowContext) ensureRouterReady(ctx context.Context) error {
+	routerID := fctx.state.Get(IdentifierRouter)
+	if routerID == nil || *routerID == "" {
+		return fmt.Errorf("no router ID found in the state")
+	}
+
+	router, err := fctx.access.GetRouterByID(ctx, *routerID)
 	if err != nil {
-		fctx.state.Set(IdentifierRouter, "")
 		return err
 	}
 	if router == nil {
-		fctx.state.Set(IdentifierRouter, "")
-		fctx.state.Set(RouterIP, "")
-		return fmt.Errorf("missing expected router %s", fctx.config.Networks.Router.ID)
+		return gardenv1beta1helper.NewErrorWithCodes(
+			fmt.Errorf("router with ID '%s' was not found", *routerID),
+			gardencorev1beta1.ErrorInfraDependencies,
+		)
 	}
-	fctx.state.Set(IdentifierRouter, fctx.config.Networks.Router.ID)
 	if len(router.ExternalFixedIPs) < 1 {
 		return fmt.Errorf("expected at least one external fixed ip")
 	}
@@ -178,35 +192,51 @@ func (fctx *FlowContext) ensureNewRouter(ctx context.Context, externalNetworkID 
 	if err != nil {
 		return err
 	}
-	if current != nil {
-		if len(current.ExternalFixedIPs) < 1 {
-			return fmt.Errorf("expected at least one external fixed ip")
+	if current == nil {
+		floatingPoolSubnetName := fctx.findFloatingPoolSubnetName()
+		fctx.state.SetPtr(NameFloatingPoolSubnet, floatingPoolSubnetName)
+		if floatingPoolSubnetName != nil {
+			log.Info("looking up floating pool subnets...")
+			desired.ExternalSubnetIDs, err = fctx.access.LookupFloatingPoolSubnetIDs(ctx, externalNetworkID, *floatingPoolSubnetName)
+			if err != nil {
+				return err
+			}
 		}
-		if _, current, err = fctx.access.UpdateRouter(ctx, desired, current); err != nil {
-			return err
-		}
-		fctx.state.Set(IdentifierRouter, current.ID)
-		return fctx.ensureEgressCIDRs(current)
-	}
 
-	floatingPoolSubnetName := fctx.findFloatingPoolSubnetName()
-	fctx.state.SetPtr(NameFloatingPoolSubnet, floatingPoolSubnetName)
-	if floatingPoolSubnetName != nil {
-		log.Info("looking up floating pool subnets...")
-		desired.ExternalSubnetIDs, err = fctx.access.LookupFloatingPoolSubnetIDs(ctx, externalNetworkID, *floatingPoolSubnetName)
+		log.Info("creating...", "router", fctx.defaultRouterName())
+		// TODO: add tags to created resources
+		created, err := fctx.access.CreateRouter(ctx, desired)
 		if err != nil {
 			return err
 		}
+		fctx.state.Set(IdentifierRouter, created.ID)
+		return nil
 	}
-	log.Info("creating...")
-	// TODO: add tags to created resources
-	created, err := fctx.access.CreateRouter(ctx, desired)
-	if err != nil {
+
+	fctx.state.Set(IdentifierRouter, current.ID)
+	if isRouterUpToDate(current, desired) {
+		return nil
+	}
+
+	log.Info("updating...", "router", current.Name)
+	if _, _, err = fctx.access.UpdateRouter(ctx, desired, current); err != nil {
 		return err
 	}
 
-	fctx.state.Set(IdentifierRouter, created.ID)
-	return fctx.ensureEgressCIDRs(created)
+	return nil
+}
+
+func isRouterUpToDate(current *access.Router, desired *access.Router) bool {
+	if current.Name != desired.Name {
+		return false
+	}
+	if current.ExternalNetworkID != desired.ExternalNetworkID {
+		return false
+	}
+	if desired.EnableSNAT != nil && !ptr.Equal(desired.EnableSNAT, current.EnableSNAT) {
+		return false
+	}
+	return true
 }
 
 func (fctx *FlowContext) findExistingRouter(ctx context.Context) (*access.Router, error) {
@@ -323,24 +353,31 @@ func (fctx *FlowContext) ensureSubnet(ctx context.Context) error {
 	// SNA case: because the corresponding shoots SubnetID is never nil.
 	if fctx.config.Networks.SubnetID != nil {
 		// SNA case
-		return fctx.ensureConfiguredSubnet(ctx)
+		fctx.state.Set(IdentifierSubnet, *fctx.config.Networks.SubnetID)
+		return nil
 	}
 	// Non SNA case
 	return fctx.ensureNewSubnet(ctx)
 }
 
-func (fctx *FlowContext) ensureConfiguredSubnet(ctx context.Context) error {
-	current, err := fctx.access.GetSubnetByID(ctx, *fctx.config.Networks.SubnetID)
+func (fctx *FlowContext) ensureSubnetReady(ctx context.Context) error {
+	subnetID := fctx.state.Get(IdentifierSubnet)
+	if subnetID == nil || *subnetID == "" {
+		return fmt.Errorf("no subnet ID found in the state")
+	}
+
+	subnet, err := fctx.access.GetSubnetByID(ctx, *subnetID)
 	if err != nil {
-		fctx.state.Set(IdentifierSubnet, "")
 		return err
 	}
-	if current == nil {
-		fctx.dnsNameservers = nil
-	} else {
-		fctx.dnsNameservers = &current.DNSNameservers
+	if subnet == nil {
+		return gardenv1beta1helper.NewErrorWithCodes(
+			fmt.Errorf("subnet with ID '%s' was not found", *subnetID),
+			gardencorev1beta1.ErrorInfraDependencies,
+		)
 	}
-	fctx.state.Set(IdentifierSubnet, *fctx.config.Networks.SubnetID)
+
+	fctx.dnsNameservers = &subnet.DNSNameservers
 	return nil
 }
 
@@ -371,24 +408,34 @@ func (fctx *FlowContext) ensureNewSubnet(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if current != nil {
-		fctx.state.Set(IdentifierSubnet, current.ID)
-		log.Info("updating...")
-		if _, err := fctx.access.UpdateSubnet(ctx, desired, current); err != nil {
-			return err
-		}
-		// Update dnsNameservers when update was successful
-		fctx.dnsNameservers = &desired.DNSNameservers
-	} else {
-		log.Info("creating...")
+	if current == nil {
+		log.Info("creating...", "subnet", fctx.defaultSubnetName())
 		created, err := fctx.access.CreateSubnet(ctx, desired)
 		if err != nil {
 			return err
 		}
 		fctx.state.Set(IdentifierSubnet, created.ID)
-		fctx.dnsNameservers = &created.DNSNameservers
+		return nil
 	}
+
+	fctx.state.Set(IdentifierSubnet, current.ID)
+	if isSubnetUpToDate(current, desired) {
+		return nil
+	}
+
+	log.Info("updating...", "subnet", current.Name)
+	if _, err := fctx.access.UpdateSubnet(ctx, desired, current); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func isSubnetUpToDate(current, desired *subnets.Subnet) bool {
+	if current.Name != desired.Name {
+		return false
+	}
+	return slices.Equal(current.DNSNameservers, desired.DNSNameservers)
 }
 
 func (fctx *FlowContext) findExistingSubnet(ctx context.Context) (*subnets.Subnet, error) {
