@@ -76,59 +76,6 @@ func (fctx *FlowContext) buildReconcileGraph() *flow.Graph {
 	return g
 }
 
-func (fctx *FlowContext) ensureNetworkReady(ctx context.Context) error {
-	networkID := fctx.state.Get(IdentifierNetwork)
-	if networkID == nil || *networkID == "" {
-		return fmt.Errorf("no network ID found in the state")
-	}
-
-	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
-	if err != nil {
-		return err
-	}
-
-	if network == nil {
-		return gardenv1beta1helper.NewErrorWithCodes(
-			fmt.Errorf("network with ID '%s' was not found", *networkID),
-			gardencorev1beta1.ErrorInfraDependencies,
-		)
-	}
-
-	networkIPv4Config := network.GetIpv4()
-	// In IaaS API Network can only have 1 Prefix. However, in OpenStack previously it was possible to have more.
-	// We never used this but let's be sure by checking it here.
-	if len(networkIPv4Config.GetPrefixes()) > 1 {
-		return fmt.Errorf("multiple prefixes found for network '%s'", network.GetId())
-	}
-	if len(networkIPv4Config.GetPrefixes()) == 0 {
-		return fmt.Errorf("no prefixes found for network '%s'", network.GetId())
-	}
-	workerCIDR := networkIPv4Config.GetPrefixes()[0]
-
-	if fctx.isSNAShoot {
-		snaConfig := &infrainternal.SNAConfig{
-			NetworkID:   network.GetId(),
-			WorkersCIDR: workerCIDR,
-		}
-
-		infrainternal.InjectConfig(&fctx.config.Networks, snaConfig)
-		fctx.nodesCIDR = &snaConfig.WorkersCIDR
-	}
-
-	routerIP := networkIPv4Config.GetPublicIp()
-	if routerIP == "" {
-		return fmt.Errorf("egress IP not found for network: %s", network.GetId())
-	}
-	fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{routerIP})
-
-	// Populate dnsNameservers for InfrastructureStatus from provided network
-	nameservers := networkIPv4Config.GetNameservers()
-	fctx.dnsNameservers = new(nameservers)
-
-	fctx.state.Set(NameNetwork, network.GetName())
-	return nil
-}
-
 func (fctx *FlowContext) ensureOpenStackSubnetID(ctx context.Context) error {
 	var networkID string
 
@@ -430,14 +377,67 @@ func (fctx *FlowContext) ensureIsolatedNetwork(ctx context.Context) error {
 }
 
 func isIsolatedNetworkUpToDate(current *iaas.Network, desired iaas.CreateIsolatedNetworkPayload) bool {
-	if current.GetName() != desired.Name {
+	if current.GetName() != desired.GetName() {
 		return false
 	}
-	if desired.Dhcp != nil && current.GetDhcp() != *desired.Dhcp {
+	if current.GetDhcp() != desired.GetDhcp() {
 		return false
 	}
-	if current.Ipv4 == nil {
-		return false
-	}
-	return slices.Equal(current.Ipv4.GetNameservers(), desired.Ipv4.CreateNetworkIPv4WithPrefix.Nameservers)
+	return slices.Equal(current.GetIpv4().Nameservers, desired.GetIpv4().CreateNetworkIPv4WithPrefix.GetNameservers())
 }
+
+// This function is the only one that is allowed to fail in a "normal" flow
+// It will be retried by the gardener flow
+func (fctx *FlowContext) ensureNetworkReady(ctx context.Context) error {
+	networkID := fctx.state.Get(IdentifierNetwork)
+	if networkID == nil || *networkID == "" {
+		return fmt.Errorf("no network ID found in the state")
+	}
+
+	network, err := fctx.iaasClient.GetNetworkById(ctx, *networkID)
+	if err != nil {
+		return err
+	}
+
+	if network == nil {
+		return gardenv1beta1helper.NewErrorWithCodes(
+			fmt.Errorf("network with ID '%s' was not found", *networkID),
+			gardencorev1beta1.ErrorInfraDependencies,
+		)
+	}
+
+	networkIPv4Config := network.GetIpv4()
+	// In IaaS API Network can only have 1 Prefix. However, in OpenStack previously it was possible to have more.
+	// We never used this but let's be sure by checking it here.
+	if len(networkIPv4Config.GetPrefixes()) > 1 {
+		return fmt.Errorf("multiple prefixes found for network '%s'", network.GetId())
+	}
+	if len(networkIPv4Config.GetPrefixes()) == 0 {
+		return fmt.Errorf("no prefixes found for network '%s'", network.GetId())
+	}
+	workerCIDR := networkIPv4Config.GetPrefixes()[0]
+
+	if fctx.isSNAShoot {
+		snaConfig := &infrainternal.SNAConfig{
+			NetworkID:   network.GetId(),
+			WorkersCIDR: workerCIDR,
+		}
+
+		infrainternal.InjectConfig(&fctx.config.Networks, snaConfig)
+		fctx.nodesCIDR = &snaConfig.WorkersCIDR
+	}
+
+	routerIP := networkIPv4Config.GetPublicIp()
+	if routerIP == "" {
+		return fmt.Errorf("egress IP not found for network: %s", network.GetId())
+	}
+	fctx.egressCIDRs = utils.ComputeEgressCIDRs([]string{routerIP})
+
+	// Populate dnsNameservers for InfrastructureStatus from provided network
+	nameservers := networkIPv4Config.GetNameservers()
+	fctx.dnsNameservers = new(nameservers)
+
+	fctx.state.Set(NameNetwork, network.GetName())
+	return nil
+}
+
